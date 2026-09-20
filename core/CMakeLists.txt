@@ -1,0 +1,121 @@
+cmake_minimum_required(VERSION 3.22.1)
+
+project(magicpodscore VERSION 2.0.9 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+
+configure_file(config/Config.h.in src/Config.h)
+
+add_executable(magicpodscore
+    src/main.cpp
+
+    src/tests/TestsSgb.cpp
+    src/tests/TestsAapBle.cpp
+
+    src/client/Client.cpp
+    src/pulseaudio/PulseAudioClient.cpp
+
+    src/sdk/aap/Aes.cpp
+    src/sdk/aap/AapHelper.cpp
+    src/sdk/aap/setters/AapEnableNotifications.cpp
+    src/sdk/aap/setters/AapInit.cpp
+    src/sdk/aap/setters/AapInitExt.cpp
+    src/sdk/aap/setters/AapRequest.cpp
+    src/sdk/aap/setters/AapSetAnc.cpp
+    src/sdk/aap/setters/AapSetConversationAwarenessStatus.cpp
+    src/sdk/aap/setters/AapSetNoiseCancellationOneAirPod.cpp
+    src/sdk/aap/setters/AapSetPressAndHoldDuration.cpp
+    src/sdk/aap/setters/AapSetPressSpeed.cpp
+    src/sdk/aap/setters/AapSetVolumeSwipe.cpp
+    src/sdk/aap/setters/AapSetVolumeSwipeLength.cpp
+    src/sdk/aap/setters/AapSetPersonalizedVolume.cpp
+    src/sdk/aap/setters/AapSetToneVolume.cpp
+    src/sdk/aap/setters/AapSetMuteMicrophoneEndCall.cpp
+    src/sdk/aap/setters/AapSetAdaptiveAudioNoise.cpp
+    src/sdk/aap/setters/AapPrivateKeys.cpp
+
+    src/sdk/aap/watchers/AapAncWatcher.cpp
+    src/sdk/aap/watchers/AapBatteryWatcher.cpp
+    src/sdk/aap/watchers/AapWatcher.cpp
+    src/sdk/aap/watchers/AapConversationAwarenessWatcher.cpp
+    src/sdk/aap/watchers/AapConversationAwarenessStateWatcher.cpp
+    src/sdk/aap/watchers/AapNoiseCancellationOneAirPodWatcher.cpp
+    src/sdk/aap/watchers/AapPressAndHoldDurationWatcher.cpp
+    src/sdk/aap/watchers/AapPressSpeedWatcher.cpp
+    src/sdk/aap/watchers/AapVolumeSwipeWatcher.cpp
+    src/sdk/aap/watchers/AapVolumeSwipeLengthWatcher.cpp
+    src/sdk/aap/watchers/AapPersonalizedVolumeWatcher.cpp
+    src/sdk/aap/watchers/AapToneVolumeWatcher.cpp
+    src/sdk/aap/watchers/AapMuteMicrophoneEndCallWatcher.cpp
+    src/sdk/aap/watchers/AapAdaptiveAudioNoiseWatcher.cpp
+    src/sdk/aap/watchers/AapPrivateKeysWatcher.cpp
+
+    src/sdk/sgb/watchers/GalaxyBudsAncWatcher.cpp
+    src/sdk/sgb/watchers/GalaxyBudsBatteryWatcher.cpp
+    src/sdk/sgb/watchers/GalaxyBudsEarDetectionWatcher.cpp
+    src/sdk/sgb/Crc16.cpp
+    src/sdk/sgb/GalaxyBudsHelper.cpp
+    src/sdk/sgb/GalaxyBudsPacket.cpp
+
+    src/device/capabilities/aap/AapCapability.cpp
+    src/device/capabilities/aap/AapAncCapability.cpp
+    src/device/capabilities/aap/AapBatteryCapability.cpp
+    src/device/capabilities/aap/AapConversationAwarenessCapability.cpp
+    src/device/capabilities/aap/AapConversationAwarenessStateCapability.cpp
+    src/device/capabilities/aap/AapNoiseCancellationOneAirPodModeCapability.cpp
+    src/device/capabilities/aap/AapPressAndHoldDurationCapability.cpp
+    src/device/capabilities/aap/AapPressSpeedCapability.cpp
+    src/device/capabilities/aap/AapVolumeSwipeCapability.cpp
+    src/device/capabilities/aap/AapVolumeSwipeLengthCapability.cpp
+    src/device/capabilities/aap/AapPersonalizedVolumeCapability.cpp
+    src/device/capabilities/aap/AapToneVolumeCapability.cpp
+    src/device/capabilities/aap/AapMuteMicrophoneEndCallCapability.cpp
+    src/device/capabilities/aap/AapAdaptiveAudioNoiseCapability.cpp
+    src/device/capabilities/aap/AppAnimationCapability.cpp
+
+    src/device/capabilities/sgb/GalaxyBudsCapability.cpp
+    src/device/capabilities/sgb/GalaxyBudsAncCapability.cpp
+    src/device/capabilities/sgb/GalaxyBudsBatteryCapability.cpp
+
+    src/device/capabilities/bhf/BhfBatteryCapability.cpp
+    src/device/capabilities/cmn/CmnBluetoothCodecCapability.cpp
+
+    src/device/capabilities/Capability.cpp
+    src/device/AapDevice.cpp
+    src/device/GalaxyBudsDevice.cpp
+    src/device/BhfDevice.cpp
+    src/device/DeviceBattery.cpp
+    src/device/Device.cpp
+
+    src/dbus/DBusDeviceInfo.cpp
+    src/dbus/DBusService.cpp
+
+    src/ble_ads/DBusBasedBleAdvertisingService.cpp
+    src/ble_ads/PassiveHciBasedBleAdvertisingService.cpp
+
+    src/DevicesInfoFetcher.cpp
+
+    src/settings/SettingsService.cpp
+    src/settings/JsonToTomlConverter.cpp
+)
+add_subdirectory(dependencies)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PULSEAUDIO REQUIRED libpulse)
+find_package(OpenSSL REQUIRED)
+target_include_directories(magicpodscore PRIVATE
+    src
+    dependencies/json
+    ${PROJECT_BINARY_DIR}/src
+    ${PULSEAUDIO_INCLUDE_DIRS}
+)
+target_link_libraries(magicpodscore PRIVATE
+    sdbus-c++
+    uWebSockets
+    nlohmann_json::nlohmann_json
+    tomlplusplus::tomlplusplus
+    bluetooth
+    OpenSSL::Crypto
+    ${PULSEAUDIO_LIBRARIES}
+)

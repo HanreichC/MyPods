@@ -1,0 +1,13 @@
+{
+    "name": "MyPods (Arch, Qt6)",
+    "build": { "dockerfile": "Dockerfile" },
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "runArgs": [
+        "--net=host",
+        "--volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket"
+    ],
+    "containerEnv": {
+        "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/run/dbus/system_bus_socket"
+    }
+}

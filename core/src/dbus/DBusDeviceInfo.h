@@ -1,0 +1,105 @@
+// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
+// Copyright: 2020-2026 Aleksandr Maslov <https://magicpods.app> & Andrei Litvintsev <a.a.litvintsev@gmail.com>
+// License: GPL-3.0
+
+#pragma once
+
+#include "ObservableVariable.h"
+
+#include <regex>
+#include <string>
+#include <optional>
+#include <vector>
+#include <sdbus-c++/sdbus-c++.h>
+
+namespace MagicPodsCore {
+
+    class DBusDeviceInfo {
+    private:
+        std::unique_ptr<sdbus::IProxy> _deviceProxy{};
+
+        std::string _address{};
+        unsigned short _productId{};
+        unsigned short _vendorId{};
+        std::vector<std::string> _uuids{};
+        std::optional<unsigned int> _clazz{};
+        std::string _name{};
+        ObservableVariable<bool> _connectionStatus{false};
+        ObservableVariable<bool> _pairedStatus{false};
+        ObservableVariable<uint8_t> _handsFreeBatteryStatus{100};
+        ObservableVariable<std::map<uint16_t, std::vector<uint8_t>>> _manufacturerData{{}};
+        ObservableVariable<std::map<std::string, std::vector<uint8_t>>> _serviceData{{}};
+        ObservableVariable<int16_t> _rssi{0};
+
+    public:
+        explicit DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces);
+
+        DBusDeviceInfo(const DBusDeviceInfo& info) = delete;
+        DBusDeviceInfo(DBusDeviceInfo&& info) noexcept = delete;
+        DBusDeviceInfo& operator=(const DBusDeviceInfo& info) = delete;
+        DBusDeviceInfo& operator=(DBusDeviceInfo&& info) noexcept = delete;
+
+        const std::string& GetAddress() const {
+            return _address;
+        }
+
+        unsigned short GetProductId() const {
+            return _productId;
+        }
+
+        unsigned short GetVendorId() const {
+            return _vendorId;
+        }
+
+        const std::vector<std::string> GetUuids() const {
+            return _uuids;
+        }
+
+        const std::optional<unsigned int>& GetClass() const {
+            return _clazz;
+        }
+
+        const std::string& GetName() const {
+            return _name;
+        }
+
+        ObservableVariable<bool>& GetConnectionStatus() {
+            return _connectionStatus;
+        }
+
+        ObservableVariable<bool>& GetPairedStatus() {
+            return _pairedStatus;
+        }
+
+        ObservableVariable<uint8_t>& GetHandsFreeBatteryStatus() {
+            return _handsFreeBatteryStatus;
+        }
+
+        ObservableVariable<std::map<uint16_t, std::vector<uint8_t>>>& GetManufacturerData() {
+            return _manufacturerData;
+        }
+
+        ObservableVariable<std::map<std::string, std::vector<uint8_t>>>& GetServiceData() {
+            return _serviceData;
+        }
+
+        ObservableVariable<int16_t>& GetRssi() {
+            return _rssi;
+        }
+
+        void Connect();
+        void ConnectAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void Disconnect();
+        void DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback);
+
+        void InterfaceAdded(const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces);
+
+        friend auto operator<=>(const DBusDeviceInfo& t1, const DBusDeviceInfo& t2) {
+            return t1.GetAddress() <=> t2.GetAddress();
+        }
+
+    private:
+        static std::array<unsigned short, 2> ParseVidPid(const std::string& modalias);
+    };
+
+}

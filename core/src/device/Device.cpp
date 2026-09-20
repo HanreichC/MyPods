@@ -1,0 +1,189 @@
+// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
+// Copyright: 2020-2026 Aleksandr Maslov <https://magicpods.app> & Andrei Litvintsev <a.a.litvintsev@gmail.com>
+// License: GPL-3.0
+
+#include "Device.h"
+#include "DevicesInfoFetcher.h"
+
+namespace MagicPodsCore {
+    void Device::SubscribeCapabilitiesChanges()
+    {
+        for (auto& c: capabilities){
+            size_t id = c->GetChangedEvent().Subscribe([this](size_t id, const Capability &capability)
+            {
+                _onCapabilityChangedEvent.FireEvent(capability);
+                Logger::Debug("%s: capability: %s changed", this->GetName().c_str(), capability.GetName().c_str());
+            });
+            capabilityEventIds.push_back(id);
+        }
+    }
+
+    void Device::UnsubscribeCapabilitiesChanges()
+    {
+        if (capabilityEventIds.size() != capabilities.size())
+            throw std::runtime_error("Size of capabilityEventIds and capabilities different");
+
+        for (int i=0; i<capabilities.size(); i++){
+            auto& c = capabilities[i];
+            c->GetChangedEvent().Unsubscribe(capabilityEventIds[i]);
+        }
+        capabilityEventIds.clear();
+    }
+
+    std::string Device::GetContainerName()
+    {
+        std::string name = GetAddress();
+        std::replace(name.begin(), name.end(), ':', '_');
+        return name;
+    }
+
+    Device::Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService) : _deviceInfo{deviceInfo}, _audioClient{audioClient}, _settingsService{settingsService} 
+    {
+    }
+
+    void Device::Init()
+    {
+        Logger::Info("%s: Init", GetName().c_str());
+        SubscribeCapabilitiesChanges();
+
+        if (_client){
+            clientReceivedDataEventId = _client->GetOnReceivedDataEvent().Subscribe([this](size_t id, const std::vector<unsigned char> &data)
+            { OnResponseDataReceived(data); });
+        }
+
+        _deviceHandsFreeBatteryStatusChangedEvent = _deviceInfo->GetHandsFreeBatteryStatus().GetEvent().Subscribe([this](size_t listener_id, uint8_t newBatteryValue) {
+            Logger::Debug("%s: PropertiesChanged:HandsFreeBattery %u",GetName().c_str(), newBatteryValue);
+            _onHandsFreeBatteryPropertyChangedEvent.FireEvent(newBatteryValue);
+        });
+
+        _deviceConnectedStatusChangedEvent = _deviceInfo->GetConnectionStatus().GetEvent().Subscribe([this](size_t listenerId, bool newConnectedValue) {
+            if (_connected != newConnectedValue) {
+                _connected = newConnectedValue;
+                Logger::Debug("%s: PropertiesChanged:Connected %s",GetName().c_str(), _connected ? "true" : "false");
+                _onConnectedPropertyChangedEvent.FireEvent(_connected);
+            }
+            if (_client){
+                if (_connected){
+                    _client->Start([this](Client& _client) {
+                        for (auto& data: this->_clientStartData){
+                            _client.SendData(data);
+                            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                        }
+                    });
+                    Logger::Info("%s _client started from PropertiesChanged", GetName().c_str());
+                }
+                else{
+                    _client->Stop();
+                    Logger::Info("%s _client stopped from PropertiesChanged", GetName().c_str());
+                }
+            }
+        });
+
+        _connected = _deviceInfo->GetConnectionStatus().GetValue();
+        Logger::Debug("%s: Init:Connected %s",GetName().c_str(), _connected ? "true" : "false");
+        if (_connected && _client){
+            _client->Start([this](Client& _client) {
+                for (auto& data: this->_clientStartData){
+                    _client.SendData(data);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                }
+            });
+            Logger::Info("%s _client started from Init", GetName().c_str());
+        }
+    }
+
+    Device::~Device()
+    {
+        _deviceInfo->GetConnectionStatus().GetEvent().Unsubscribe(_deviceConnectedStatusChangedEvent);
+        _deviceInfo->GetHandsFreeBatteryStatus().GetEvent().Unsubscribe(_deviceHandsFreeBatteryStatusChangedEvent);
+
+        UnsubscribeCapabilitiesChanges();
+        capabilities.clear();
+
+        if (_client) {
+            _client->Stop();
+            _client->GetOnReceivedDataEvent().Unsubscribe(clientReceivedDataEventId);
+        }
+        Logger::Debug("Device::~Device");
+
+        //TODO: Unsubscribe all listeners from all events in device. See the event.h
+    }
+
+    void Device::Connect() {
+        _deviceInfo->Connect();
+    }
+
+    void Device::ConnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
+        _deviceInfo->ConnectAsync(std::move(callback));
+    }
+
+    void Device::Disconnect() {
+        _deviceInfo->Disconnect();
+    }
+
+    void Device::DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
+        _deviceInfo->DisconnectAsync(std::move(callback));
+    }
+
+    void Device::SetCapabilities(const nlohmann::json &json)
+    {
+        for (auto& capability : capabilities)
+        {
+            capability->SetFromJson(json);
+        }
+    }
+
+    void Device::SaveSettingString(const std::string &settingName, const std::string &value)
+    {        
+        _settingsService->SaveSetting(GetContainerName(), settingName, value);
+    }
+
+    std::optional<std::string> Device::LoadSettingString(const std::string &settingName)
+    {
+        toml::node_view<toml::node> value = _settingsService->GetSetting(GetContainerName(), settingName);
+        if (auto v = value.as_string())
+            return v->get();
+
+        return std::nullopt;
+    }
+
+    void Device::SaveSettingInt(const std::string &settingName, const int64_t value)
+    {
+        _settingsService->SaveSetting(GetContainerName(), settingName, value);
+    }
+
+    std::optional<int64_t> Device::LoadSettingInt(const std::string &settingName)
+    {
+        toml::node_view<toml::node> value = _settingsService->GetSetting(GetContainerName(), settingName);
+        if (auto v = value.as_integer())
+            return v->get();
+
+        return std::nullopt;        
+    }
+
+    nlohmann::json Device::GetAsJson()
+    {
+        auto capabilitiesJson = nlohmann::json::object();
+        auto deviceJson = nlohmann::json::object();
+
+        deviceJson["name"] = GetName();
+        deviceJson["address"] = GetAddress();
+        deviceJson["connected"] = GetConnected();
+        deviceJson["model"] = GetProductId();
+        deviceJson["vendor"] = GetVendorId();
+        
+        std::optional<int64_t> settingColor = LoadSettingInt("color");        
+        deviceJson["color"] = settingColor.has_value()? settingColor.value() : 0;
+
+        for (auto& capability : capabilities)
+        {
+            auto capabilityJson = capability->GetAsJson();
+            if (!capabilityJson.empty())
+                capabilitiesJson.update(capabilityJson);
+        }
+
+        deviceJson["capabilities"] = capabilitiesJson;
+
+        return deviceJson;
+    }
+}
