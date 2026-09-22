@@ -493,6 +493,33 @@ Supported Bluetooth profiles/codecs
 | `[1]`         | Human-readable profile description |
 
 
+### Parrot Zik 2.0 capabilities (MyPods)
+
+Detected by the RFCOMM service `8b6814d3-6ce7-4498-9700-9312c1711f63`; protocol notes in `core/src/sdk/zik/ZikProtocol.h`.
+Besides the common `battery` (`single` only), `anc` and `bluetoothCodec`:
+
+- `anc`: options Street mode (`2`, Transparency) and Noise cancellation (`16`), plus `level` `1` (normal) or `2` (maximum). `SetCapabilities` accepts `selected`, `level` or both. No Off: on a Zik 2 (fw 2.05) noise control off mutes the music; `selected` is still `1` if the Zik reports off.
+- `equalizer`: same presets as below, applied by the Zik's own DSP (the 10 bands are averaged down to its 5 and doubled, the Zik's gains are weak).
+- `earDetection`: head detection, `selected` bool.
+- Switches, `selected` bool: `concertHall`, `smartAudioTune`, `ancPhoneMode` (noise control during calls), `voicePrompts`, `autoConnection`.
+- Lists, `selected` is an index into `options` (`-1` if the Zik reports a value not in the list):
+
+| key                | options                                  |
+| ------------------ | ---------------------------------------- |
+| `concertHallRoom`  | `silent`, `living`, `jazz`, `concert`    |
+| `concertHallAngle` | `30`, `60`, `90`, `120`, `150`, `180`    |
+| `autoPowerOff`     | minutes: `0` (never), `5`, `10`, `15`, `30`, `60` |
+
+```json
+{
+  "concertHallRoom": {
+    "readonly": false,
+    "selected": 3,
+    "options": ["silent", "living", "jazz", "concert"]
+  }
+}
+```
+
 ### AirPods and Beats capabilities
 
 ##### Automatic switching (MyPods)

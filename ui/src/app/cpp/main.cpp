@@ -150,9 +150,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("cppTrayIcon", &trayIcon);
     engine.rootContext()->setContextProperty("gameScopeMode", gameScopeMode);
     engine.rootContext()->setContextProperty("trayAvailable", QSystemTrayIcon::isSystemTrayAvailable());
-    // Ohne Tray kaeme man an ein verstecktes Fenster nicht mehr heran
-    engine.rootContext()->setContextProperty("startHidden", app.arguments().contains(QStringLiteral("--hidden"))
-                                                                 && QSystemTrayIcon::isSystemTrayAvailable());
+    // Kein Tray-Check: beim Anmelden ist das Tray oft noch nicht bereit; erneutes Starten holt das Fenster ueber den LocalServer hervor
+    engine.rootContext()->setContextProperty("startHidden", app.arguments().contains(QStringLiteral("--hidden")));
     backendManager.start();
     backend.connectSocket();
     engine.loadFromModule("magicpods", "Main");

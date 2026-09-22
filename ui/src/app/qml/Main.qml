@@ -13,11 +13,12 @@ import magicpods as MP
 
 QQC2.ApplicationWindow {
     id: root
-    minimumWidth: gameScopeMode ? 0 : 420
+    minimumWidth: gameScopeMode ? 0 : 560
+    maximumWidth: gameScopeMode ? Screen.width : 560
     width: gameScopeMode ? Screen.width : 560
     height: gameScopeMode ? Screen.height : 720
-    visibility: gameScopeMode ? Window.FullScreen : Window.Windowed
-    visible: !startHidden
+    // Nur visibility setzen: zusammen mit visible gewinnt visibility und --hidden waere wirkungslos
+    visibility: startHidden ? Window.Hidden : gameScopeMode ? Window.FullScreen : Window.Windowed
     color: MP.Theme.base
     // Material hard-codes Roboto/Noto for controls; the window font overrides it for every control
     font.family: "Inter"
@@ -105,8 +106,8 @@ QQC2.ApplicationWindow {
     Item {
         id: tabBar
         readonly property var tabs: [
-            { text: qsTrId("menu.battery"), icon: "icon-battery-fill.svg" },
-            { text: qsTrId("menu.headphones"), icon: "icon-headphones-fill.svg" },
+            { text: qsTrId("menu.battery"), icon: "icon-headphones-fill.svg" },
+            { text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
             { text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
             { text: qsTrId("menu.about"), icon: "icon-info-fill.svg" }
         ]

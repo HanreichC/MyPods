@@ -43,9 +43,27 @@ Components.ScrollPage {
     readonly property var earDetectionData: capabilities?.earDetection ?? null
     readonly property int mWidth: MP.Units.gridUnit * 10
 
+    // Parrot Zik: plain switches and lists. The core sends selected as bool (switch) or index (list);
+    // a row with dependsOn is only editable while that switch is on.
+    readonly property var zikSwitches: [
+        { key: "concertHall", label: qsTrId("battery.concert_hall") },
+        { key: "smartAudioTune", label: qsTrId("battery.smart_audio_tune") },
+        { key: "ancPhoneMode", label: qsTrId("battery.anc_phone_mode") },
+        { key: "voicePrompts", label: qsTrId("battery.voice_prompts") },
+        { key: "autoConnection", label: qsTrId("battery.auto_connection_zik") }
+    ]
+    readonly property var zikLists: [
+        { key: "concertHallRoom", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_room"),
+          options: [qsTrId("battery.concert_hall_room.silent"), qsTrId("battery.concert_hall_room.living"), qsTrId("battery.concert_hall_room.jazz"), qsTrId("battery.concert_hall_room.concert")] },
+        { key: "concertHallAngle", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_angle"),
+          options: ["30°", "60°", "90°", "120°", "150°", "180°"] },
+        { key: "autoPowerOff", label: qsTrId("battery.auto_power_off"),
+          options: [qsTrId("battery.auto_power_off.never"), "5 min", "10 min", "15 min", "30 min", "60 min"] }
+    ]
+
     readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, spatialAudioData, equalizerData, autoSwitchData, earDetectionData].some(function (v) {
         return v !== null;
-    })
+    }) || zikSwitches.concat(zikLists).some(z => capabilities?.[z.key] !== undefined)
 
     title: hasInfo ? (infoData?.name ?? "") : qsTrId("menu.battery")
 
@@ -499,6 +517,65 @@ Components.ScrollPage {
                     if (rootPage.earDetectionData) {
                         rootPage.earDetectionData.selected = checked;
                         cppBackend.setCapability("earDetection", rootPage.currentAddress(), checked);
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.ancData?.level !== undefined
+            label: qsTrId("battery.noise_level")
+
+            Components.Picker {
+                implicitWidth: rootPage.mWidth
+                model: [qsTrId("battery.noise_level.normal"), qsTrId("battery.noise_level.max")]
+                currentIndex: (rootPage.ancData?.level ?? 1) - 1
+                enabled: !(rootPage.ancData?.readonly ?? true) && rootPage.selectedAnc !== rootPage.ancModes.OFF
+                onActivated: cppBackend.setCapability("anc", rootPage.currentAddress(), currentIndex + 1, "level")
+            }
+        }
+
+        Repeater {
+            model: rootPage.zikSwitches
+            delegate: MP.FormRow {
+                id: row
+                required property var modelData
+                readonly property var cap: rootPage.capabilities?.[modelData.key] ?? null
+                Layout.fillWidth: true
+                visible: cap !== null
+                label: modelData.label
+
+                Components.Toggle {
+                    checked: row.cap?.selected ?? false
+                    enabled: !(row.cap?.readonly ?? true)
+                    onToggled: {
+                        row.cap.selected = checked;
+                        cppBackend.setCapability(row.modelData.key, rootPage.currentAddress(), checked);
+                    }
+                }
+            }
+        }
+
+        Repeater {
+            model: rootPage.zikLists
+            delegate: MP.FormRow {
+                id: row
+                required property var modelData
+                readonly property var cap: rootPage.capabilities?.[modelData.key] ?? null
+                Layout.fillWidth: true
+                visible: cap !== null
+                label: modelData.label
+
+                Components.Picker {
+                    implicitWidth: rootPage.mWidth
+                    model: row.modelData.options
+                    currentIndex: row.cap?.selected ?? -1
+                    enabled: !(row.cap?.readonly ?? true)
+                             && (!row.modelData.dependsOn || (rootPage.capabilities?.[row.modelData.dependsOn]?.selected ?? false))
+                    onActivated: {
+                        row.cap.selected = currentIndex;
+                        cppBackend.setCapability(row.modelData.key, rootPage.currentAddress(), currentIndex);
                     }
                 }
             }

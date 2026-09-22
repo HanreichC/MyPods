@@ -8,6 +8,10 @@ Privates Projekt fuer AirPods Pro 3 (A3063/A3064/A3065) und AirPods Max
 (Max `0x200A`, Max USB-C `0x201F`, Max 2 `0x202D`), nur Linux.
 Windows ist bewusst ausgeklammert — siehe [docs/PLAN.md](docs/PLAN.md).
 
+Ausserdem: **Parrot Zik 2.0** ueber dessen RFCOMM-XML-API — Akku, ANC / Street-Mode (normal/max; kein „Aus“, das macht den Zik 2 stumm),
+Kopferkennung, Concert Hall (Raum, Winkel), Equalizer auf dem Kopfhoerer-DSP, Smart Audio Tune,
+ANC im Telefonat, Sprachansagen, Auto-Verbinden, Auto-Aus. Einfach koppeln, MyPods erkennt ihn am Dienst.
+
 ## Wie am Mac
 
 | Mac | MyPods |

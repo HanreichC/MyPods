@@ -42,7 +42,7 @@
         <location filename="../qml/main.qml" line="147"/>
         <location filename="../qml/pages/BatteryPage.qml" line="46"/>
         <source></source>
-        <translation>Battery</translation>
+        <translation>Control</translation>
     </message>
     <message id="battery.connect_headphones.header">
         <location filename="../qml/pages/BatteryPage.qml" line="84"/>
@@ -249,7 +249,7 @@
         <location filename="../qml/main.qml" line="152"/>
         <location filename="../qml/pages/HeadphonesPage.qml" line="13"/>
         <source></source>
-        <translation>Headphones</translation>
+        <translation>Bluetooth</translation>
     </message>
     <message id="menu.settings">
         <location filename="../qml/main.qml" line="157"/>
@@ -435,6 +435,70 @@
     <message id="battery.move_here">
         <source></source>
         <translation>Move here</translation>
+    </message>
+    <message id="battery.noise_level">
+        <source></source>
+        <translation>Noise control strength:</translation>
+    </message>
+    <message id="battery.noise_level.normal">
+        <source></source>
+        <translation>Normal</translation>
+    </message>
+    <message id="battery.noise_level.max">
+        <source></source>
+        <translation>Maximum</translation>
+    </message>
+    <message id="battery.concert_hall">
+        <source></source>
+        <translation>Parrot Concert Hall:</translation>
+    </message>
+    <message id="battery.concert_hall_room">
+        <source></source>
+        <translation>Room:</translation>
+    </message>
+    <message id="battery.concert_hall_room.silent">
+        <source></source>
+        <translation>Silent room</translation>
+    </message>
+    <message id="battery.concert_hall_room.living">
+        <source></source>
+        <translation>Living room</translation>
+    </message>
+    <message id="battery.concert_hall_room.jazz">
+        <source></source>
+        <translation>Jazz club</translation>
+    </message>
+    <message id="battery.concert_hall_room.concert">
+        <source></source>
+        <translation>Concert hall</translation>
+    </message>
+    <message id="battery.concert_hall_angle">
+        <source></source>
+        <translation>Speaker angle:</translation>
+    </message>
+    <message id="battery.smart_audio_tune">
+        <source></source>
+        <translation>Smart audio tune:</translation>
+    </message>
+    <message id="battery.anc_phone_mode">
+        <source></source>
+        <translation>Noise control during calls:</translation>
+    </message>
+    <message id="battery.voice_prompts">
+        <source></source>
+        <translation>Voice prompts:</translation>
+    </message>
+    <message id="battery.auto_connection_zik">
+        <source></source>
+        <translation>Connect automatically:</translation>
+    </message>
+    <message id="battery.auto_power_off">
+        <source></source>
+        <translation>Auto power off:</translation>
+    </message>
+    <message id="battery.auto_power_off.never">
+        <source></source>
+        <translation>Never</translation>
     </message>
 </context>
 </TS>

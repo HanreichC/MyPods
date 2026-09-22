@@ -14,6 +14,7 @@
 #include "tests/TestsSgb.h"
 #include "tests/TestsAapBle.h"
 #include "tests/TestsAapAudio.h"
+#include "tests/TestsZik.h"
 #include "Logger.h"
 #include "Config.h"
 #include "settings/SettingsService.h"
@@ -414,7 +415,7 @@ int main(int argc, char** argv) {
 
     // Byte-level self-checks without hardware: magicpodscore --selftest
     if (argc > 1 && std::string{argv[1]} == "--selftest") {
-        int failures = TestsSgb{}.failures + TestsAapBle{}.failures + TestsAapAudio{}.failures;
+        int failures = TestsSgb{}.failures + TestsAapBle{}.failures + TestsAapAudio{}.failures + TestsZik{}.failures;
         Logger::Info("Selftest: %d failure(s)", failures);
         return failures == 0 ? 0 : 1;
     }

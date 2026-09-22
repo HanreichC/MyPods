@@ -14,6 +14,7 @@ add_executable(magicpodscore
     src/tests/TestsSgb.cpp
     src/tests/TestsAapBle.cpp
     src/tests/TestsAapAudio.cpp
+    src/tests/TestsZik.cpp
 
     src/client/Client.cpp
     src/pulseaudio/PulseAudioClient.cpp
@@ -78,6 +79,7 @@ add_executable(magicpodscore
     src/device/capabilities/aap/AapAdaptiveAudioNoiseCapability.cpp
     src/device/capabilities/aap/AppAnimationCapability.cpp
     src/device/capabilities/aap/AapEarDetectionCapability.cpp
+    src/device/capabilities/zik/ZikCapabilities.cpp
     src/device/capabilities/aap/AapAudioSwitchCapability.cpp
     src/device/capabilities/aap/AapAudioEffectsCapabilities.cpp
 
@@ -92,6 +94,7 @@ add_executable(magicpodscore
     src/device/AapDevice.cpp
     src/device/GalaxyBudsDevice.cpp
     src/device/BhfDevice.cpp
+    src/device/ZikDevice.cpp
     src/device/DeviceBattery.cpp
     src/device/Device.cpp
 

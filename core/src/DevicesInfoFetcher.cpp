@@ -12,6 +12,7 @@
 #include "device/GalaxyBudsDevice.h"
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
+#include "device/ZikDevice.h"
 
 #include <regex>
 #include <iostream>
@@ -189,6 +190,13 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
                  ((keyPair = GalaxyBudsHelper::SearchModelColor(deviceInfo->GetUuids(), deviceInfo->GetName())).first != GalaxyBudsModelIds::Unknown))
         {
             auto newDevice = GalaxyBudsDevice::Create(deviceInfo,_audioClient, _settingsService, static_cast<unsigned short>(keyPair.first));
+            newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
+                TrySelectNewActiveDevice();
+            });
+            return newDevice;
+        }
+        else if (ZikDevice::IsZikDevice(deviceInfo->GetUuids())) {
+            auto newDevice = ZikDevice::Create(deviceInfo, _audioClient, _settingsService);
             newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
                 TrySelectNewActiveDevice();
             });
