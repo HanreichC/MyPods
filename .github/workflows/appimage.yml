@@ -1,0 +1,22 @@
+name: AppImage
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'captures/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: podman run --rm -v "$PWD:/workspace:Z" -w /workspace docker.io/library/ubuntu:22.04 ./appimage.sh
+      - run: >
+          gh release create "build-$GITHUB_RUN_NUMBER" MyPods-x86_64.AppImage
+          --target "$GITHUB_SHA" --title "MyPods build $GITHUB_RUN_NUMBER" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

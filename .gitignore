@@ -1,2 +1,4 @@
 build/
 captures/*.txt
+*.AppImage
+aqtinstall.log

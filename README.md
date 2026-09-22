@@ -190,6 +190,15 @@ sudo pacman -S --needed bluez pipewire pipewire-pulse libpulse openssl \
 
 ## Installation
 
+### AppImage (any distribution)
+
+Download `MyPods-x86_64.AppImage` from the [latest release](https://github.com/HanreichC/MyPods/releases/latest),
+then run `chmod +x MyPods-x86_64.AppImage && ./MyPods-x86_64.AppImage`. Qt is bundled; BlueZ, PipeWire
+and libmysofa still come from the host. Every push to `main` publishes a new build.
+To build it yourself: `podman run --rm -v "$PWD:/workspace:Z" -w /workspace docker.io/library/ubuntu:22.04 ./appimage.sh`
+
+### From source (Arch-based)
+
 ```bash
 git clone https://github.com/HanreichC/MyPods.git
 cd MyPods

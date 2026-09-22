@@ -39,9 +39,10 @@ bool DesktopManager::createDesktopFile()
     if (!installIcon())
         qWarning() << "[DesktopManager] Failed to install icon";
 
-    // Use launcher script path if available (CQtDeployer sets CQT_RUN_FILE),
+    // Use the AppImage file (its runtime sets APPIMAGE; the binary itself lives in a temporary mount)
+    // or launcher script path if available (CQtDeployer sets CQT_RUN_FILE),
     // otherwise fall back to the binary itself (dev builds)
-    QString exePath = qEnvironmentVariable("CQT_RUN_FILE");
+    QString exePath = qEnvironmentVariable("APPIMAGE", qEnvironmentVariable("CQT_RUN_FILE"));
     if (exePath.isEmpty())
         exePath = QCoreApplication::applicationFilePath();
 
