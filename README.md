@@ -1,6 +1,6 @@
 # MyPods
 
-**Use AirPods on Linux the way they feel on a Mac.**
+**Use AirPods and other Bluetooth headphones on Linux the way they feel on a Mac.**
 
 MyPods is a Linux desktop app and background daemon for Apple AirPods and other Bluetooth
 headphones. It shows the familiar lid-open popup with an animation, reads the exact battery level,
@@ -13,9 +13,16 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599c.svg)
 
 > [!NOTE]
-> MyPods is a personal project in active development. It is developed and tested on
-> CachyOS (Arch-based) with AirPods Pro 3. Some features are marked as *unverified* below
-> because they are implemented from protocol research, not yet confirmed on real hardware.
+> MyPods is a personal project in active development, running on CachyOS (Arch-based).
+> It has been tested with **AirPods Max** and **Parrot Zik 2.0**. AirPods Pro 3 support is
+> implemented from protocol research but has **not been tested on real hardware** yet, and
+> neither have the other models listed below. Features marked *unverified* fall into the same
+> category.
+
+> [!WARNING]
+> **This project is vibe-coded.** Large parts of the new code were written with an AI coding
+> assistant and reviewed by hand, on top of the existing MagicPods code base. Expect rough
+> edges, and read the code before you rely on it.
 
 ---
 
@@ -94,12 +101,12 @@ and the active Bluetooth codec.
 
 | Family | Models | Status |
 |--------|--------|--------|
-| AirPods Pro | AirPods Pro 3 (A3063 / A3064 / A3065, model ID `0x2027`) | Primary target |
-| AirPods Max | Max (`0x200A`), Max USB-C (`0x201F`), Max 2 (`0x202D`) | Supported. Max 2 popup trigger is *unverified*. |
-| Other AirPods | AirPods 1–4, AirPods 4 ANC, AirPods Pro, Pro 2, Pro 2 USB-C | Recognized by the inherited AAP stack; not tested by this project |
-| Beats | Powerbeats Pro / Pro 2 / 3 / 4 / Fit, Beats Fit Pro, Studio Buds / Buds+, Studio Pro, Studio 3, Solo 3 / Pro / 4 / Buds, Flex, BeatsX | Recognized by the inherited AAP stack; not tested by this project |
-| Parrot | Zik 2.0 | Supported |
-| Samsung | Galaxy Buds series (see above) | Inherited from MagicPodsCore |
+| AirPods Max | Max (`0x200A`), Max USB-C (`0x201F`), Max 2 (`0x202D`) | **Tested** (AirPods Max). Max 2 popup trigger is *unverified*. |
+| AirPods Pro | AirPods Pro 3 (A3063 / A3064 / A3065, model ID `0x2027`) | Implemented, *not tested on hardware* |
+| Other AirPods | AirPods 1–4, AirPods 4 ANC, AirPods Pro, Pro 2, Pro 2 USB-C | Recognized by the inherited AAP stack, not tested by this project |
+| Beats | Powerbeats Pro / Pro 2 / 3 / 4 / Fit, Beats Fit Pro, Studio Buds / Buds+, Studio Pro, Studio 3, Solo 3 / Pro / 4 / Buds, Flex, BeatsX | Recognized by the inherited AAP stack, not tested by this project |
+| Parrot | Zik 2.0 | **Tested** |
+| Samsung | Galaxy Buds series (see above) | Inherited from MagicPodsCore, not tested by this project |
 | Generic | Any Hands-Free (HFP) headset | Battery and codec only |
 
 Linux only. Windows support is intentionally out of scope: AirPods settings run over L2CAP, and
@@ -422,7 +429,7 @@ The full reference with request and response examples is in
 - **Generic HRTF.** Spatial audio uses the generic KEMAR HRTF shipped with libmysofa. Apple
   personalizes it from a scan of your ears. You can replace the SOFA file with a personal one.
 - **Head tracking calibration.** Interpreting the head-tracking stream is a heuristic taken from
-  LibrePods and not yet calibrated on AirPods Pro 3 hardware.
+  LibrePods and not yet calibrated on real hardware.
 - **No takeover for non-MPRIS audio.** Games and system sounds deliberately do not trigger
   automatic switching, same as on a Mac.
 - **iPhone handoff** requires the Apple DeviceID in BlueZ (see
@@ -473,7 +480,8 @@ play to the `mypods_fx` sink.
 
 ## Roadmap
 
-- Verify the remaining *unverified* behavior on real hardware (AirPods Max 2 popup, iPhone
+- Test AirPods Pro 3 on real hardware
+- Verify the remaining *unverified* behavior (AirPods Max 2 popup, iPhone
   handoff, head-tracking sign and scale)
 - Rename, device metadata (model number, serial, firmware)
 - Low battery notifications, hotkeys, more translations
