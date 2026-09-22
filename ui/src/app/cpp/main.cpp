@@ -22,7 +22,6 @@
 
 #include "BackendManager.h"
 #include "DesktopManager.h"
-#include "DeckyManager.h"
 #include "TrayIcon.h"
 #include "TrayIconManager.h"
 #include "Backend.h"
@@ -52,31 +51,17 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
 
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Thin.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-ThinItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-ExtraLight.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-ExtraLightItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Light.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-LightItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Italic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Medium.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-MediumItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-SemiBold.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-SemiBoldItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Bold.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-BoldItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-ExtraBold.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-ExtraBoldItalic.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-Black.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/NotoSans-BlackItalic.ttf");
-    app.setFont(QFont("Noto Sans", app.font().pointSize()));
+    QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Inter-Medium.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Inter-SemiBold.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Inter-Bold.ttf");
+    app.setFont(QFont("Inter", app.font().pointSize()));
 
-    QQuickStyle::setStyle("FluentWinUI3");
-    app.setApplicationName("MagicPods");
-    app.setApplicationDisplayName("MagicPods");
+    QQuickStyle::setStyle("Material");
+    app.setApplicationName("MyPods");
+    app.setApplicationDisplayName("MyPods");
     app.setApplicationVersion(MAGICPODS_VERSION);
-    app.setOrganizationName("MagicPods");
+    app.setOrganizationName("MyPods");
     app.setOrganizationDomain("magicpods.app");
     app.setDesktopFileName("app.magicpods");
     app.setQuitOnLastWindowClosed(false);
@@ -157,15 +142,17 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     BackendManager backendManager;
     DesktopManager desktopManager;
-    DeckyManager deckyManager;
     Backend backend;
     TrayIcon trayIcon;
     engine.rootContext()->setContextProperty("backendManager", &backendManager);
     engine.rootContext()->setContextProperty("desktopManager", &desktopManager);
-    engine.rootContext()->setContextProperty("deckyManager", &deckyManager);
     engine.rootContext()->setContextProperty("cppBackend", &backend);
     engine.rootContext()->setContextProperty("cppTrayIcon", &trayIcon);
     engine.rootContext()->setContextProperty("gameScopeMode", gameScopeMode);
+    engine.rootContext()->setContextProperty("trayAvailable", QSystemTrayIcon::isSystemTrayAvailable());
+    // Ohne Tray kaeme man an ein verstecktes Fenster nicht mehr heran
+    engine.rootContext()->setContextProperty("startHidden", app.arguments().contains(QStringLiteral("--hidden"))
+                                                                 && QSystemTrayIcon::isSystemTrayAvailable());
     backendManager.start();
     backend.connectSocket();
     engine.loadFromModule("magicpods", "Main");

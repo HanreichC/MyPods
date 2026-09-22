@@ -3,10 +3,9 @@
 // License: GPL-3.0
 
 import QtQuick 2.15
+import magicpods as MP
 
 Text {
-    id: root
-
-    color: palette.windowText
-    font.pixelSize: 14
+    color: MP.Theme.text
+    font.pixelSize: 17
 }

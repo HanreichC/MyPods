@@ -9,6 +9,8 @@
 #include "sdk/aap/setters/AapRequest.h"
 #include "ble_ads/DBusBasedBleAdvertisingService.h"
 #include "settings/SettingsService.h"
+#include "audio/AudioEffects.h"
+#include <atomic>
 
 namespace MagicPodsCore
 {
@@ -41,6 +43,16 @@ namespace MagicPodsCore
         }
 
         void SendData(const AapRequest &setter);
+        void SendData(const std::vector<unsigned char> &data);
+
+        // Shared by the ear-detection, audio-switch and spatial-audio capabilities
+        std::atomic<bool> ownsAudio{true}; // this computer is the AirPods' audio source (until the AirPods say otherwise)
+        std::atomic<int> podsInEar{-1};    // from AAP ear detection, -1 = unknown
+
+        // Plays this computer's audio on the headphones: effect chain (spatial audio, EQ) in front of the
+        // bluez sink, made the default sink. Blocking PulseAudio round trips, so never call it on the PulseAudio thread.
+        void RouteAudio();
+        EffectsConfig LoadEffectsConfig();
         void FireAnimation(const nlohmann::json &json);
         static std::unique_ptr<AapDevice> Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<DBusBasedBleAdvertisingService> bleService);
     };

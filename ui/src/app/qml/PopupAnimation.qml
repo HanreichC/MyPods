@@ -5,6 +5,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls 2.15 as QQC2
+import QtQuick.Controls.Material
 import magicpods as MP
 
 QQC2.ApplicationWindow {
@@ -27,6 +28,10 @@ QQC2.ApplicationWindow {
         ? (Qt.Popup | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         : (Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
     color: "transparent"
+    // Material hard-codes Roboto/Noto for controls; the window font overrides it for every control
+    font.family: "Inter"
+    Material.theme: MP.Theme.dark ? Material.Dark : Material.Light
+    Material.accent: MP.Theme.accent
     width: frame.implicitWidth
     height: frame.implicitHeight
     visible: false
@@ -211,17 +216,21 @@ QQC2.ApplicationWindow {
         implicitHeight: popupRoot.height + (MP.Units.smallSpacing * 2)
         padding: 0
         background: Rectangle {
-            radius: 14
-            color: frame.palette.window
+            radius: 28
+            color: MP.Theme.popup
             border.width: 1
-            border.color: Qt.rgba(frame.palette.windowText.r, frame.palette.windowText.g, frame.palette.windowText.b, 0.15)
+            border.color: MP.Theme.glassBorder
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.tint(MP.Theme.popup, MP.Theme.glassSheen) }
+                GradientStop { position: 0.4; color: MP.Theme.popup }
+            }
         }
 
         Item {
             id: popupRoot
             anchors.centerIn: parent
-            width: 228
-            height: isExt ? 238 + 18 : 238
+            width: 248
+            height: isExt ? 290 + 18 : 290
             clip: true
 
             MP.Animations {
@@ -236,7 +245,7 @@ QQC2.ApplicationWindow {
             property var batteryRight: batteryInfo ? batteryInfo.right : null
             property var batteryCase: batteryInfo ? batteryInfo.case : null
             property var batterySingle: batteryInfo ? batteryInfo.single : null
-            property bool useSingle: batterySingle && batterySingle.status !== 0 && (!batteryLeft || batteryLeft.status === 0) && (!batteryRight || batteryRight.status === 0) && (!batteryCase || batteryCase.status === 0)
+            property bool useSingle: !!batterySingle && batterySingle.status !== 0 && (!batteryLeft || batteryLeft.status === 0) && (!batteryRight || batteryRight.status === 0) && (!batteryCase || batteryCase.status === 0)
             property string resolvedKey: {
                 if (!device) {
                     return animStore.fallbackKey;
@@ -265,28 +274,34 @@ QQC2.ApplicationWindow {
             anchors.fill: popupRoot
             spacing: 0
 
-            QQC2.ToolButton {
+            QQC2.RoundButton {
                 id: closeButton
-                text: "×"
-                Layout.preferredWidth: 24
-                Layout.preferredHeight: 24
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 28
+                Layout.topMargin: 8
+                Layout.rightMargin: 8
                 Layout.alignment: Qt.AlignRight | Qt.AlignTop
+                padding: 0
+                flat: true
+                icon.source: MP.Theme.asset("icons/icon-close.svg")
+                icon.width: 16
+                icon.height: 16
+                icon.color: MP.Theme.secondaryText
+                background: Rectangle { radius: 14; color: MP.Theme.tertiaryFill }
                 onClicked: osdDialog.hideOsd()
             }
 
             ColumnLayout {
                 Layout.topMargin: -8
-                Layout.maximumWidth: 180
+                Layout.maximumWidth: 208
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
                 spacing: 0
 
                 MP.Heading {
                     Layout.alignment: Qt.AlignHCenter
-                    level: 1
-                    font.bold: false
+                    level: 3
                     text: popupRoot.device && popupRoot.device.name ? popupRoot.device.name : ""
                     wrapMode: Text.WordWrap
-                    font.pointSize: Qt.application.font.pointSize * 1.2
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
@@ -313,47 +328,44 @@ QQC2.ApplicationWindow {
                 }
 
                 RowLayout {
-                    Layout.topMargin: 8
-                    Layout.fillWidth: true
-                    visible: !popupRoot.useSingle
+                    Layout.topMargin: 12
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 20
 
-                    MP.BatteryPopup {
-                        Layout.leftMargin: 8
+                    MP.BatteryRing {
+                        size: 46
+                        name: qsTrId("battery.battery_left")
                         battery: popupRoot.batteryLeft ? popupRoot.batteryLeft.battery : 0
                         isCharging: popupRoot.batteryLeft ? popupRoot.batteryLeft.charging : false
-                        status: popupRoot.batteryLeft ? popupRoot.batteryLeft.status : 0
+                        status: popupRoot.useSingle ? 0 : (popupRoot.batteryLeft ? popupRoot.batteryLeft.status : 0)
                     }
-
-                    MP.BatteryPopup {
-                        Layout.leftMargin: 4
+                    MP.BatteryRing {
+                        size: 46
+                        name: qsTrId("battery.battery_right")
                         battery: popupRoot.batteryRight ? popupRoot.batteryRight.battery : 0
                         isCharging: popupRoot.batteryRight ? popupRoot.batteryRight.charging : false
-                        status: popupRoot.batteryRight ? popupRoot.batteryRight.status : 0
+                        status: popupRoot.useSingle ? 0 : (popupRoot.batteryRight ? popupRoot.batteryRight.status : 0)
                     }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    MP.BatteryPopup {
-                        Layout.rightMargin: 24
+                    MP.BatteryRing {
+                        size: 46
+                        name: qsTrId("battery.battery_case")
                         battery: popupRoot.batteryCase ? popupRoot.batteryCase.battery : 0
                         isCharging: popupRoot.batteryCase ? popupRoot.batteryCase.charging : false
-                        status: popupRoot.batteryCase ? popupRoot.batteryCase.status : 0
+                        status: popupRoot.useSingle ? 0 : (popupRoot.batteryCase ? popupRoot.batteryCase.status : 0)
                     }
-                }
-
-                MP.BatteryPopup {
-                    Layout.topMargin: 8
-                    battery: popupRoot.batterySingle ? popupRoot.batterySingle.battery : 0
-                    isCharging: popupRoot.batterySingle ? popupRoot.batterySingle.charging : false
-                    status: popupRoot.batterySingle ? popupRoot.batterySingle.status : 0
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: popupRoot.useSingle
+                    MP.BatteryRing {
+                        size: 46
+                        name: qsTrId("battery.battery_single")
+                        battery: popupRoot.batterySingle ? popupRoot.batterySingle.battery : 0
+                        isCharging: popupRoot.batterySingle ? popupRoot.batterySingle.charging : false
+                        status: popupRoot.useSingle ? popupRoot.batterySingle.status : 0
+                    }
                 }
 
                 QQC2.Button {
-                    Layout.topMargin: 16
+                    Layout.topMargin: 12
+                    highlighted: !popupRoot.connected
+                    Material.roundedScale: Material.FullScale
                     text: popupRoot.connected ? qsTrId("tray.disconnect") : qsTrId("tray.connect")
                     Layout.fillWidth: true
                     onClicked: {

@@ -266,11 +266,11 @@ void Backend::setAnc(const QString &address, int value)
     });
 }
 
-void Backend::setCapability(const QString &capability, const QString &address, const QVariant &value)
+void Backend::setCapability(const QString &capability, const QString &address, const QVariant &value, const QString &field)
 {
     QVariantMap capabilities;
     capabilities.insert(capability, QVariantMap{
-                                       {QStringLiteral("selected"), value},
+                                       {field, value},
                                    });
 
     sendJson({

@@ -55,7 +55,8 @@ namespace MagicPodsCore
         std::string readableStr = "";
         std::vector<DeviceBatteryData> batteryData;
 
-        for (int i = 0; i < batteryCount; i++)
+        // Each entry is 5 bytes: <type> 01 <level> <status> 01
+        for (int i = 0; i < batteryCount && startByte + 4 < static_cast<int>(data.size()); i++, startByte += 5)
         {
             if (!isValidAapBatteryType(data[startByte]))
                 continue;
@@ -69,7 +70,6 @@ namespace MagicPodsCore
                 continue;
 
             AapChargingStatus charging = static_cast<AapChargingStatus>(data[startByte + 3]);
-            startByte += 5;
 
             ConvertBattery(batteryData, batteryType, charging, battery);
             readableStr += AapBatteryTypeToString(batteryType) + " " + std::to_string(battery) + " " + AapChargingStatusToString(charging) + " ";

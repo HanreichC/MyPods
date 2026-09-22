@@ -541,6 +541,7 @@ void TestsSgb::Test(const char *name, bool b)
     }
     else
     {
+        failures++;
         Logger::Debug("%s%s: FAIL", name, space.c_str());
     }
 }

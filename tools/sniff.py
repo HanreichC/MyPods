@@ -30,6 +30,9 @@ MODELS = {
     0x202D: "AirPods Max 2",
 }
 
+# Kopfhoerer ohne Case: Popup-Trigger ist das High-Nibble von Byte 8 (== 8), nicht der Case-Zustand
+MAX_MODELS = {0x200A, 0x201F, 0x202D}
+
 COLORS = {
     0x00: "weiss", 0x01: "schwarz", 0x02: "rot", 0x03: "blau", 0x04: "pink",
     0x05: "grau", 0x06: "silber", 0x07: "gold", 0x08: "rosegold",
@@ -70,11 +73,12 @@ def decode(data):
     two_pods_active = bool(status & 0x01)
     this_pod_in_case = bool(status & 0x40)
     xor = flipped ^ this_pod_in_case
+    model_id = (data[4] << 8) | data[3]
 
     return {
         "paired": data[2] == 0x01,
-        "model_id": (data[4] << 8) | data[3],
-        "model": MODELS.get((data[4] << 8) | data[3], "unbekannt"),
+        "model_id": model_id,
+        "model": MODELS.get(model_id, "unbekannt"),
         "color": COLORS.get(data[9], f"0x{data[9]:02x}"),
         "primary": "links" if primary_left else "rechts",
         "left": battery(left_nib),
@@ -90,7 +94,8 @@ def decode(data):
         "lid_counter": lid & 0x07,
         "lid_open": not bool((lid >> 3) & 0x01),
         # Popup-Heuristik von MagicPodsCore (AppAnimationCapability::ParseBle)
-        "popup": both_in_case and two_pods_active and (lid & 0x0F) <= 8,
+        "popup": (lid >> 4) == 8 if model_id in MAX_MODELS
+                 else both_in_case and two_pods_active and (lid & 0x0F) <= 8,
         "conn": CONN_STATES.get(data[10], f"0x{data[10]:02x}"),
         "status_byte": status,
         "lid_byte": lid,
@@ -101,10 +106,15 @@ def describe(d):
     def pct(v, charging):
         return "--" if v is None else f"{v}%{'+' if charging else ''}"
 
+    if d["model_id"] in MAX_MODELS:
+        # Ein Akku: steht im Nibble des primaeren "Pods", das andere ist 0
+        level = max(d["left"] or 0, d["right"] or 0)
+        akku = f"Akku {pct(level, d['left_charging'] or d['right_charging'])}"
+    else:
+        akku = (f"L {pct(d['left'], d['left_charging'])} R {pct(d['right'], d['right_charging'])} "
+                f"Case {pct(d['case'], d['case_charging'])}")
     return (
-        f"{d['model']} (0x{d['model_id']:04x}, {d['color']}) "
-        f"L {pct(d['left'], d['left_charging'])} R {pct(d['right'], d['right_charging'])} "
-        f"Case {pct(d['case'], d['case_charging'])} | "
+        f"{d['model']} (0x{d['model_id']:04x}, {d['color']}) {akku} | "
         f"Deckel {'auf' if d['lid_open'] else 'zu'} #{d['lid_counter']} "
         f"(Byte8 0x{d['lid_byte']:02x}) | "
         f"beide im Case: {'ja' if d['both_in_case'] else 'nein'} | "
@@ -178,6 +188,9 @@ def live(args):
         pass
     finally:
         scan.terminate()
+    if not seen:
+        print("Keine AirPods-Advertisements (Typ 0x07) gesehen. Geraet wach, ausserhalb des "
+              "Smart Case und in Reichweite? Pairing-Modus erzwingt das Senden.")
         if log:
             log.close()
 
@@ -196,7 +209,13 @@ def selftest():
           "right_charging": True, "popup": False}),
         # AirPods Max, Popup-Zustand laut MagicPodsCore-Test
         ("0719010a20020480820f400185c65a0aff9097826bd7c542e1cc55",
-         {"model_id": 0x200A, "color": "0x0f"}),
+         {"model_id": 0x200A, "color": "0x0f", "popup": True}),
+        # AirPods Max auf dem Kopf -> kein Popup
+        ("0719010a20220580000f45e80d9bb8e51897326a99455bb1cff367",
+         {"model_id": 0x200A, "popup": False}),
+        # Synthetisch: Max-Popup-Capture mit Max-2-ID (noch kein echter Mitschnitt)
+        ("0719012d20020480820f400185c65a0aff9097826bd7c542e1cc55",
+         {"model_id": 0x202D, "model": "AirPods Max 2", "popup": True}),
         # Beats Solo 4: Einzelgeraet, 90%
         ("07190125200009800400041ed3edebd0bc052b11618fc29f861d8a",
          {"model_id": 0x2025}),

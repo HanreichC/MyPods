@@ -116,13 +116,13 @@ void TrayIconManager::updateTrayIcon()
         return;
     }
 
-    const QVariantMap batteryData = batteryDataFromInfo(infoData);
+    const int battery = trayBattery();
     if (!backend->connected()) {
         trayIcon->setIconType(TrayIcon::IconType::Warning);
-    } else if (batteryData.isEmpty()) {
+    } else if (battery < 0) {
         trayIcon->setIconType(TrayIcon::IconType::Default);
     } else {
-        trayIcon->setTextIcon(trayBattery());
+        trayIcon->setTextIcon(battery);
     }
 
     trayIcon->setToolTip(composeToolTip(trayTooltipText()));
@@ -187,7 +187,7 @@ int TrayIconManager::trayBattery() const
 {
     const QVariantMap batteryData = batteryDataFromInfo(infoData);
     if (batteryData.isEmpty()) {
-        return 0;
+        return -1;
     }
 
     const QVariantMap single = batteryData.value(QStringLiteral("single")).toMap();
@@ -210,7 +210,8 @@ int TrayIconManager::trayBattery() const
     if (hasRight) {
         return right.value(QStringLiteral("battery")).toInt();
     }
-    return 0;
+    // Only the case (or nothing) is reported: no earbud level to show
+    return -1;
 }
 
 QString TrayIconManager::trayTooltipText() const

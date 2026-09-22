@@ -13,6 +13,7 @@ namespace MagicPodsCore
     private:
         bool TestAirPodsMaxInEar_utp_22();
         bool TestAirPodsMaxPopupAnimation();
+        bool TestAirPodsMax2PopupAnimation();
         bool TestAirPods2_utp_53();
         bool TestAirPods2_utp_33();
         bool TestBeatsSolo4();
@@ -34,5 +35,6 @@ namespace MagicPodsCore
 
     public:
         TestsAapBle();
+        int failures = 0;
     };
 }

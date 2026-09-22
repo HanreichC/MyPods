@@ -1,7 +1,4 @@
-include(FetchContent)
-
-FetchContent_Declare(
-    tomlplusplus
-    URL https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.zip
-)
-FetchContent_MakeAvailable(tomlplusplus)
+# marzer/tomlplusplus v3.4.0 (MIT), header-only, vendored
+add_library(tomlplusplus INTERFACE)
+add_library(tomlplusplus::tomlplusplus ALIAS tomlplusplus)
+target_include_directories(tomlplusplus INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/vendor/include)

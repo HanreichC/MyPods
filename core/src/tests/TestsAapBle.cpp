@@ -14,10 +14,13 @@ using namespace MagicPodsCore;
 
 TestsAapBle::TestsAapBle()
 {
-    std::string enc = "";
+    // Synthetic key: the key of the device the private captures came from is not public,
+    // so their 16-byte encrypted tail was re-encrypted with this key (first 11 bytes are real).
+    std::string enc = "000102030405060708090a0b0c0d0e0f";
 
     Test("TestAirPodsMaxInEar_utp_22", TestAirPodsMaxInEar_utp_22());
     Test("TestAirPodsMaxPopupAnimation", TestAirPodsMaxPopupAnimation());
+    Test("TestAirPodsMax2PopupAnimation", TestAirPodsMax2PopupAnimation());
     Test("TestAirPods2_utp_53", TestAirPods2_utp_53());
     Test("TestAirPods2_utp_33", TestAirPods2_utp_33());
     Test("TestBeatsSolo4", TestBeatsSolo4());
@@ -66,6 +69,23 @@ bool TestsAapBle::TestAirPodsMaxPopupAnimation()
         false);
 
     std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010a20020480820f400185c65a0aff9097826bd7c542e1cc55"), static_cast<unsigned short>(expected.model));
+    return (actual.has_value() && actual.value() == expected);
+}
+
+// Synthetic: Max popup capture with the Max 2 model id (2d 20), no real capture yet
+bool TestsAapBle::TestAirPodsMax2PopupAnimation()
+{
+    bleData expected;
+    expected.animation = true;
+    expected.color = 0x0f;
+    expected.model = AapModelIds::airpodsmax2;
+    expected.batteryData.emplace_back(
+        DeviceBatteryType::Single,
+        DeviceBatteryStatus::Connected,
+        40,
+        false);
+
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719012d20020480820f400185c65a0aff9097826bd7c542e1cc55"), static_cast<unsigned short>(expected.model));
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -121,37 +141,16 @@ bool TestsAapBle::TestAirPods2_utp_33()
 
 bool TestsAapBle::TestBeatsSolo4()
 {
-    bleData expected;
-    expected.animation = false;
-    expected.color = 0x00;
-    expected.model = AapModelIds::beatssolo4;
-    expected.batteryData.emplace_back(
-        DeviceBatteryType::Single,
-        DeviceBatteryStatus::Connected,
-        90,
-        false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("07190125200009800400041ed3edebd0bc052b11618fc29f861d8a"), static_cast<unsigned short>(expected.model));
-    return (actual.has_value() && actual.value() == expected);
+    // No popup animation for this model (not in IsAnimationSupport), so the advertisement is ignored
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("07190125200009800400041ed3edebd0bc052b11618fc29f861d8a"), static_cast<unsigned short>(AapModelIds::beatssolo4));
+    return !actual.has_value();
 }
 
 bool TestsAapBle::TestBeatsSoloBuds()
 {
-    bleData expected;
-    expected.animation = false;
-    expected.color = 0x03;
-    expected.model = AapModelIds::beatssolobuds;
-    expected.batteryData.emplace_back(
-        DeviceBatteryType::Left,
-        DeviceBatteryStatus::Connected,
-        90,
-        false);
-    expected.batteryData.emplace_back(
-        DeviceBatteryType::Right,
-        DeviceBatteryStatus::Connected,
-        80,
-        false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("071901262033898001030496bfb2c5f7b2365d80676c748ebcda28"), static_cast<unsigned short>(expected.model));
-    return (actual.has_value() && actual.value() == expected);
+    // No popup animation for this model (not in IsAnimationSupport), so the advertisement is ignored
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("071901262033898001030496bfb2c5f7b2365d80676c748ebcda28"), static_cast<unsigned short>(AapModelIds::beatssolobuds));
+    return !actual.has_value();
 }
 
 bool TestsAapBle::TestPowerBeatsPro2()
@@ -206,17 +205,9 @@ bool TestsAapBle::TestBeatsStudioBudsPlus()
 
 bool TestsAapBle::TestBeatsStudioPro()
 {
-    bleData expected;
-    expected.animation = false;
-    expected.color = 0x01;
-    expected.model = AapModelIds::beatsstudiopro;
-    expected.batteryData.emplace_back(
-        DeviceBatteryType::Single,
-        DeviceBatteryStatus::Connected,
-        60,
-        false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719011720000600010100eb63a515bf0f416a06574cf37bc55a22"), static_cast<unsigned short>(expected.model));
-    return (actual.has_value() && actual.value() == expected);
+    // No popup animation for this model (not in IsAnimationSupport), so the advertisement is ignored
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719011720000600010100eb63a515bf0f416a06574cf37bc55a22"), static_cast<unsigned short>(AapModelIds::beatsstudiopro));
+    return !actual.has_value();
 }
 
 bool TestsAapBle::TestPowerBeatsPro()
@@ -246,17 +237,9 @@ bool TestsAapBle::TestPowerBeatsPro()
 
 bool TestsAapBle::TestPowerBeats4()
 {
-    bleData expected;
-    expected.animation = false;
-    expected.color = 0x01;
-    expected.model = AapModelIds::powerbeats4;
-    expected.batteryData.emplace_back(
-        DeviceBatteryType::Single,
-        DeviceBatteryStatus::Connected,
-        70,
-        false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010d20000780050105d8c07399be0547113083d7b84bde576e"), static_cast<unsigned short>(expected.model));
-    return (actual.has_value() && actual.value() == expected);
+    // No popup animation for this model (not in IsAnimationSupport), so the advertisement is ignored
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010d20000780050105d8c07399be0547113083d7b84bde576e"), static_cast<unsigned short>(AapModelIds::powerbeats4));
+    return !actual.has_value();
 }
 
 bool TestsAapBle::TestPrivateAirPods2_1(const std::string &enc)
@@ -306,7 +289,7 @@ bool TestsAapBle::TestPrivateAirPods2_2(const std::string &enc)
         DeviceBatteryStatus::Connected,
         72,
         false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2071aa9709000439e77f8663dcc46c531ef4f2869e1473"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2071aa97090004f1682c25b1e43ba332d0fac3a813273e"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -331,7 +314,7 @@ bool TestsAapBle::TestPrivateAirPods2_3(const std::string &enc)
         DeviceBatteryStatus::Connected,
         72,
         false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f20719a9709000418b9477e7df5caab57f7bdfc05bad3c4"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f20719a97090004fcc2e67adfc621df0c37683762d219f0"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -356,7 +339,7 @@ bool TestsAapBle::TestPrivateAirPods2_4(const std::string &enc)
         DeviceBatteryStatus::Disconnected,
         0,
         false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2000f98f010004a8d828263f10af19a01375e3cac56acc"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2000f98f010004f16982f7f16c57736ffe918b3f848fd5"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -381,7 +364,7 @@ bool TestsAapBle::TestPrivateAirPods2_5(const std::string &enc)
         DeviceBatteryStatus::Connected,
         72,
         false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f205199970a00044ab2fd1614bc36a17df1b5a22a5556e6"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f205199970a0004aff249324f3d2f2603ff68e99a89bff1"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -406,7 +389,7 @@ bool TestsAapBle::TestPrivateAirPods2_6(const std::string &enc)
         DeviceBatteryStatus::Disconnected,
         0,
         false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2021f98f0100042ac1d294f37c7b5f596ebd6876a5c2c6"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2021f98f010004f16982f7f16c57736ffe918b3f848fd5"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -431,7 +414,7 @@ bool TestsAapBle::TestPrivateAirPods2_7(const std::string &enc)
         DeviceBatteryStatus::Disconnected,
         0,
         false);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2021998f0100044f8e71ff6d69604976eb7eb8cc959e59"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2021998f01000485fd269fc7bbb7ce696f5e0b72829e39"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -456,7 +439,7 @@ bool TestsAapBle::TestPrivateAirPods2_8(const std::string &enc)
         DeviceBatteryStatus::Connected,
         71,
         true);
-    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2055aaf701000474a70931b203722fe2d40dda81d0e64c"), static_cast<unsigned short>(expected.model), enc);
+    std::optional<bleData> actual = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719010f2055aaf70100049e3459a875255504d6d25d7c5acab0ea"), static_cast<unsigned short>(expected.model), enc);
     return (actual.has_value() && actual.value() == expected);
 }
 
@@ -475,6 +458,7 @@ void TestsAapBle::Test(const char *name, bool b)
     }
     else
     {
+        failures++;
         Logger::Debug("%s%s: FAIL", name, space.c_str());
     }
 }

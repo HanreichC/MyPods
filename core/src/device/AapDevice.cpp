@@ -22,6 +22,11 @@
 #include "sdk/aap/setters/AapEnableNotifications.h"
 #include "sdk/aap/setters/AapPrivateKeys.h"
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
+#include "capabilities/aap/AapEarDetectionCapability.h"
+#include "capabilities/aap/AapAudioSwitchCapability.h"
+#include "capabilities/aap/AapAudioEffectsCapabilities.h"
+#include <algorithm>
+#include <thread>
 
 namespace MagicPodsCore
 {
@@ -51,6 +56,42 @@ namespace MagicPodsCore
         _client->SendData(setter.Request());
     }
 
+    void AapDevice::SendData(const std::vector<unsigned char> &data)
+    {
+        _client->SendData(data);
+    }
+
+    EffectsConfig AapDevice::LoadEffectsConfig()
+    {
+        EffectsConfig config;
+        config.spatial = static_cast<SpatialMode>(std::clamp<int64_t>(LoadSettingInt("spatialAudio").value_or(0), 0, AapSpatialAudioCapability::HasHeadTracking(GetProductId()) ? 2 : 1));
+        if (auto gains = AudioEffects::Preset(LoadSettingString("equalizer").value_or("Off")))
+            config.eq = *gains;
+        return config;
+    }
+
+    void AapDevice::RouteAudio()
+    {
+        static std::mutex routing;
+        std::lock_guard lock{routing};
+
+        auto pac = GetAudioClient();
+        std::string mac = GetAddress();
+        std::replace(mac.begin(), mac.end(), ':', '_');
+        auto sink = pac->FindSink("bluez_output." + mac);
+        if (!sink)
+        {
+            AudioEffects::Instance().Stop();
+            return;
+        }
+        auto target = AudioEffects::Instance().Apply(*sink, GetName(), LoadEffectsConfig());
+        // the chain's sink appears a moment after its process starts
+        for (int i = 0; i < 30 && !pac->FindSink(target); i++)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        pac->SetDefaultSink(target);
+        Logger::Info("%s: audio routed to %s", GetName().c_str(), target.c_str());
+    }
+
     void AapDevice::FireAnimation(const nlohmann::json &json)
     {
         _onAnimationTriggered.FireEvent(json);
@@ -65,7 +106,16 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<AapAncCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapConversationAwarenessCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapConversationAwarenessStateCapability>(*device));
-        device->capabilities.push_back(std::make_unique<AapNoiseCancellationOneAirPodModeCapability>(*device));
+        // over-ear headphones are a single unit, so "ANC with one AirPod" does not apply
+        switch (static_cast<AapModelIds>(deviceInfo->GetProductId()))
+        {
+        case AapModelIds::airpodsmax: case AapModelIds::airpodsmax2024: case AapModelIds::airpodsmax2:
+        case AapModelIds::beatsSolo3: case AapModelIds::beatssolopro: case AapModelIds::beatssolo4:
+        case AapModelIds::beatsstudio3: case AapModelIds::beatsstudiopro:
+            break;
+        default:
+            device->capabilities.push_back(std::make_unique<AapNoiseCancellationOneAirPodModeCapability>(*device));
+        }
         device->capabilities.push_back(std::make_unique<AapPressAndHoldDurationCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapPressSpeedCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapVolumeSwipeCapability>(*device));
@@ -75,6 +125,10 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<AapMuteMicrophoneEndCallCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapAdaptiveAudioNoiseCapability>(*device));
         device->capabilities.push_back(std::make_unique<AppAnimationCapability>(*device));
+        device->capabilities.push_back(std::make_unique<AapEarDetectionCapability>(*device));
+        device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));
+        device->capabilities.push_back(std::make_unique<AapSpatialAudioCapability>(*device));
+        device->capabilities.push_back(std::make_unique<AapEqualizerCapability>(*device));
 
         device->_clientStartData.push_back(AapInit{}.Request());
         device->_clientStartData.push_back(AapEnableNotifications{AapNotificationsMode::Unknown2}.Request());

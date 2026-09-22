@@ -61,13 +61,13 @@ bool DesktopManager::createDesktopFile()
     out << QString(
 R"([Desktop Entry]
 Type=Application
-Name=MagicPods
+Name=MyPods
 Comment=The control center for your Bluetooth headphones
 Exec=%1
 Icon=%2
 Terminal=false
 Categories=Utility;
-StartupWMClass=MagicPods
+StartupWMClass=MyPods
 )")
     .arg(exePath, iconInstallPath());
     return true;

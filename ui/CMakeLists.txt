@@ -7,7 +7,8 @@ include(GNUInstallDirs)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
+# 6.9: RectangularShadow
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
 
 qt_standard_project_setup(REQUIRES 6.8
     I18N_TRANSLATED_LANGUAGES en
@@ -19,7 +20,7 @@ set(APP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/app")
 set(APP_QML_DIR "${APP_SOURCE_DIR}/qml")
 set(APP_I18N_TS_FILE_BASE "src/app/i18n/locale")
 
-set_source_files_properties(src/app/qml/Units.qml
+set_source_files_properties(src/app/qml/Units.qml src/app/qml/Theme.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE
 )
 
@@ -31,7 +32,6 @@ file(GLOB_RECURSE APP_RESOURCE_FILES CONFIGURE_DEPENDS
 qt_add_executable(magicpods
     src/app/cpp/Backend.cpp
     src/app/cpp/BackendManager.cpp
-    src/app/cpp/DeckyManager.cpp
     src/app/cpp/DesktopManager.cpp
     src/app/cpp/main.cpp
     src/app/cpp/TrayIcon.cpp
@@ -41,24 +41,10 @@ qt_add_executable(magicpods
 qt_add_resources(magicpods "fonts"
     PREFIX "/fonts"
     FILES
-        src/app/fonts/NotoSans-Thin.ttf
-        src/app/fonts/NotoSans-ThinItalic.ttf
-        src/app/fonts/NotoSans-ExtraLight.ttf
-        src/app/fonts/NotoSans-ExtraLightItalic.ttf
-        src/app/fonts/NotoSans-Light.ttf
-        src/app/fonts/NotoSans-LightItalic.ttf
-        src/app/fonts/NotoSans-Regular.ttf
-        src/app/fonts/NotoSans-Italic.ttf
-        src/app/fonts/NotoSans-Medium.ttf
-        src/app/fonts/NotoSans-MediumItalic.ttf
-        src/app/fonts/NotoSans-SemiBold.ttf
-        src/app/fonts/NotoSans-SemiBoldItalic.ttf
-        src/app/fonts/NotoSans-Bold.ttf
-        src/app/fonts/NotoSans-BoldItalic.ttf
-        src/app/fonts/NotoSans-ExtraBold.ttf
-        src/app/fonts/NotoSans-ExtraBoldItalic.ttf
-        src/app/fonts/NotoSans-Black.ttf
-        src/app/fonts/NotoSans-BlackItalic.ttf
+        src/app/fonts/Inter-Regular.ttf
+        src/app/fonts/Inter-Medium.ttf
+        src/app/fonts/Inter-SemiBold.ttf
+        src/app/fonts/Inter-Bold.ttf
 )
 
 qt_add_qml_module(magicpods
@@ -66,16 +52,20 @@ qt_add_qml_module(magicpods
     OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml/magicpods"
     QML_FILES
         src/app/qml/Units.qml
+        src/app/qml/Theme.qml
         src/app/qml/Main.qml
         src/app/qml/PopupAnimation.qml        
         src/app/qml/components/Animations.qml
-        src/app/qml/components/BatteryPopup.qml
-        src/app/qml/components/BatteryVertical.qml
+        src/app/qml/components/BatteryRing.qml
         src/app/qml/components/FormRow.qml
+        src/app/qml/components/Card.qml
         src/app/qml/components/Heading.qml
         src/app/qml/components/HelpMessage.qml
         src/app/qml/components/InlineMessage.qml
         src/app/qml/components/Label.qml
+        src/app/qml/components/Picker.qml
+        src/app/qml/components/ScrollPage.qml
+        src/app/qml/components/Toggle.qml
         src/app/qml/components/Separator.qml
         src/app/qml/pages/AboutPage.qml
         src/app/qml/pages/BatteryPage.qml

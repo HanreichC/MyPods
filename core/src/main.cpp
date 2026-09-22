@@ -13,6 +13,7 @@
 #include "device/enums/DeviceAncModes.h"
 #include "tests/TestsSgb.h"
 #include "tests/TestsAapBle.h"
+#include "tests/TestsAapAudio.h"
 #include "Logger.h"
 #include "Config.h"
 #include "settings/SettingsService.h"
@@ -411,6 +412,13 @@ int main(int argc, char** argv) {
     if (TryToParseArguments(argc, argv))
         return 0;
 
+    // Byte-level self-checks without hardware: magicpodscore --selftest
+    if (argc > 1 && std::string{argv[1]} == "--selftest") {
+        int failures = TestsSgb{}.failures + TestsAapBle{}.failures + TestsAapAudio{}.failures;
+        Logger::Info("Selftest: %d failure(s)", failures);
+        return failures == 0 ? 0 : 1;
+    }
+
     std::shared_ptr<SettingsService> settingsService = std::make_shared<SettingsService>(SettingsService::GetConfigPath("config.toml"));
     StartListeningLogSettings(*settingsService);
 
@@ -491,6 +499,7 @@ int main(int argc, char** argv) {
             #ifdef DEBUG
             TestsSgb sgb;
             TestsAapBle aapBle;
+            TestsAapAudio aapAudio;
             #endif
 
             devicesInfoFetcher = std::make_unique<DevicesInfoFetcher>(settingsService);

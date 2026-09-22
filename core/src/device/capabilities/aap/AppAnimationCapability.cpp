@@ -215,7 +215,8 @@ namespace MagicPodsCore
         bool _twoAirPodActive = utp & 0b0000'0001;
         bool isLeft = utp & 0b0010'0000 ? true : false;
 
-        if (data.model == AapModelIds::airpodsmax || data.model == AapModelIds::airpodsmax2024)
+        // ponytail: Max 2 assumed to share the Max/Max USB-C encoding (high nibble of byte 8 == 8), not yet verified on hardware
+        if (data.model == AapModelIds::airpodsmax || data.model == AapModelIds::airpodsmax2024 || data.model == AapModelIds::airpodsmax2)
         {
             data.animation = (capCount >> 4) == 8 ? true : false;
         }

@@ -3,227 +3,85 @@
 // License: GPL-3.0
 
 import QtQuick 2.15
-import QtQuick.Controls 2.15 as QQC2
+import QtQuick.Effects
 import QtQuick.Layouts 1.15
 import magicpods as MP
+import "../components" as Components
 
-QQC2.Page {
+Components.ScrollPage {
     id: rootPage
-    padding: 0
-    background: Rectangle {
-        color: "transparent"
+    title: qsTrId("menu.about")
+    showTitle: false
+
+    Item {
+        Layout.fillWidth: true
+        Layout.topMargin: MP.Units.hugeSpacing
+        implicitHeight: 112
+
+        RectangularShadow {
+            anchors.fill: logo
+            anchors.margins: 8
+            radius: 26
+            blur: 32
+            offset.y: 10
+            color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0.5 : 0.18)
+        }
+
+        Image {
+            id: logo
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 112; height: 112
+            sourceSize: Qt.size(224, 224)
+            source: MP.Theme.asset("icons/mp-logo-color.svg")
+        }
     }
 
-    title: qsTrId("menu.about")
-    readonly property int mWidth: MP.Units.gridUnit * 12
+    MP.Heading {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.topMargin: MP.Units.mediumSpacing
+        level: 1
+        text: "MyPods"
+    }
 
-    QQC2.ScrollView {
-        id: aboutScrollView
-        anchors.fill: parent
-        contentWidth: availableWidth
+    MP.Label {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.bottomMargin: MP.Units.hugeSpacing
+        color: MP.Theme.secondaryText
+        text: Qt.application.version
+    }
 
-        ColumnLayout {
-            width: aboutScrollView.availableWidth
-            y: Math.max(0, (aboutScrollView.availableHeight - implicitHeight) / 2)
+    MP.Heading {
+        level: 5
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("about.packages")
+    }
 
-            RowLayout {
-                Layout.topMargin: MP.Units.largeSpacing
-                Layout.alignment: Qt.AlignHCenter
-                spacing: MP.Units.largeSpacing
-                Layout.fillWidth: false
+    Components.Card {
 
-                Image {
-                    Layout.preferredHeight: 64
-                    Layout.preferredWidth: 64
-                    source: "qrc:/qt/qml/magicpods/src/app/qml/assets/images/logo-512.png"
-                    smooth: true
-                    mipmap: true
-                }
+        MP.FormRow {
+            label: "MyPods"
+            MP.Label { color: MP.Theme.secondaryText; text: Qt.application.version }
+        }
 
-                ColumnLayout {
-                    MP.Heading {
-                        level: 1
-                        text: "MagicPods"
-                        wrapMode: Text.WordWrap
-                        font.bold: true
-                        font.pointSize: Qt.application.font.pointSize * 2
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                        maximumLineCount: 1
-                    }
-
-                    MP.Label {
-                        Layout.topMargin: -4
-                        text: qsTrId("about.button.home_page")
-                        color: palette.link
-                        font.underline: true
-                        MouseArea {
-                            id: mouseHomePage
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: Qt.openUrlExternally("https://magicpods.app")
-                        }
-                        QQC2.ToolTip {
-                            visible: mouseHomePage.containsMouse
-                            text: "https://magicpods.app"
-                            delay: 500
-                        }
-                    }
-                }
-            }
-
-            MP.Separator {
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: MP.Units.mediumSpacing
-            }
-
+        MP.FormRow {
+            label: "MyPods Core"
             MP.Label {
-                Layout.fillWidth: true
-                Layout.topMargin: MP.Units.largeSpacing
-                Layout.bottomMargin: MP.Units.smallSpacing
-                font.bold: true
-                text: qsTrId("about.packages")
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: "MagicPods:"
-                MP.Label { text: Qt.application.version }
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: "MagicPodsCore:"
-                MP.Label {
-                    text: backendManager ? backendManager.version() || qsTrId("about.not_installed") : ""
-                }
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: ""
-                MP.Label {
-                    text: (cppBackend && cppBackend.backendInfoText !== "")
-                          ? cppBackend.backendInfoText
-                          : qsTrId("about.not_connected")
-                }
-            }
-
-            MP.FormRow {
-                id: deckyRow                
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: "MagicPodsDecky:"
-
-                MP.Label {
-                    text: deckyManager ? deckyManager.version() || qsTrId("about.not_installed") : ""
-                }
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: ""
-                MP.Label {                    
-                }
-            }
-
-            MP.Label {
-                Layout.fillWidth: true
-                Layout.topMargin: MP.Units.largeSpacing
-                Layout.bottomMargin: MP.Units.smallSpacing
-                font.bold: true
-                text: qsTrId("about.support")
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: qsTrId("about.item.issue")
-                MP.Label {
-                    text: "GitHub"
-                    color: palette.link
-                    font.underline: true
-                    MouseArea {
-                        id: mouseGitHub
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: Qt.openUrlExternally("https://github.com/steam3d/MagicPodsLinux/issues")
-                    }
-                    QQC2.ToolTip {
-                        visible: mouseGitHub.containsMouse
-                        text: "https://github.com/steam3d/MagicPodsLinux/issues"
-                        delay: 500
-                    }
-                }
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: qsTrId("about.item.community")
-                MP.Label {
-                    text: "Discord"
-                    color: palette.link
-                    font.underline: true
-                    MouseArea {
-                        id: mouseDiscord
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: Qt.openUrlExternally("https://discord.com/invite/UyY4PY768V")
-                    }
-                    QQC2.ToolTip {
-                        visible: mouseDiscord.containsMouse
-                        text: "https://discord.com/invite/UyY4PY768V"
-                        delay: 500
-                    }
-                }
-            }
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                label: ""
-                MP.Label {
-                    text: "Telegram"
-                    color: palette.link
-                    font.underline: true
-                    MouseArea {
-                        id: mouseTelegram
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: Qt.openUrlExternally("https://t.me/magicpods")
-                    }
-                    QQC2.ToolTip {
-                        visible: mouseTelegram.containsMouse
-                        text: "https://t.me/magicpods"
-                        delay: 500
-                    }
-                }
-            }
-
-            Item {
-                Layout.preferredHeight: 0
+                color: MP.Theme.secondaryText
+                text: backendManager ? backendManager.version() || qsTrId("about.not_installed") : ""
             }
         }
+    }
+
+    // section footer
+    MP.Label {
+        Layout.fillWidth: true
+        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.rightMargin: MP.Units.largeSpacing
+        wrapMode: Text.WordWrap
+        color: MP.Theme.secondaryText
+        font.pixelSize: 13
+        text: (cppBackend && cppBackend.backendInfoText !== "")
+              ? cppBackend.backendInfoText
+              : qsTrId("about.not_connected")
     }
 }

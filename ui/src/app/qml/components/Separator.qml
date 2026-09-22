@@ -4,9 +4,10 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+import magicpods as MP
 
 Rectangle {
     Layout.fillWidth: true
     implicitHeight: 1
-    color: palette.dark
+    color: MP.Theme.separator
 }

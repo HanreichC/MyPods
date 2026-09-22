@@ -10,16 +10,17 @@ ColumnLayout {
     required property url iconSource
     required property string titleText
     required property string bodyText
-    anchors.centerIn: parent
+    Layout.fillWidth: true
+    Layout.topMargin: MP.Units.hugeSpacing * 2
+    spacing: MP.Units.mediumSpacing
 
     Image {
-        Layout.preferredWidth: 72
-        Layout.preferredHeight: 72
-        fillMode: Image.PreserveAspectFit
-        source: iconSource
+        Layout.preferredWidth: 112
+        Layout.preferredHeight: 112
         Layout.alignment: Qt.AlignHCenter
-        smooth: true
-        mipmap: true
+        Layout.bottomMargin: MP.Units.mediumSpacing
+        sourceSize: Qt.size(224, 224)
+        source: iconSource
     }
 
     MP.Heading {
@@ -27,16 +28,14 @@ ColumnLayout {
         level: 2
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
-        elide: Text.ElideRight
-        Layout.alignment: Qt.AlignHCenter
         horizontalAlignment: Text.AlignHCenter
     }
 
     MP.Label {
         text: bodyText
+        color: MP.Theme.secondaryText
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
-        Layout.alignment: Qt.AlignHCenter
         horizontalAlignment: Text.AlignHCenter
     }
 }

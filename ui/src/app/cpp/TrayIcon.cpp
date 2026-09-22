@@ -89,10 +89,11 @@ void TrayIcon::setThemeMode(int mode) {
 }
 
 bool TrayIcon::isDarkTheme() const {
+    // Light/Dark name the icon's own color; a light (white) icon is the variant for dark panels.
     if (m_themeMode == ThemeMode::Light)
-        return false;
-    if (m_themeMode == ThemeMode::Dark)
         return true;
+    if (m_themeMode == ThemeMode::Dark)
+        return false;
     const QColor bg = QApplication::palette().color(QPalette::Window);
     const qreal luminance = (0.2126 * bg.redF()) + (0.7152 * bg.greenF()) + (0.0722 * bg.blueF());
     return luminance < 0.5;

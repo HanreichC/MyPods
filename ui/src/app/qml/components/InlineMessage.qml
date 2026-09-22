@@ -4,9 +4,11 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15 as QQC2
+import QtQuick.Controls.impl as Impl
 import QtQuick.Layouts 1.15
+import magicpods as MP
 
-QQC2.Frame {
+MP.Card {
     id: root
 
     readonly property int typeInformation: 0
@@ -17,20 +19,22 @@ QQC2.Frame {
     property int    type:    typeInformation
     property string text:    ""
     property list<QtObject> actions
+    readonly property color tint: [MP.Theme.accent, MP.Theme.green, MP.Theme.orange, MP.Theme.red][type]
 
-    contentItem: RowLayout {
-        spacing: 8
+    verticalPadding: MP.Units.mediumSpacing + 4
+    border.width: 1
+    border.color: Qt.rgba(tint.r, tint.g, tint.b, 0.5)
 
-        Image {
-            source: "qrc:/qt/qml/magicpods/src/app/qml/assets/icons/menu-help.png"
-            Layout.preferredWidth:  24
-            Layout.preferredHeight: 24
-            fillMode:          Image.PreserveAspectFit
-            smooth:            true
-            mipmap:            true
+    RowLayout {
+        spacing: MP.Units.mediumSpacing
+
+        Impl.IconImage {
+            sourceSize: Qt.size(22, 22)
+            source: MP.Theme.asset("icons/icon-info.svg")
+            color: root.tint
         }
 
-        QQC2.Label {
+        MP.Label {
             text:             root.text
             wrapMode:         Text.WordWrap
             Layout.fillWidth: true
@@ -39,7 +43,6 @@ QQC2.Frame {
         Repeater {
             model: root.actions
             delegate: QQC2.Button {
-                flat:      false
                 text:      modelData.text
                 icon.name: modelData.icon ? (modelData.icon.name ?? "") : ""
                 onClicked: modelData.trigger()

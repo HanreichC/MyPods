@@ -101,8 +101,12 @@ Reduction, Accessibility, Multipoint-Handoff inkl. "Move to iPhone"-Verhalten).
 * **Herzfrequenz (Pro 3)**: Kein Standard-BT-HRM-Profil, läuft proprietär. Community-Stand: noch
   nicht reverse engineered (LibrePods Issue #308, offen). → Forschungsthema, nicht Scope P1–P4.
 * **Spatial Audio mit Head-Tracking**: Head-Tracking-Stream ist bekannt
-  (`04 00 04 00 17 00 …`, Orientierung ab Offset 43), aber HRTF-Rendering ist ein eigenes Projekt.
-  → out of scope.
+  (`04 00 04 00 17 00 …`, Orientierung ab Offset 43). HRTF-Rendering übernimmt PipeWire selbst
+  (filter-chain `sofa`/`spatializer` + libmysofa, auf CachyOS vorhanden) → umgesetzt, siehe 3.6.
+* **Automatisches Umschalten** („Mit diesem Mac verbinden: Automatisch"): AirPods relayen
+  Smart-Routing-Nachrichten zwischen ihren Quellen (AAP `0x10`/`0x11`, OPACK-kodiert), melden die
+  Audioquelle (`0x0E`), verbundene Geräte (`0x2E`) und „owns connection" (Control `0x06`).
+  Reverse Engineering: LibrePods (Android, `AACPManager.kt`). Setzt Apple-DeviceID in BlueZ voraus.
 * **Find My / Case-Sound**: nicht reverse engineered. → out of scope.
 
 ---
@@ -231,6 +235,20 @@ P0 Schritt 4–6, sobald die AirPods da sind. Bis dahin ist alles Vorbereitbare 
 Der Baum steht, der Dekoder ist getestet, der Devcontainer baut. Erst die Captures
 entscheiden, ob die Annahmen aus Abschnitt 1 für die Pro 3 stimmen — danach P1.
 
+### 3.6 Stand 2026-09-22: Mac-Parität Audio
+
+Umgesetzt im Daemon, ohne neue Abhängigkeit (MPRIS über sdbus-c++, PipeWire als Kindprozess):
+
+* `AapAudioSwitchCapability` — Übernahme bei Wiedergabestart (MPRIS), Freigabe bei
+  `SetOwnershipToFalse`/fremder Audioquelle (Pause, A2DP aus, Lautsprecher), manuell „Move here".
+* `AapEarDetectionCapability` — `0x06` → Pause/Weiter, Schalter = Control `0x0A`.
+* `AapSpatialAudioCapability` / `AapEqualizerCapability` + `audio/AudioEffects` — filter-chain
+  (EQ-Biquads → SOFA-Spatializer), Head-Tracking dreht die virtuellen Lautsprecher über `pw-cli`.
+* Check: `magicpodscore --selftest` (Smart-Routing-Bytes gegen LibrePods, Parser, Chain-Aufbau).
+
+**(H)** an echter Hardware offen: Übernahme mit iPhone (braucht DeviceID), Vorzeichen/Skalierung
+der Kopfbewegung, ob die Pro 3 den Head-Tracking-Start von LibrePods akzeptieren.
+
 ---
 
 ## Quellen
@@ -241,4 +259,6 @@ entscheiden, ob die Annahmen aus Abschnitt 1 für die Pro 3 stimmen — danach P
 * Heinze, Classen, Rohrbach: *MagicPairing: Apple's Take on Securing Bluetooth Peripherals*, WiSec 2020, arXiv:2005.07255
 * Celosia, Cunche: *Discontinued Privacy: Personal Data Leaks in Apple Bluetooth-Low-Energy Continuity Protocols*
 * Martin et al.: *Handoff All Your Privacy*, arXiv:1904.10600
+* LibrePods Android `AACPManager.kt`, `AirPodsService.kt`, `HeadOrientation.kt` (Smart Routing, Takeover, Head-Tracking)
+* PipeWire filter-chain `sofa`/`spatializer`, `bq_*` (Doku: `man libpipewire-module-filter-chain`)
 * Microsoft: *Bluetooth Echo L2CAP Profile Driver* (bthecho), nefarius/BthPS3 — Windows-L2CAP-Weg

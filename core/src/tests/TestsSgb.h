@@ -36,5 +36,6 @@ namespace MagicPodsCore{
         void Test(const char *name, bool b);
     public:
         TestsSgb();
+        int failures = 0;
     };
 }

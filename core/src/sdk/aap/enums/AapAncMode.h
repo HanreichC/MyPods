@@ -28,7 +28,7 @@ namespace MagicPodsCore
         case AapAncMode::Adaptive:
             return "Adaptive";
         case AapAncMode::Anc:
-            return "WindCancellation";
+            return "NoiseCancellation";
         default:
             return "Unknown value";
         }

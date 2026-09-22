@@ -13,9 +13,12 @@ add_executable(magicpodscore
 
     src/tests/TestsSgb.cpp
     src/tests/TestsAapBle.cpp
+    src/tests/TestsAapAudio.cpp
 
     src/client/Client.cpp
     src/pulseaudio/PulseAudioClient.cpp
+    src/media/MprisClient.cpp
+    src/audio/AudioEffects.cpp
 
     src/sdk/aap/Aes.cpp
     src/sdk/aap/AapHelper.cpp
@@ -74,6 +77,9 @@ add_executable(magicpodscore
     src/device/capabilities/aap/AapMuteMicrophoneEndCallCapability.cpp
     src/device/capabilities/aap/AapAdaptiveAudioNoiseCapability.cpp
     src/device/capabilities/aap/AppAnimationCapability.cpp
+    src/device/capabilities/aap/AapEarDetectionCapability.cpp
+    src/device/capabilities/aap/AapAudioSwitchCapability.cpp
+    src/device/capabilities/aap/AapAudioEffectsCapabilities.cpp
 
     src/device/capabilities/sgb/GalaxyBudsCapability.cpp
     src/device/capabilities/sgb/GalaxyBudsAncCapability.cpp
@@ -106,7 +112,6 @@ pkg_check_modules(PULSEAUDIO REQUIRED libpulse)
 find_package(OpenSSL REQUIRED)
 target_include_directories(magicpodscore PRIVATE
     src
-    dependencies/json
     ${PROJECT_BINARY_DIR}/src
     ${PULSEAUDIO_INCLUDE_DIRS}
 )

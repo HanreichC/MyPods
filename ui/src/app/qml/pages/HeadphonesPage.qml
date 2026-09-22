@@ -8,16 +8,11 @@ import QtQuick.Layouts 1.15
 import magicpods as MP
 import "../components" as Components
 
-QQC2.Page {
+Components.ScrollPage {
     id: rootPage
-    padding: 0
-    background: Rectangle {
-        color: "transparent"
-    }
 
     title: qsTrId("menu.headphones")
 
-    readonly property int mWidth: MP.Units.gridUnit * 12
     property var btAdapterData: ({})
     property var headphonesData: []
     readonly property var sortedHeadphones: hasHeadphones ? headphonesData.slice().sort(function (a, b) {
@@ -59,95 +54,70 @@ QQC2.Page {
 
     Components.HelpMessage {
         visible: !hasBtAdapter
-        iconSource: "qrc:/qt/qml/magicpods/src/app/qml/assets/icons/bluetooth-not-found.png"
+        iconSource: MP.Theme.asset("icons/illustration-bluetooth-off.svg")
         titleText: qsTrId("headphones.help.bluetooth_not_found.header")
         bodyText: qsTrId("headphones.help.bluetooth_not_found.description")
-        width: mWidth * 1.5
+    }
+
+    Components.Card {
+        visible: rootPage.hasBtAdapter
+
+        MP.FormRow {
+            label: qsTrId("headphones.item.bluetooth")
+            iconSource: MP.Theme.asset("icons/icon-bluetooth.svg")
+
+            Components.Toggle {
+                id: bt
+                checked: rootPage.btAdapterData?.enabled ?? false
+                onToggled: {
+                    rootPage.btAdapterData.enabled = checked;
+                    if (checked)
+                        cppBackend.enableDefaultBluetoothAdapter();
+                    else
+                        cppBackend.disableDefaultBluetoothAdapter();
+                }
+            }
+        }
     }
 
     Components.HelpMessage {
         visible: !hasHeadphones && hasBtAdapter
-        iconSource: "qrc:/qt/qml/magicpods/src/app/qml/assets/icons/pair-headphones.png"
+        iconSource: MP.Theme.asset("icons/illustration-pair.svg")
         titleText: qsTrId("headphones.help.bluetooth_no_paired_headphones.header")
         bodyText: qsTrId("headphones.help.no_paired_headphones.description")
-        width: mWidth * 1.5
     }
 
-    QQC2.ScrollView {
-        id: headphonesScrollView
-        anchors.fill: parent
+    MP.Heading {
         visible: hasHeadphones && hasBtAdapter
-        contentWidth: availableWidth
+        level: 5
+        Layout.topMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("headphones.headphones")
+    }
 
-        ColumnLayout {
-            width: headphonesScrollView.availableWidth
-            y: Math.max(0, (headphonesScrollView.availableHeight - implicitHeight) / 2)
-            spacing: MP.Units.mediumSpacing
+    Components.Card {
+        visible: hasHeadphones && hasBtAdapter
 
-            MP.Label {
-                Layout.fillWidth: true
-                Layout.topMargin: MP.Units.largeSpacing
-                Layout.bottomMargin: MP.Units.smallSpacing
-                font.bold: true
-                text: qsTrId("headphones.bluetooth")
-                horizontalAlignment: Text.AlignHCenter
-            }
+        Repeater {
+            model: rootPage.sortedHeadphones
+            delegate: MP.FormRow {
+                enabled: bt.checked
+                label: modelData.name
+                iconSource: MP.Theme.asset("icons/icon-headphones.svg")
+                iconColor: modelData.connected ? MP.Theme.accent : MP.Theme.gray
 
-            MP.FormRow {
-                Layout.fillWidth: true
-                Layout.maximumWidth: mWidth * 1.5
-                Layout.alignment: Qt.AlignHCenter
-                visible: rootPage.hasBtAdapter
-                label: qsTrId("headphones.item.bluetooth")
-
-                QQC2.Switch {
-                    id: bt
-                    checked: rootPage.btAdapterData?.enabled ?? false
+                Components.Toggle {
+                    checked: modelData.connected
                     onToggled: {
-                        rootPage.btAdapterData.enabled = checked;
-                        if (checked)
-                            cppBackend.enableDefaultBluetoothAdapter();
-                        else
-                            cppBackend.disableDefaultBluetoothAdapter();
-                    }
-                }
-            }
-
-            MP.Label {
-                Layout.fillWidth: true
-                Layout.topMargin: MP.Units.largeSpacing
-                Layout.bottomMargin: MP.Units.smallSpacing
-                font.bold: true
-                text: qsTrId("headphones.headphones")
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Repeater {
-                model: rootPage.sortedHeadphones
-                delegate: MP.FormRow {
-                    Layout.fillWidth: true
-                    Layout.maximumWidth: mWidth * 1.5
-                    Layout.alignment: Qt.AlignHCenter
-                    enabled: bt.checked
-                    label: modelData.name + ":"
-
-                    QQC2.Switch {
-                        checked: modelData.connected
-                        onToggled: {
-                            if (modelData.address) {
-                                modelData.connected = checked;
-                                if (checked)
-                                    cppBackend.connectDevice(modelData.address);
-                                else
-                                    cppBackend.disconnectDevice(modelData.address);
-                            }
+                        if (modelData.address) {
+                            modelData.connected = checked;
+                            if (checked)
+                                cppBackend.connectDevice(modelData.address);
+                            else
+                                cppBackend.disconnectDevice(modelData.address);
                         }
                     }
                 }
-            }
-
-            Item {
-                Layout.preferredHeight: 0
             }
         }
     }

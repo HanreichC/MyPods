@@ -36,6 +36,9 @@ namespace MagicPodsCore{
             std::optional<CardInfo> GetCardInfoByName(const std::string& name);
             std::optional<CardInfo> GetCardInfoByIndex(uint32_t index);
             std::string GetNameFromMac(const std::string& mac);
+            // First sink whose name contains `part`, e.g. the MAC with underscores for a bluez sink
+            std::optional<std::string> FindSink(const std::string& part);
+            bool SetDefaultSink(const std::string& name);
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }

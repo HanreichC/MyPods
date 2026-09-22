@@ -243,7 +243,7 @@
     <message id="Error.service_api_wrong">
         <location filename="../qml/main.qml" line="56"/>
         <source></source>
-        <translation>MagicPodsCore version mismatch. Please update the Decky Loader plugin and desktop app.</translation>
+        <translation>MyPods core version mismatch. Please update MyPods.</translation>
     </message>
     <message id="menu.headphones">
         <location filename="../qml/main.qml" line="152"/>
@@ -320,6 +320,11 @@
         <source></source>
         <translation>Adds the application to the application menu under "Utilities".</translation>
     </message>
+    <message id="settings.appearance">
+        <location filename="../qml/pages/SettingsPage.qml" line="1"/>
+        <source></source>
+        <translation>Appearance</translation>
+    </message>
     <message id="settings.tray_icon_theme">
         <location filename="../qml/pages/SettingsPage.qml" line="97"/>
         <source></source>
@@ -371,21 +376,6 @@
         <source></source>
         <translation>Exit</translation>
     </message>
-    <message id="settings.exit">
-        <location filename="../qml/pages/SettingsPage.qml" line="182"/>
-        <source></source>
-        <translation>Exit application:</translation>
-    </message>
-    <message id="settings.exit.description">
-        <location filename="../qml/pages/SettingsPage.qml" line="183"/>
-        <source></source>
-        <translation>The application will be closed and all functions will be disabled.</translation>
-    </message>
-    <message id="settings.exit_button">
-        <location filename="../qml/pages/SettingsPage.qml" line="186"/>
-        <source></source>
-        <translation>Exit</translation>
-    </message>
     <message id="tray.disconnect">
         <location filename="../qml/PopupAnimation.qml" line="354"/>
         <location filename="../cpp/TrayIconManager.cpp" line="283"/>
@@ -397,6 +387,54 @@
         <location filename="../cpp/TrayIconManager.cpp" line="283"/>
         <source></source>
         <translation>Connect</translation>
+    </message>
+    <message id="battery.spatial_audio">
+        <source></source>
+        <translation>Spatial audio:</translation>
+    </message>
+    <message id="battery.spatial_audio.off">
+        <source></source>
+        <translation>Off</translation>
+    </message>
+    <message id="battery.spatial_audio.fixed">
+        <source></source>
+        <translation>Fixed</translation>
+    </message>
+    <message id="battery.spatial_audio.head_tracked">
+        <source></source>
+        <translation>Head tracked</translation>
+    </message>
+    <message id="battery.equalizer">
+        <source></source>
+        <translation>Equalizer:</translation>
+    </message>
+    <message id="battery.auto_switch">
+        <source></source>
+        <translation>Connect to this computer:</translation>
+    </message>
+    <message id="battery.auto_switch.automatically">
+        <source></source>
+        <translation>Automatically</translation>
+    </message>
+    <message id="battery.auto_switch.last_connected">
+        <source></source>
+        <translation>When last connected</translation>
+    </message>
+    <message id="battery.ear_detection">
+        <source></source>
+        <translation>Automatic ear detection:</translation>
+    </message>
+    <message id="battery.moved">
+        <source></source>
+        <translation>Playing on %1</translation>
+    </message>
+    <message id="battery.moved_other">
+        <source></source>
+        <translation>Playing on another device</translation>
+    </message>
+    <message id="battery.move_here">
+        <source></source>
+        <translation>Move here</translation>
     </message>
 </context>
 </TS>

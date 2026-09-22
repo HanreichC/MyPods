@@ -495,6 +495,77 @@ Supported Bluetooth profiles/codecs
 
 ### AirPods and Beats capabilities
 
+##### Automatic switching (MyPods)
+
+Apple's "Connect to This Mac". `owns` = this computer is the audio source; `source` names the device that
+took the audio (`"iPhone"`, `"iPad"`, `"Mac"` or empty). Send `{"autoSwitch": {"takeover": true}}` to move the
+audio here ("Move back").
+
+```json
+{
+  "autoSwitch": {
+    "readonly": false,
+    "selected": 0,
+    "owns": true,
+    "source": ""
+  }
+}
+```
+
+| selected |                                            |
+| -------- | ------------------------------------------ |
+| `0`      | Automatically (take over when media starts) |
+| `1`      | When last connected to this computer        |
+
+##### Automatic ear detection (MyPods)
+
+Taking a pod out pauses, putting it back resumes. `primary`/`secondary`: `0` in ear, `1` out, `2` in case, `-1` unknown.
+
+```json
+{
+  "earDetection": {
+    "readonly": false,
+    "selected": true,
+    "primary": 0,
+    "secondary": 0
+  }
+}
+```
+
+##### Spatial audio (MyPods)
+
+Rendered on this computer (PipeWire filter-chain with the libmysofa HRTF); head orientation from the AirPods.
+
+```json
+{
+  "spatialAudio": {
+    "readonly": false,
+    "selected": 0,
+    "headTracking": true
+  }
+}
+```
+
+| selected |              |
+| -------- | ------------ |
+| `0`      | Off          |
+| `1`      | Fixed        |
+| `2`      | Head tracked (only when `headTracking` is `true`; false on AirPods 1/2 and older Beats without motion sensors) |
+
+##### Equalizer (MyPods)
+
+Apple Music presets, applied on this computer. `selected` must be one of `options`.
+
+```json
+{
+  "equalizer": {
+    "readonly": false,
+    "selected": "Off",
+    "options": ["Off", "Acoustic", "Bass Booster", "..."]
+  }
+}
+```
+
 ##### Volume swipe
 
 Adjust the volume by swiping up or down on the sensor located on the AirPods Pro stem.

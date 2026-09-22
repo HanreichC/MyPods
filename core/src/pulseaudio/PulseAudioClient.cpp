@@ -174,6 +174,53 @@ namespace MagicPodsCore
             return card.first ? std::optional<CardInfo>(card.second) : std::nullopt;
     }
 
+    std::optional<std::string> PulseAudioClient::FindSink(const std::string &part)
+    {
+        if (!ready.load() || !ctx || !ml) return std::nullopt;
+
+        std::pair<std::string, std::optional<std::string>> query{part, std::nullopt};
+        pa_operation* op = pa_context_get_sink_info_list(
+            ctx,
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata)
+            {
+                auto* q = static_cast<std::pair<std::string, std::optional<std::string>>*>(userdata);
+                if (eol || !info || !info->name || q->second) return;
+                if (std::string(info->name).find(q->first) != std::string::npos)
+                    q->second = info->name;
+            },
+            &query
+        );
+
+        if (!op) return std::nullopt;
+        while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        pa_operation_unref(op);
+
+        return query.second;
+    }
+
+    bool PulseAudioClient::SetDefaultSink(const std::string &name)
+    {
+        if (!ready.load() || !ctx || !ml) return false;
+
+        bool ok = false;
+        pa_operation* op = pa_context_set_default_sink(
+            ctx,
+            name.c_str(),
+            [](pa_context*, int success, void* userdata) {
+                *static_cast<bool*>(userdata) = success;
+            },
+            &ok
+        );
+
+        if (!op) return false;
+        while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        pa_operation_unref(op);
+
+        return ok;
+    }
+
     std::string PulseAudioClient::GetNameFromMac(const std::string &mac)
     {
         std::string name = mac;
