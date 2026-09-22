@@ -38,13 +38,10 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 - [Configuration](#configuration)
 - [Building from source](#building-from-source)
 - [Testing](#testing)
-- [Project structure](#project-structure)
 - [WebSocket API](#websocket-api)
 - [Known limitations](#known-limitations)
 - [Troubleshooting](#troubleshooting)
 - [Security](#security)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
 - [Credits](#credits)
 - [License](#license)
 
@@ -367,42 +364,6 @@ AirPods Max have no charging case. For them, the popup trigger is the high nibbl
 
 ---
 
-## Project structure
-
-```
-MyPods/
-├── core/                    Daemon "magicpodscore" (C++20)
-│   ├── src/
-│   │   ├── sdk/aap/         Apple Accessory Protocol: requests, watchers, AES, enums
-│   │   ├── sdk/sgb/         Samsung Galaxy Buds protocol
-│   │   ├── sdk/zik/         Parrot Zik 2.0 protocol (RFCOMM XML API)
-│   │   ├── device/          Device models and their capabilities (aap/, sgb/, zik/, bhf/, cmn/)
-│   │   ├── ble_ads/         BLE advertisement scanning (BlueZ D-Bus and passive HCI)
-│   │   ├── audio/           PipeWire filter chain for equalizer and spatial audio
-│   │   ├── media/           MPRIS client (auto-pause, playback detection)
-│   │   ├── pulseaudio/      Audio profile and default sink handling
-│   │   ├── dbus/            BlueZ D-Bus integration
-│   │   ├── settings/        TOML settings with change notifications
-│   │   ├── tests/           Self-checks run by --selftest
-│   │   └── main.cpp         WebSocket server and request routing
-│   └── dependencies/        Vendored third-party libraries
-├── ui/                      Desktop app "magicpods" (Qt 6 / QML)
-│   └── src/app/
-│       ├── cpp/             Backend connection, daemon launcher, tray, autostart
-│       ├── qml/             Pages, components, PopupAnimation.qml, device images and sprites
-│       └── i18n/            Translations
-├── tools/sniff.py           BLE advertisement sniffer and decoder
-├── captures/                Hardware captures used as test vectors
-├── docs/
-│   ├── PLAN.md              Protocol research and implementation plan (German)
-│   └── core-api-reference.md  WebSocket API of the daemon
-├── .devcontainer/           Podman/Dev Container build environment
-├── install.sh               Build and per-user install
-└── CMakeLists.txt           Top-level build (core + ui)
-```
-
----
-
 ## WebSocket API
 
 The UI and the daemon are separate processes that talk JSON over a WebSocket on port `2020`.
@@ -475,34 +436,6 @@ play to the `mypods_fx` sink.
   port in your firewall if your machine is on an untrusted network.
 - The AirPods' IRK and ENC keys are stored in plain text in `~/.config/mypods/config.toml`.
   Keep that file private.
-
----
-
-## Roadmap
-
-- Test AirPods Pro 3 on real hardware
-- Verify the remaining *unverified* behavior (AirPods Max 2 popup, iPhone
-  handoff, head-tracking sign and scale)
-- Rename, device metadata (model number, serial, firmware)
-- Low battery notifications, hotkeys, more translations
-- Packaging: PKGBUILD for the AUR and an AppImage
-- Research: AirPods Pro 3 heart rate
-
-See [docs/PLAN.md](docs/PLAN.md) for details.
-
----
-
-## Contributing
-
-Issues and pull requests are welcome. A few guidelines:
-
-- Keep changes small and focused. Reuse what exists in the codebase before adding new code.
-- Avoid new dependencies. Required libraries are vendored so the build works offline.
-- Add a check for non-trivial logic to the existing self-tests in `core/src/tests/`, so that
-  `magicpodscore --selftest` fails if the logic breaks.
-- Protocol changes should come with a capture (`tools/sniff.py --log …` or a btsnoop file)
-  that shows the real bytes.
-- Build inside the dev container; do not rely on globally installed toolchains.
 
 ---
 
