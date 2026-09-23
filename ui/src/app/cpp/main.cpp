@@ -18,10 +18,17 @@
 #include <QQmlComponent>
 #include <QQuickStyle>
 #include <QScopedPointer>
+#include <QCursor>
+#include <QScreen>
 #include <QWindow>
+
+#ifdef HAVE_LAYERSHELLQT
+#include <LayerShellQt/window.h>
+#endif
 
 #include "BackendManager.h"
 #include "DesktopManager.h"
+#include "MediaController.h"
 #include "TrayIcon.h"
 #include "TrayIconManager.h"
 #include "Backend.h"
@@ -144,10 +151,12 @@ int main(int argc, char *argv[]) {
     DesktopManager desktopManager;
     Backend backend;
     TrayIcon trayIcon;
+    MediaController mediaController;
     engine.rootContext()->setContextProperty("backendManager", &backendManager);
     engine.rootContext()->setContextProperty("desktopManager", &desktopManager);
     engine.rootContext()->setContextProperty("cppBackend", &backend);
     engine.rootContext()->setContextProperty("cppTrayIcon", &trayIcon);
+    engine.rootContext()->setContextProperty("cppMedia", &mediaController);
     engine.rootContext()->setContextProperty("gameScopeMode", gameScopeMode);
     engine.rootContext()->setContextProperty("trayAvailable", QSystemTrayIcon::isSystemTrayAvailable());
     // Kein Tray-Check: beim Anmelden ist das Tray oft noch nicht bereit; erneutes Starten holt das Fenster ueber den LocalServer hervor
@@ -172,6 +181,42 @@ int main(int argc, char *argv[]) {
         qWarning() << "Failed to create PopupAnimation.qml";
         qWarning() << popupAnimationComponent.errors();
     }
+
+    QQmlComponent trayPopupComponent(&engine, QUrl(QStringLiteral("qrc:/qt/qml/magicpods/src/app/qml/TrayPopup.qml")));
+    QScopedPointer<QObject> trayPopupObject(trayPopupComponent.create(engine.rootContext()));
+    auto *trayPopup = qobject_cast<QWindow *>(trayPopupObject.get());
+    if (!trayPopup) {
+        qWarning() << "Failed to create TrayPopup.qml" << trayPopupComponent.errors();
+    }
+    bool trayPopupAnchored = false;
+#ifdef HAVE_LAYERSHELLQT
+    // Wayland doesn't let windows place themselves; a layer surface anchored to the top right corner
+    // lands right under a top panel's tray.
+    // ponytail: assumes the panel is at the top; a bottom panel would need AnchorBottom
+    if (trayPopup && QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) {
+        auto *layer = LayerShellQt::Window::get(trayPopup);
+        layer->setLayer(LayerShellQt::Window::LayerTop);
+        layer->setAnchors({LayerShellQt::Window::AnchorTop, LayerShellQt::Window::AnchorRight});
+        layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
+        layer->setActivateOnShow(true);
+        layer->setWantsToBeOnActiveScreen(true);
+        layer->setScope(QStringLiteral("mypods-tray-popup"));
+        trayPopupAnchored = true;
+    }
+#endif
+    auto toggleTrayPopup = [&]() {
+        // X11: under (or above) the pointer, inside the work area, so a panel on any edge works
+        if (!trayPopupAnchored && !trayPopup->isVisible()) {
+            const QPoint cursor = QCursor::pos();
+            if (QScreen *screen = QGuiApplication::screenAt(cursor)) {
+                const QRect area = screen->availableGeometry();
+                const int x = qBound(area.left(), cursor.x() - trayPopup->width() / 2, area.right() + 1 - trayPopup->width());
+                const int y = cursor.y() < area.center().y() ? area.top() : area.bottom() + 1 - trayPopup->height();
+                trayPopup->setPosition(x, y);
+            }
+        }
+        QMetaObject::invokeMethod(trayPopup, "toggle");
+    };
 
     root = engine.rootObjects().constFirst();
     if (raisePending) {
@@ -203,9 +248,24 @@ int main(int argc, char *argv[]) {
 
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         trayIcon.setContextMenu(&trayMenu);
+        // Click: the popup for the connected headphones (the window when there are none).
+        // Double click: the window.
         QObject::connect(&trayIcon, &TrayIcon::leftClicked, [&]() {
-            toggleMainWindow();
+            if (trayPopup && trayPopup->property("hasInfo").toBool()) {
+                toggleTrayPopup();
+            } else {
+                toggleMainWindow();
+            }
         });
+        QObject::connect(&trayIcon, &TrayIcon::doubleClicked, [&]() {
+            if (trayPopup) {
+                trayPopup->hide();
+            }
+            raiseWindow();
+        });
+        if (trayPopup) {
+            QObject::connect(trayPopup, SIGNAL(openAppRequested()), &trayIcon, SIGNAL(doubleClicked()));
+        }
 
         trayIcon.show();
     }

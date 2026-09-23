@@ -63,9 +63,10 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Spatial Audio: Off / Fixed / Head Tracked | PipeWire filter chain with an HRTF (libmysofa). Head orientation streams from the AirPods. |
 | Equalizer (Music app) | The Apple Music presets (Acoustic, Bass Booster, Classical, Rock, Vocal Booster …), applied in front of the AirPods. |
 | Conversation Awareness | On/off and current state. |
+| AirPods module in the menu bar / Control Center | Clicking the tray icon opens a popup right under the panel: battery, noise control, Conversation Awareness, "Move here", what's playing with play/pause/skip, and the output volume. A double click opens the full window. |
 | Press speed, press-and-hold duration, volume swipe, tone volume, personalized volume, mute/end call, ANC with one AirPod | Same settings, written to the AirPods. |
 
-Also available: Bluetooth codec display, system tray icon with battery levels, autostart,
+Also available: Bluetooth codec display, battery level in the tray icon, autostart,
 a Steam Deck / gamescope mode inherited from MagicPods, and English UI strings with
 translation support via Qt Linguist.
 
@@ -169,7 +170,9 @@ A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](d
 - **Qt 6.9 or newer**: `qt6-base`, `qt6-declarative`, `qt6-websockets`, `qt6-svg`
 - `libpulse`, `openssl`, `systemd-libs`
 - `libmysofa` (only for spatial audio; the default HRTF is read from `/usr/share/libmysofa/default.sofa`)
-- An MPRIS-capable media player for auto-pause and automatic switching (browsers, Spotify, mpv with `mpv-mpris`, …)
+- An MPRIS-capable media player for auto-pause, automatic switching and the tray popup's now playing (browsers, Spotify, mpv with `mpv-mpris`, …)
+- `pactl` (part of `libpulse`) for the tray popup's volume slider
+- Optional: `layer-shell-qt` (ships with KDE Plasma) to place the tray popup under the panel on Wayland
 
 **Build**
 
@@ -183,7 +186,7 @@ On Arch-based systems, the runtime packages are:
 
 ```bash
 sudo pacman -S --needed bluez pipewire pipewire-pulse libpulse openssl \
-    qt6-base qt6-declarative qt6-websockets qt6-svg libmysofa
+    qt6-base qt6-declarative qt6-websockets qt6-svg libmysofa layer-shell-qt
 ```
 
 ---
@@ -258,8 +261,12 @@ Then reconnect the AirPods once. `install.sh` reminds you if the line is missing
 2. **Start MyPods** from the start menu (it also starts automatically at login). The UI launches
    the daemon by itself.
 3. **Open the case** near your computer. The popup appears with the animation and battery levels.
-4. Click the **tray icon** to open the device page: battery, noise control, ear detection,
-   automatic switching, spatial audio, equalizer and all device-specific settings.
+4. **Click the tray icon** for the popup: battery, noise control, Conversation Awareness, what's
+   playing with media controls, and the volume. It closes on a second click, Esc or a click
+   elsewhere. Without connected headphones, a click opens the window instead.
+5. **Double-click the tray icon** (or choose **MyPods Settings…** in the popup) for the full
+   window: ear detection, automatic switching, spatial audio, equalizer and all device-specific
+   settings. Right-click opens the context menu with connect/disconnect and Exit.
 
 Command-line options:
 
@@ -415,6 +422,13 @@ The full reference with request and response examples is in
 - **Not implemented:** heart rate (AirPods Pro 3), Find My and the case speaker. These parts of
   Apple's protocol have not been reverse engineered publicly.
 - **Binary compatibility.** Binaries built by `install.sh` target Arch-based systems.
+- **Tray popup placement.** Wayland doesn't let apps position their windows, so the popup is a
+  layer-shell surface anchored to the top-right corner: right for a panel at the top, wrong for
+  one at the bottom. The AppImage is built without `layer-shell-qt`, so there the compositor
+  places the popup. On X11 it opens at the pointer, for a panel on any edge.
+- **Tray double click** is two clicks within the system's double-click interval, since the KDE
+  tray protocol (StatusNotifierItem) has none. The popup opens on the first click and gives way
+  to the window on the second.
 
 ---
 

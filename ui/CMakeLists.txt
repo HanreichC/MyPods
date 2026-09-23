@@ -8,7 +8,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 6.9: RectangularShadow
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
+# Optional: anchors the tray popup under the panel on Wayland (KDE ships it; the AppImage builds without)
+find_package(LayerShellQt QUIET)
 
 qt_standard_project_setup(REQUIRES 6.8
     I18N_TRANSLATED_LANGUAGES en
@@ -34,6 +36,7 @@ qt_add_executable(magicpods
     src/app/cpp/BackendManager.cpp
     src/app/cpp/DesktopManager.cpp
     src/app/cpp/main.cpp
+    src/app/cpp/MediaController.cpp
     src/app/cpp/TrayIcon.cpp
     src/app/cpp/TrayIconManager.cpp
 )
@@ -54,15 +57,18 @@ qt_add_qml_module(magicpods
         src/app/qml/Units.qml
         src/app/qml/Theme.qml
         src/app/qml/Main.qml
-        src/app/qml/PopupAnimation.qml        
+        src/app/qml/PopupAnimation.qml
+        src/app/qml/TrayPopup.qml
         src/app/qml/components/Animations.qml
         src/app/qml/components/BatteryRing.qml
         src/app/qml/components/FormRow.qml
         src/app/qml/components/Card.qml
+        src/app/qml/components/DeviceImage.qml
         src/app/qml/components/Heading.qml
         src/app/qml/components/HelpMessage.qml
         src/app/qml/components/InlineMessage.qml
         src/app/qml/components/Label.qml
+        src/app/qml/components/NoiseControl.qml
         src/app/qml/components/Picker.qml
         src/app/qml/components/ScrollPage.qml
         src/app/qml/components/Toggle.qml
@@ -90,6 +96,7 @@ target_include_directories(magicpods PRIVATE
 
 target_link_libraries(magicpods PRIVATE
     Qt6::Core
+    Qt6::DBus
     Qt6::Gui
     Qt6::Qml
     Qt6::Quick
@@ -97,6 +104,11 @@ target_link_libraries(magicpods PRIVATE
     Qt6::Widgets
     Qt6::WebSockets
 )
+
+if(LayerShellQt_FOUND)
+    target_link_libraries(magicpods PRIVATE LayerShellQt::Interface)
+    target_compile_definitions(magicpods PRIVATE HAVE_LAYERSHELLQT)
+endif()
 
 target_compile_definitions(magicpods PRIVATE
     MAGICPODS_VERSION="${PROJECT_VERSION}"

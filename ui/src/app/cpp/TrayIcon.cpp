@@ -19,15 +19,17 @@ TrayIcon::TrayIcon(QObject *parent)
     : QSystemTrayIcon(parent) {
     connect(this, &QSystemTrayIcon::activated, this, [this](ActivationReason reason) {
         qDebug() << "TrayIcon activated, reason =" << reason;
-        if (reason == QSystemTrayIcon::Trigger) {
-            emit leftClicked();
-        } else if (reason == QSystemTrayIcon::MiddleClick) {
-            emit middleClicked();
-        } else {
-
-
-
-            emit rightClicked();
+        if (reason == QSystemTrayIcon::DoubleClick) {
+            emit doubleClicked();
+        } else if (reason == QSystemTrayIcon::Trigger) {
+            // StatusNotifierItem (KDE, Wayland) has no double click, only two activations in a row
+            if (m_lastTrigger.isValid() && m_lastTrigger.elapsed() < QApplication::doubleClickInterval()) {
+                m_lastTrigger.invalidate();
+                emit doubleClicked();
+            } else {
+                m_lastTrigger.start();
+                emit leftClicked();
+            }
         }
     });
 

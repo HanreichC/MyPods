@@ -6,6 +6,7 @@
 
 #include <optional>
 
+#include <QElapsedTimer>
 #include <QSystemTrayIcon>
 
 class TrayIcon final : public QSystemTrayIcon {
@@ -36,8 +37,7 @@ public:
 
 signals:
     void leftClicked();
-    void rightClicked();
-    void middleClicked();
+    void doubleClicked();
     void themeModeChanged();
 
 protected:
@@ -53,4 +53,5 @@ private:
     IconType m_iconType = IconType::Default;
     ThemeMode m_themeMode = ThemeMode::Auto;
     std::optional<int> m_textIconValue;
+    QElapsedTimer m_lastTrigger;
 };

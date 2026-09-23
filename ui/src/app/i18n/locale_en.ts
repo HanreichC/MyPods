@@ -500,5 +500,40 @@
         <source></source>
         <translation>Never</translation>
     </message>
+    <message id="tray.popup.connected">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Connected</translation>
+    </message>
+    <message id="tray.popup.play">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Play</translation>
+    </message>
+    <message id="tray.popup.pause">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Pause</translation>
+    </message>
+    <message id="tray.popup.previous">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Previous</translation>
+    </message>
+    <message id="tray.popup.next">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Next</translation>
+    </message>
+    <message id="tray.popup.volume">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Volume</translation>
+    </message>
+    <message id="tray.popup.open_app">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>MyPods Settings…</translation>
+    </message>
 </context>
 </TS>

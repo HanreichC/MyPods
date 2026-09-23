@@ -4,9 +4,7 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15 as QQC2
-import QtQuick.Controls.impl as Impl
 import QtQuick.Layouts 1.15
-import QtQuick.Effects
 import magicpods as MP
 import "../components" as Components
 
@@ -16,14 +14,6 @@ Components.ScrollPage {
     property var infoData: ({})
     readonly property bool hasInfo: infoData && Object.keys(infoData).length > 0
     readonly property bool backendConnected: !!cppBackend && cppBackend.connected
-    property int selectedAnc: ancData?.selected ?? 0
-    readonly property var ancModes: ({
-            OFF: 1,
-            TRANSPARENCY: 2,
-            ADAPTIVE: 4,
-            WIND: 8,
-            ANC: 16
-        })
     readonly property var capabilities: infoData?.capabilities ?? null
     readonly property var ancData: capabilities?.anc ?? null
     readonly property var conversationAwarenessData: capabilities?.conversationAwareness ?? null
@@ -85,12 +75,6 @@ Components.ScrollPage {
                 rootPage.infoData = ({});
             } else if (json.info) {
                 rootPage.infoData = json.info;
-                // while a switch is pending, only its confirmation may move the thumb
-                var anc = json.info?.capabilities?.anc?.selected;
-                if (anc !== undefined && (!ancRevert.running || anc === rootPage.selectedAnc)) {
-                    rootPage.selectedAnc = anc;
-                    ancRevert.stop();
-                }
             }
         }
         function onConnectedChanged() {
@@ -99,31 +83,6 @@ Components.ScrollPage {
     }
     Component.onCompleted: {
         requestInfo();
-    }
-
-    readonly property var ancButtons: [
-        { mode: ancModes.OFF, icon: "icon-off.svg", text: qsTrId("battery.anc_off") },
-        { mode: ancModes.TRANSPARENCY, icon: "icon-tra.svg", text: qsTrId("battery.anc_tra") },
-        { mode: ancModes.ADAPTIVE, icon: "icon-adaptive.svg", text: qsTrId("battery.anc_adaptive") },
-        { mode: ancModes.WIND, icon: "icon-wind.svg", text: qsTrId("battery.anc_wind") },
-        { mode: ancModes.ANC, icon: "icon-noise.svg", text: qsTrId("battery.anc_anc") }
-    ]
-
-    // Optimistic: the thumb moves at once, ancData keeps the device's last confirmed mode.
-    // The core only broadcasts when the mode actually changes, so if the headphones ignore
-    // the command nothing arrives and ancRevert snaps the thumb back to the real mode.
-    function setAnc(mode) {
-        if (!rootPage.ancData)
-            return;
-        rootPage.selectedAnc = mode;
-        cppBackend.setAnc(rootPage.currentAddress(), mode);
-        ancRevert.restart();
-    }
-
-    Timer {
-        id: ancRevert
-        interval: 2000
-        onTriggered: rootPage.selectedAnc = rootPage.ancData?.selected ?? rootPage.selectedAnc
     }
 
     Components.HelpMessage {
@@ -144,51 +103,10 @@ Components.ScrollPage {
             Layout.fillWidth: true
             Layout.preferredHeight: 168
 
-            Image {
-                id: headphonesImage
-                property var candidates: []
-                property int candidateIndex: 0
+            Components.DeviceImage {
                 anchors.centerIn: parent
                 width: 168; height: 168
-                sourceSize: Qt.size(512, 512)
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                mipmap: true
-                source: ""
-
-                function buildCandidates() {
-                    var v = infoData?.vendor ?? 0;
-                    var m = infoData?.model ?? 0;
-                    var c = infoData?.color ?? 0;
-                    var basePath = "headphones/" + v + "_";
-                    candidates = [
-                        MP.Theme.asset(basePath + m + "_" + c + ".png"),
-                        MP.Theme.asset(basePath + m + ".png"),
-                        MP.Theme.asset("headphones/0_0_0.png")
-                    ];
-                    candidateIndex = 0;
-                    tryNext();
-                }
-
-                function tryNext() {
-                    if (candidateIndex < candidates.length)
-                        source = candidates[candidateIndex];
-                }
-
-                onStatusChanged: {
-                    if (status === Image.Error) {
-                        candidateIndex += 1;
-                        tryNext();
-                    }
-                }
-
-                Component.onCompleted: headphonesImage.buildCandidates()
-                Connections {
-                    target: rootPage
-                    function onInfoDataChanged() {
-                        headphonesImage.buildCandidates();
-                    }
-                }
+                info: rootPage.infoData
             }
         }
 
@@ -240,159 +158,14 @@ Components.ScrollPage {
         }
     }
 
-    // Noise control: HIG segmented control with a draggable thumb. Per HIG, content-layer
-    // sliders only turn into Liquid Glass while touched: at rest the thumb is solid, while
-    // pressed/dragged it lifts into a translucent lens (grows, rim + sheen, magnifies the icon
-    // below) and springs into the nearest segment on release.
-    Rectangle {
-        id: ancTrack
-        readonly property var modes: rootPage.ancButtons.filter(b => (rootPage.ancData?.options ?? 0) & b.mode)
-        readonly property int selectedIndex: modes.findIndex(b => b.mode === rootPage.selectedAnc)
-        readonly property real segmentWidth: ancLane.width / Math.max(1, modes.length)
-        readonly property bool glass: ancMouse.pressed
-        // segment under the thumb's centre, i.e. what a release would select
-        readonly property int thumbIndex: Math.max(0, Math.min(modes.length - 1, Math.floor((ancThumb.x + segmentWidth / 2) / segmentWidth)))
-
-        function step(delta) {
-            var i = Math.max(0, Math.min(modes.length - 1, selectedIndex + delta));
-            if (i !== selectedIndex)
-                rootPage.setAnc(modes[i].mode);
-        }
-
-        visible: hasInfo && rootPage.ancData !== null && modes.length > 0
-        enabled: !(rootPage.ancData?.readonly ?? true)
-        opacity: enabled ? 1 : 0.4
+    // Noise control: HIG segmented control with a draggable Liquid Glass thumb
+    Components.NoiseControl {
+        id: noiseControl
+        visible: hasInfo && available
         Layout.fillWidth: true
         Layout.topMargin: MP.Units.mediumSpacing
-        implicitHeight: 56
-        radius: height / 2
-        color: MP.Theme.tertiaryFill
-        border.width: activeFocus ? 2 : 0
-        border.color: MP.Theme.accent
-
-        activeFocusOnTab: true
-        Keys.onLeftPressed: step(-1)
-        Keys.onRightPressed: step(1)
-        Accessible.role: Accessible.PageTabList
-        Accessible.name: rootPage.ancButtons.find(b => b.mode === rootPage.selectedAnc)?.text ?? ""
-
-        Item {
-            id: ancLane
-            anchors.fill: parent
-            anchors.margins: 4
-
-            Rectangle {
-                id: ancThumb
-                visible: ancTrack.selectedIndex >= 0 || ancMouse.dragging
-                x: ancMouse.dragging ? Math.max(0, Math.min(ancLane.width - width, ancMouse.mouseX - width / 2))
-                                     : Math.max(0, ancTrack.selectedIndex) * width
-                width: ancTrack.segmentWidth
-                height: parent.height
-                radius: height / 2
-                scale: ancTrack.glass ? 1.14 : 1
-                color: ancTrack.glass ? Qt.rgba(1, 1, 1, MP.Theme.dark ? 0.12 : 0.3) : MP.Theme.thumb
-                border.width: 1
-                border.color: ancTrack.glass ? MP.Theme.glassBorder : "transparent"
-
-                Behavior on x { enabled: !ancMouse.dragging; NumberAnimation { duration: 380; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
-                Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 2 } }
-                Behavior on color { ColorAnimation { duration: 180 } }
-                Behavior on border.color { ColorAnimation { duration: 180 } }
-
-                // specular sheen on the upper half of the lens
-                Rectangle {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    opacity: ancTrack.glass ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 180 } }
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: MP.Theme.glassSheen }
-                        GradientStop { position: 0.55; color: "transparent" }
-                    }
-                }
-
-                // effects need a shader-capable scene graph; the software renderer drops the item
-                layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowBlur: ancTrack.glass ? 0.8 : 0.4
-                    shadowOpacity: ancTrack.glass ? 0.25 : 0.15
-                    shadowVerticalOffset: ancTrack.glass ? 4 : 2
-                }
-            }
-
-            Row {
-                anchors.fill: parent
-
-                Repeater {
-                    model: ancTrack.modes
-                    delegate: Item {
-                        required property var modelData
-                        required property int index
-                        readonly property bool hovered: ancMouse.containsMouse && !ancMouse.pressed
-                                                        && Math.floor(ancMouse.mouseX / ancTrack.segmentWidth) === index
-                        width: ancTrack.segmentWidth
-                        height: parent.height
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: height / 2
-                            color: MP.Theme.tertiaryFill
-                            visible: parent.hovered && index !== ancTrack.selectedIndex
-                        }
-
-                        Impl.IconImage {
-                            anchors.centerIn: parent
-                            sourceSize: Qt.size(24, 24)
-                            source: MP.Theme.asset("icons/" + modelData.icon)
-                            color: MP.Theme.text
-                            // lens magnification under the glass thumb
-                            scale: ancTrack.glass && index === ancTrack.thumbIndex ? 1.2 : 1
-                            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
-                        }
-
-                        QQC2.ToolTip.visible: hovered
-                        QQC2.ToolTip.delay: 500
-                        QQC2.ToolTip.text: modelData.text
-                    }
-                }
-            }
-
-            MouseArea {
-                id: ancMouse
-                property real pressX: 0
-                property bool dragging: false
-                anchors.fill: parent
-                hoverEnabled: true
-                preventStealing: true
-                cursorShape: ancTrack.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                onPressed: mouse => { pressX = mouse.x; ancTrack.forceActiveFocus(); }
-                onPositionChanged: mouse => {
-                    if (pressed && !dragging && Math.abs(mouse.x - pressX) > 4)
-                        dragging = true;
-                }
-                onReleased: {
-                    // tap selects the segment under the pointer, drag the one under the thumb
-                    var i = dragging ? ancTrack.thumbIndex
-                                     : Math.max(0, Math.min(ancTrack.modes.length - 1, Math.floor(mouseX / ancTrack.segmentWidth)));
-                    dragging = false;
-                    if (i !== ancTrack.selectedIndex)
-                        rootPage.setAnc(ancTrack.modes[i].mode);
-                }
-                onCanceled: dragging = false
-            }
-        }
-    }
-
-    MP.Label {
-        visible: hasInfo && rootPage.ancData !== null
-        Layout.fillWidth: true
-        horizontalAlignment: Text.AlignHCenter
-        color: MP.Theme.secondaryText
-        font.pixelSize: 13
-        font.weight: Font.Medium
-        text: rootPage.ancButtons.find(b => b.mode === rootPage.selectedAnc)?.text ?? ""
+        ancData: rootPage.ancData
+        address: rootPage.currentAddress() ?? ""
     }
 
     MP.Heading {
@@ -531,7 +304,7 @@ Components.ScrollPage {
                 implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.noise_level.normal"), qsTrId("battery.noise_level.max")]
                 currentIndex: (rootPage.ancData?.level ?? 1) - 1
-                enabled: !(rootPage.ancData?.readonly ?? true) && rootPage.selectedAnc !== rootPage.ancModes.OFF
+                enabled: !(rootPage.ancData?.readonly ?? true) && noiseControl.selectedAnc !== noiseControl.ancModes.OFF
                 onActivated: cppBackend.setCapability("anc", rootPage.currentAddress(), currentIndex + 1, "level")
             }
         }

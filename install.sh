@@ -9,7 +9,8 @@ DEST="$HOME/.local/opt/mypods"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 AUTOSTART="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
 
-podman image exists mypods-dev || podman build -t mypods-dev -f .devcontainer/Dockerfile .devcontainer
+# Cached layers make this quick; rerunning it picks up changes to the Dockerfile
+podman build -q -t mypods-dev -f .devcontainer/Dockerfile .devcontainer
 podman run --rm -v "$PWD:/workspace" -w /workspace mypods-dev \
     sh -c 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j$(nproc)'
 
