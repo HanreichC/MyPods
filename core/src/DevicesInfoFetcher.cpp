@@ -81,8 +81,8 @@ namespace MagicPodsCore {
                     _devicesMap.emplace(addedDeviceInfo->GetAddress(), device);
                     _onDeviceAddEvent.FireEvent(device);
                     UpdateBleState();
+                    TrySelectNewActiveDevice(); // it may already be connected, so no Connected change will come
                 }
-                //TrySelectNewActiveDevice();
                 // TODO: уведомление о добавлении устройства
             }
         });
@@ -90,8 +90,9 @@ namespace MagicPodsCore {
         _dbusService.GetOnDeviceRemovedEvent().Subscribe([this](size_t listenerId, const std::shared_ptr<DBusDeviceInfo>& removedDeviceInfo) {
             Logger::Debug("OnDeviceRemoved: %s", removedDeviceInfo->GetAddress().c_str());
             if (_devicesMap.contains(removedDeviceInfo->GetAddress())) {
-                _onDeviceRemoveEvent.FireEvent(_devicesMap.at(removedDeviceInfo->GetAddress()));
+                auto device = _devicesMap.at(removedDeviceInfo->GetAddress());
                 _devicesMap.erase(removedDeviceInfo->GetAddress());
+                _onDeviceRemoveEvent.FireEvent(device); // after erase, listeners publish the list without it
                 UpdateBleState();
             }
 

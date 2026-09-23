@@ -125,15 +125,19 @@ namespace MagicPodsCore {
                     _onDeviceAddedEvent.FireEvent(deviceInfo);
                 }
                 else {
-                    deviceInfo->GetPairedStatus().GetEvent().Subscribe([this, objectPath](size_t listenerId, bool newValue) {
-                        if (newValue && _knownDevices.contains(objectPath)) {
-                            auto device = _knownDevices.at(objectPath);
-                            if (!_pairedDevices.contains(device)) {
-                                _pairedDevices.emplace(device);
-                                _onDeviceAddedEvent.FireEvent(device);
-                            }
+                    // BlueZ reports Paired before SDP has delivered the UUIDs and Modalias the
+                    // device type is derived from, so wait until the services are resolved too.
+                    auto tryAddPaired = [this, objectPath](size_t listenerId, bool newValue) {
+                        if (!_knownDevices.contains(objectPath))
+                            return;
+                        auto device = _knownDevices.at(objectPath);
+                        if (device->GetPairedStatus().GetValue() && device->GetServicesResolved().GetValue() && !_pairedDevices.contains(device)) {
+                            _pairedDevices.emplace(device);
+                            _onDeviceAddedEvent.FireEvent(device);
                         }
-                    });
+                    };
+                    deviceInfo->GetPairedStatus().GetEvent().Subscribe(tryAddPaired);
+                    deviceInfo->GetServicesResolved().GetEvent().Subscribe(tryAddPaired);
                 }
 
                 return deviceInfo;

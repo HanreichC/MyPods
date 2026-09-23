@@ -340,13 +340,23 @@ void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& device
             });
         }
     }
-    devicesInfoFetcher.GetOnDeviceAddEvent().Subscribe([onCapabilityChangedListener, onConnectedChangedListener](size_t listenerId, auto device) {
+    devicesInfoFetcher.GetOnDeviceAddEvent().Subscribe([onCapabilityChangedListener, onConnectedChangedListener, onAnimationTriggered](size_t listenerId, auto device) {
         device->GetCapabilityChangedEvent().Subscribe([onCapabilityChangedListener, weakDevice = std::weak_ptr(device)](size_t listenerId, auto& newValues) {
             onCapabilityChangedListener(weakDevice.lock(), newValues);
         });
         device->GetConnectedPropertyChangedEvent().Subscribe([onConnectedChangedListener, weakDevice = std::weak_ptr(device)](size_t listenerId, auto newValue) {
             onConnectedChangedListener(weakDevice.lock(), newValue);
         });
+        if (auto aap = std::dynamic_pointer_cast<AapDevice>(device)){
+            aap->GetAnimationTriggered().Subscribe([onAnimationTriggered](size_t listenerId, const nlohmann::json &newValue){
+                onAnimationTriggered(newValue);
+            });
+        }
+        // Pushes the device list, so a newly paired device shows up without a restart.
+        onConnectedChangedListener(device, device->GetConnected());
+    });
+    devicesInfoFetcher.GetOnDeviceRemoveEvent().Subscribe([onConnectedChangedListener](size_t listenerId, auto device) {
+        onConnectedChangedListener(device, false);
     });
     devicesInfoFetcher.GetOnActiveDeviceChangedEvent().Subscribe([onActiveDeviceChanged](size_t listenerId, auto newDevice) {
         onActiveDeviceChanged(newDevice);

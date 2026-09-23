@@ -367,6 +367,10 @@ One check does need hardware, because the behavior it guards only exists on a re
 # With MyPods running: fails if a discovery session is held although no Apple device is
 # paired, which is what stops Bluetooth LE mice and keyboards from reconnecting
 sh tools/check_no_idle_discovery.sh
+
+# With MyPods running: remove the headphones in bluetoothctl, start this, then pair them;
+# passes once the core pushes a device list containing them, without a restart
+python3 tools/check_new_pairing.py AA:BB:CC:DD:EE:FF
 ```
 
 ### Capturing from real hardware

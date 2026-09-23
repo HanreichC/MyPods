@@ -48,6 +48,10 @@ namespace MagicPodsCore {
             _pairedStatus.SetValue(deviceInterface.at("Paired").get<bool>());
         }
 
+        if (deviceInterface.contains("ServicesResolved")) {
+            _servicesResolved.SetValue(deviceInterface.at("ServicesResolved").get<bool>());
+        }
+
         if (deviceInterface.contains("ManufacturerData")) {
             std::map<uint16_t, std::vector<uint8_t>> manuData;
             auto manuDataFromVariant = deviceInterface.at("ManufacturerData").get<std::map<uint16_t, sdbus::Variant>>();
@@ -84,11 +88,22 @@ namespace MagicPodsCore {
                     _vendorId = vidPid[0];
                     _productId = vidPid[1];
                 }
+                // A freshly paired device only learns its UUIDs and name after pairing, via SDP.
+                if (values.contains("UUIDs")) {
+                    _uuids = values.at("UUIDs").get<std::vector<std::string>>();
+                }
+                if (values.contains("Name")) {
+                    _name = values.at("Name").get<std::string>();
+                }
                 if (values.contains("Connected")) {
                     _connectionStatus.SetValue(values["Connected"].get<bool>());
                 }
+                // Paired and ServicesResolved after the fields above: their listeners classify the device from them.
                 if (values.contains("Paired")) {
                     _pairedStatus.SetValue(values.at("Paired").get<bool>());
+                }
+                if (values.contains("ServicesResolved")) {
+                    _servicesResolved.SetValue(values.at("ServicesResolved").get<bool>());
                 }
 
                 if (values.contains("ManufacturerData")) {

@@ -26,6 +26,7 @@ namespace MagicPodsCore {
         std::string _name{};
         ObservableVariable<bool> _connectionStatus{false};
         ObservableVariable<bool> _pairedStatus{false};
+        ObservableVariable<bool> _servicesResolved{false};
         ObservableVariable<uint8_t> _handsFreeBatteryStatus{100};
         ObservableVariable<std::map<uint16_t, std::vector<uint8_t>>> _manufacturerData{{}};
         ObservableVariable<std::map<std::string, std::vector<uint8_t>>> _serviceData{{}};
@@ -69,6 +70,10 @@ namespace MagicPodsCore {
 
         ObservableVariable<bool>& GetPairedStatus() {
             return _pairedStatus;
+        }
+
+        ObservableVariable<bool>& GetServicesResolved() {
+            return _servicesResolved;
         }
 
         ObservableVariable<uint8_t>& GetHandsFreeBatteryStatus() {
