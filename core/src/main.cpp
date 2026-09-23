@@ -22,6 +22,8 @@
 
 using namespace MagicPodsCore;
 
+int EmulateAirPods(); // tests/EmulateAirPods.cpp
+
 //Do not forget to change version when API changes
 constexpr int API_VERSION = 0;
 constexpr int WEBSOCKET_PORT = 2020;
@@ -429,6 +431,9 @@ int main(int argc, char** argv) {
         Logger::Info("Selftest: %d failure(s)", failures);
         return failures == 0 ? 0 : 1;
     }
+    // Emulated AirPods Max through the real audio path, needs PipeWire: magicpodscore --emulate-airpods
+    if (argc > 1 && std::string{argv[1]} == "--emulate-airpods")
+        return EmulateAirPods();
 
     std::shared_ptr<SettingsService> settingsService = std::make_shared<SettingsService>(SettingsService::GetConfigPath("config.toml"));
     StartListeningLogSettings(*settingsService);

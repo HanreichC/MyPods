@@ -15,6 +15,7 @@ add_executable(magicpodscore
     src/tests/TestsAapBle.cpp
     src/tests/TestsAapAudio.cpp
     src/tests/TestsZik.cpp
+    src/tests/EmulateAirPods.cpp
 
     src/client/Client.cpp
     src/pulseaudio/PulseAudioClient.cpp

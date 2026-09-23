@@ -40,9 +40,10 @@ namespace MagicPodsCore
         std::shared_ptr<SettingsService> settingsService,
         std::shared_ptr<DBusBasedBleAdvertisingService> bleService) : Device(deviceInfo, audioClient, settingsService), _bleService{bleService}
     {
-        _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MagicPodsCore::BleAdertisingData& adData){
-            _onLeDataReceived.FireEvent(adData);
-        });
+        if (_bleService) // none in the emulator (tests/EmulateAirPods.cpp)
+            _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MagicPodsCore::BleAdertisingData& adData){
+                _onLeDataReceived.FireEvent(adData);
+            });
     }
     
     AapDevice::~AapDevice()

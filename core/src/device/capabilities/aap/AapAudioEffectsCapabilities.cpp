@@ -93,6 +93,9 @@ namespace MagicPodsCore
         {
             isAvailable = true;
             _onChanged.FireEvent(*this);
+            // first packet of a session: nothing else applies saved effects (spatial and EQ) when the daemon starts next to connected headphones
+            if (!device.LoadEffectsConfig().IsNeutral())
+                RouteIfOurs(device);
         }
         UpdateTracking(); // ownership may have moved since the last packet
 

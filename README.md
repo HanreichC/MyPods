@@ -352,6 +352,10 @@ framework required. All but one run without hardware.
 # audio effect chain, Galaxy Buds and Parrot Zik protocol
 ./build/modules/magicpodscore --selftest
 
+# Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, routing).
+# Needs PipeWire, no Bluetooth; briefly switches the default sink to a fake headphones sink.
+./build/modules/magicpodscore --emulate-airpods
+
 # BLE advertisement decoder in the sniffing tool, against known captures
 python3 tools/sniff.py --selftest
 ```
