@@ -17,6 +17,7 @@
 #include <set>
 #include <map>
 #include <array>
+#include <mutex>
 #include <sdbus-c++/sdbus-c++.h>
 #include <nlohmann/json.hpp>
 #include "settings/SettingsService.h"
@@ -37,6 +38,9 @@ namespace MagicPodsCore {
         std::shared_ptr<DBusBasedBleAdvertisingService> _bleService{};
         std::shared_ptr<SettingsService> _settingsService{};
         size_t _onSettingsChangeId = 0;
+        bool _bleScanActive = false;
+        std::mutex _bleStateMutex{};
+        bool HasAapDevice() const;
         void UpdateBleState();
 
         std::map<std::string, std::shared_ptr<Device>> _devicesMap{}; // address -> device

@@ -98,7 +98,13 @@ void DBusBasedBleAdvertisingService::OnAdapterPowerChanged(size_t listenerId, bo
 void DBusBasedBleAdvertisingService::StartScan(bool isPassive)
 {
     std::map<std::string, sdbus::Variant> filter;
-    filter.emplace("Transport", sdbus::Variant("le"));
+    // Deliberately no "Transport" filter. An LE-only discovery scans without a gap, and
+    // the kernel then never gets to finish the allowlist auto-connect that paired LE
+    // devices (mice, keyboards) need -- they stay disconnected for as long as we scan.
+    // The default transport interleaves BR/EDR inquiry with the LE scan, which leaves
+    // exactly those gaps. Measured on real hardware: with "le" the MX Master did not
+    // reconnect in 71s; without it, it was back in 19s while 78 Apple advertisements
+    // still arrived in the same window.
     filter.emplace("DuplicateData", sdbus::Variant(true)); // Add this line to receive duplicate data
     try {
         _dbusService.SetDiscoveryFilter(filter);

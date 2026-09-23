@@ -286,7 +286,7 @@ Most options are set through the UI. Global options live in the `[magicpods]` ta
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `animation` | `true` | Enables the BLE scan used for the lid-open popup. Disable it if you do not want a permanent BLE scan. |
+| `animation` | `true` | Enables the BLE scan used for the lid-open popup. The scan only runs while AirPods are actually paired, and it leaves the discovery transport at its default so paired Bluetooth LE mice and keyboards keep reconnecting — see [Troubleshooting](#troubleshooting). |
 | `logLevel` | Info | Daemon log verbosity (debug builds always log at debug level). |
 
 Per-device settings (for example the stored `irk`/`enc` keys, switching mode, spatial audio and
@@ -338,7 +338,7 @@ libpulse, OpenSSL, libsystemd) and run the same two CMake commands directly. All
 ## Testing
 
 MyPods follows a simple rule: every piece of non-trivial logic has one runnable check, no test
-framework required. All checks run without hardware.
+framework required. All but one run without hardware.
 
 ```bash
 # Daemon: AAP battery/ANC parsing, BLE advertisement decoding, smart routing packets,
@@ -353,6 +353,14 @@ Two additional standalone checks for the ANC and battery wire paths live in
 [core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp) and
 [core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp); the compile command
 is at the top of each file.
+
+One check does need hardware, because the behavior it guards only exists on a real adapter:
+
+```bash
+# With MyPods running: fails if a discovery session is held although no Apple device is
+# paired, which is what stops Bluetooth LE mice and keyboards from reconnecting
+sh tools/check_no_idle_discovery.sh
+```
 
 ### Capturing from real hardware
 
@@ -417,6 +425,14 @@ Check that the `animation` setting is enabled and that Bluetooth is on. Run
 `python3 tools/sniff.py` and open the case; if nothing shows up, the adapter is not receiving the
 advertisements. The popup also needs the IRK/ENC keys, which are fetched the first time the
 AirPods connect to MyPods.
+
+**My Bluetooth mouse or keyboard stopped reconnecting on its own.**
+This was fixed in the lid-open popup's BLE scan: it no longer sets an LE-only discovery
+filter. An LE-only discovery scans without a gap and the kernel never gets to finish the
+allowlist auto-connect that paired Bluetooth LE devices need, so they stay disconnected for
+as long as MyPods scans. The default transport interleaves BR/EDR inquiry with the LE scan
+and leaves exactly those gaps, at no measurable cost to advertisement throughput. If you
+still see it on an older build, `animation = false` disables the scan.
 
 **Noise control and settings are missing.**
 These need an active classic connection (A2DP/HFP). Connect the AirPods first. If they still do not
