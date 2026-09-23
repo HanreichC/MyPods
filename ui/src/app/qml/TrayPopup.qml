@@ -80,6 +80,22 @@ QQC2.ApplicationWindow {
         onTriggered: cppMedia.refresh()
     }
 
+    component VolumeStepButton: QQC2.AbstractButton {
+        implicitWidth: 26
+        implicitHeight: 26
+        opacity: enabled ? 1 : 0.35
+        autoRepeat: true
+        background: Rectangle {
+            radius: width / 2
+            color: parent.pressed ? MP.Theme.fill : parent.hovered ? MP.Theme.tertiaryFill : "transparent"
+        }
+        contentItem: Impl.IconImage {
+            sourceSize: Qt.size(14, 14)
+            source: parent.icon.source
+            color: MP.Theme.text
+        }
+    }
+
     Shortcut {
         sequence: "Esc"
         onActivated: popup.visible = false
@@ -305,39 +321,92 @@ QQC2.ApplicationWindow {
                 }
             }
 
-            // Volume: Control Center style capsule, the fill is the value
-            QQC2.Slider {
-                id: volumeSlider
+            // Volume: Control Center style capsule, the fill is the value; − and + step to the
+            // neighbouring multiple of 5 (31 → 35 / 30), so a step never lands on an odd value
+            RowLayout {
                 Layout.fillWidth: true
                 visible: cppMedia.volume >= 0
-                implicitHeight: 26
-                padding: 0
-                from: 0
-                to: 100
-                stepSize: 1
-                value: Math.max(0, cppMedia.volume)
-                Accessible.name: qsTrId("tray.popup.volume")
-                onMoved: cppMedia.setVolume(value)
+                spacing: 4
 
-                background: Rectangle {
-                    radius: height / 2
-                    color: MP.Theme.fill
+                VolumeStepButton {
+                    icon.source: MP.Theme.asset("icons/icon-minus.svg")
+                    enabled: volumeSlider.value > 0
+                    Accessible.name: qsTrId("tray.popup.volume_down")
+                    onClicked: cppMedia.setVolume(Math.ceil(volumeSlider.value / 5) * 5 - 5)
+                }
 
-                    Rectangle {
-                        width: Math.max(parent.height, volumeSlider.visualPosition * parent.width)
-                        height: parent.height
+                QQC2.Slider {
+                    id: volumeSlider
+                    Layout.fillWidth: true
+                    implicitHeight: 26
+                    padding: 0
+                    from: 0
+                    to: 100
+                    stepSize: 1
+                    value: Math.max(0, cppMedia.volume)
+                    Accessible.name: qsTrId("tray.popup.volume")
+                    onMoved: cppMedia.setVolume(value)
+
+                    background: Rectangle {
                         radius: height / 2
-                        color: MP.Theme.accent
+                        color: MP.Theme.fill
+
+                        Text {
+                            id: volumeLabel
+                            anchors.right: parent.right
+                            anchors.rightMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: Math.round(volumeSlider.value) + "%"
+                            color: MP.Theme.secondaryText
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            font.features: { "tnum": 1 }
+                        }
+                        Rectangle {
+                            width: Math.max(parent.height, volumeSlider.visualPosition * parent.width)
+                            height: parent.height
+                            radius: height / 2
+                            color: cppMedia.muted ? MP.Theme.gray : MP.Theme.accent
+                            clip: true
+
+                            // the same label in white where the fill covers it
+                            Text {
+                                x: volumeLabel.x
+                                y: volumeLabel.y
+                                text: volumeLabel.text
+                                color: "white"
+                                font: volumeLabel.font
+                            }
+                        }
                     }
-                    Impl.IconImage {
-                        x: 6
-                        anchors.verticalCenter: parent.verticalCenter
-                        sourceSize: Qt.size(14, 14)
-                        source: MP.Theme.asset(volumeSlider.value > 0 ? "icons/icon-speaker-wave.svg" : "icons/icon-speaker.svg")
-                        color: "white"
+                    handle: null
+
+                    // HIG: like Control Center, the speaker is the mute button; muting keeps the level
+                    QQC2.AbstractButton {
+                        id: muteButton
+                        width: parent.height
+                        height: parent.height
+                        Accessible.name: cppMedia.muted ? qsTrId("tray.popup.unmute") : qsTrId("tray.popup.mute")
+                        onClicked: cppMedia.setMuted(!cppMedia.muted)
+                        background: Rectangle {
+                            radius: height / 2
+                            color: muteButton.pressed ? Qt.rgba(0, 0, 0, 0.2) : muteButton.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
+                        }
+                        contentItem: Impl.IconImage {
+                            sourceSize: Qt.size(14, 14)
+                            source: MP.Theme.asset(cppMedia.muted ? "icons/icon-speaker-slash.svg"
+                                                   : volumeSlider.value > 0 ? "icons/icon-speaker-wave.svg" : "icons/icon-speaker.svg")
+                            color: "white"
+                        }
                     }
                 }
-                handle: null
+
+                VolumeStepButton {
+                    icon.source: MP.Theme.asset("icons/icon-plus.svg")
+                    enabled: volumeSlider.value < 100
+                    Accessible.name: qsTrId("tray.popup.volume_up")
+                    onClicked: cppMedia.setVolume(Math.floor(volumeSlider.value / 5) * 5 + 5)
+                }
             }
 
             Components.Separator { Layout.fillWidth: true }

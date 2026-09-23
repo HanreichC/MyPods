@@ -70,18 +70,30 @@ void MediaController::refresh()
     }
 
     // pactl talks to PulseAudio and PipeWire alike; "Volume: front-left: 32768 /  50% / ..." -> 50
-    QProcess pactl;
-    pactl.start(QStringLiteral("pactl"), {QStringLiteral("get-sink-volume"), QStringLiteral("@DEFAULT_SINK@")});
     int volume = -1;
-    if (pactl.waitForFinished(kTimeoutMs) && pactl.exitCode() == 0) {
-        const auto match = QRegularExpression(QStringLiteral("(\\d+)%")).match(QString::fromUtf8(pactl.readAllStandardOutput()));
-        if (match.hasMatch())
-            volume = match.captured(1).toInt();
-    }
-    if (volume != m_volume) {
+    const QString volumeOut = pactl({QStringLiteral("get-sink-volume"), QStringLiteral("@DEFAULT_SINK@")});
+    const auto match = QRegularExpression(QStringLiteral("(\\d+)%")).match(volumeOut);
+    if (match.hasMatch())
+        volume = match.captured(1).toInt();
+    const bool muted = pactl({QStringLiteral("get-sink-mute"), QStringLiteral("@DEFAULT_SINK@")}).contains(QLatin1String("yes"));
+    if (volume != m_volume || muted != m_muted) {
         m_volume = volume;
+        m_muted = muted;
         emit volumeChanged();
     }
+}
+
+// Empty on failure. LC_ALL=C because pactl translates "Mute: yes"
+QString MediaController::pactl(const QStringList &args)
+{
+    QProcess process;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert(QStringLiteral("LC_ALL"), QStringLiteral("C"));
+    process.setProcessEnvironment(env);
+    process.start(QStringLiteral("pactl"), args);
+    if (!process.waitForFinished(kTimeoutMs) || process.exitCode() != 0)
+        return {};
+    return QString::fromUtf8(process.readAllStandardOutput());
 }
 
 void MediaController::callPlayer(const QString &method)
@@ -114,12 +126,20 @@ void MediaController::previous()
 void MediaController::setVolume(int percent)
 {
     percent = qBound(0, percent, 100);
-    if (percent == m_volume)
+    if (percent == m_volume && !m_muted)
         return;
     m_volume = percent;
-    emit volumeChanged();
     // Like the Mac's slider: moving it also unmutes
-    QProcess::startDetached(QStringLiteral("pactl"), {QStringLiteral("set-sink-mute"), QStringLiteral("@DEFAULT_SINK@"), QStringLiteral("0")});
+    setMuted(false);
     QProcess::startDetached(QStringLiteral("pactl"), {QStringLiteral("set-sink-volume"), QStringLiteral("@DEFAULT_SINK@"),
                                                       QString::number(percent) + QLatin1Char('%')});
+}
+
+// The sink keeps its volume while muted, so unmuting brings back the old level
+void MediaController::setMuted(bool muted)
+{
+    m_muted = muted;
+    emit volumeChanged();
+    QProcess::startDetached(QStringLiteral("pactl"), {QStringLiteral("set-sink-mute"), QStringLiteral("@DEFAULT_SINK@"),
+                                                      muted ? QStringLiteral("1") : QStringLiteral("0")});
 }

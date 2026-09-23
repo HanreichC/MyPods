@@ -530,6 +530,26 @@
         <source></source>
         <translation>Volume</translation>
     </message>
+    <message id="tray.popup.volume_down">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Turn Volume Down</translation>
+    </message>
+    <message id="tray.popup.volume_up">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Turn Volume Up</translation>
+    </message>
+    <message id="tray.popup.mute">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Mute</translation>
+    </message>
+    <message id="tray.popup.unmute">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Unmute</translation>
+    </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
