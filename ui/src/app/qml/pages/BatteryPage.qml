@@ -61,6 +61,24 @@ Components.ScrollPage {
         return infoData?.address;
     }
 
+    // [profile id, PipeWire description] -> "AAC", "mSBC (Calls)", ... The codec comes from the
+    // description ("… (A2DP Sink, codec AAC)"): the unsuffixed a2dp-sink is whatever codec the
+    // headphones do best. The id suffix (a2dp-sink-sbc_xq) is the fallback, the description the last resort.
+    function codecLabel(option) {
+        var id = String(option[0]), description = String(option[1] ?? "");
+        if (id === "off")
+            return qsTrId("battery.bluetooth_codec.off");
+        var inner = /\(([^()]*)\)\s*$/.exec(description)?.[1] ?? "";
+        var last = inner.split(",").pop().trim();
+        var codec = inner.indexOf(",") >= 0 && last.indexOf(" ") > 0 ? last.slice(last.indexOf(" ") + 1) : "";
+        if (!codec) {
+            var suffix = /^(?:a2dp-sink|headset-head-unit)-(.+)$/.exec(id);
+            codec = suffix ? suffix[1].replace(/_/g, "-").toUpperCase() : description || id;
+        }
+        codec = codec.replace(/^MSBC$/i, "mSBC");
+        return id.startsWith("headset") ? qsTrId("battery.bluetooth_codec.calls").arg(codec) : codec;
+    }
+
     function requestInfo() {
         if (cppBackend && cppBackend.connected) {
             cppBackend.getInfo();
@@ -188,15 +206,13 @@ Components.ScrollPage {
                 var lines = [];
                 options.forEach(function (option) {
                     if (!option || option.length < 2) return;
-                    lines.push(String(option[0]) + " — " + String(option[1]));
+                    lines.push(rootPage.codecLabel(option) + " — " + String(option[1]));
                 });
                 return lines.join("\n\n");
             }
 
             Components.Picker {
-                model: (rootPage.bluetoothCodec?.options ?? []).map(function (option) {
-                    return option[0];
-                })
+                model: (rootPage.bluetoothCodec?.options ?? []).map(rootPage.codecLabel)
                 currentIndex: {
                     var options = rootPage.bluetoothCodec?.options || [];
                     for (var i = 0; i < options.length; i++) {
@@ -210,10 +226,8 @@ Components.ScrollPage {
                         var options = rootPage.bluetoothCodec.options || [];
                         if (options[currentIndex]) {
                             var nextValue = options[currentIndex][0];
-                            if (rootPage.bluetoothCodec.selected !== nextValue) {
-                                rootPage.bluetoothCodec.selected = nextValue;
+                            if (rootPage.bluetoothCodec.selected !== nextValue)
                                 cppBackend.setCapability("bluetoothCodec", rootPage.currentAddress(), nextValue);
-                            }
                         }
                     }
                 }

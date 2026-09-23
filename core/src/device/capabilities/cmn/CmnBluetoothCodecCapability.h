@@ -5,6 +5,7 @@
 #pragma once
 #include "../Capability.h"
 #include "device/Device.h"
+#include <mutex>
 
 namespace MagicPodsCore
 {
@@ -13,7 +14,10 @@ namespace MagicPodsCore
     private:        
         size_t onConnectedPropertyChangedId;                        
         size_t onAudioCardPropertyChangedId;
-        CardInfo info{};                       
+        CardInfo info{}; // written on the PulseAudio and D-Bus threads, read on the API thread
+        std::mutex infoLock;
+        std::mutex switching;
+        std::atomic<int> request{0};
         void UpdateCodecInfo();
         void UpdateCardInfo(const CardInfo& newinfo);
         bool IsValidSelected(const std::string& selected);

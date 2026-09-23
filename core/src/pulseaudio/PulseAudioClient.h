@@ -32,9 +32,9 @@ namespace MagicPodsCore{
         public:
             PulseAudioClient();
             ~PulseAudioClient();
+            // Blocks until the card reports the profile (up to ~12 s), false if it never does
             bool SetCardProfile(const std::string& name, const std::string& profile);
             std::optional<CardInfo> GetCardInfoByName(const std::string& name);
-            std::optional<CardInfo> GetCardInfoByIndex(uint32_t index);
             std::string GetNameFromMac(const std::string& mac);
             // First sink whose name contains `part`, e.g. the MAC with underscores for a bluez sink
             std::optional<std::string> FindSink(const std::string& part);
@@ -45,13 +45,12 @@ namespace MagicPodsCore{
         private:
             Event<CardInfo> _onAudioCardPropertyChangedEvent{};
             std::atomic<bool> ready{false};
-            std::atomic<bool> stop{false};
-            std::thread th;
-            pa_mainloop* ml {nullptr};
+            pa_threaded_mainloop* ml {nullptr};
             pa_context* ctx {nullptr};
-            void MainLoop();
-            void StopLoop();
-            bool WaitReady(std::chrono::milliseconds timeout = std::chrono::seconds(3));
+            bool Usable();
+            // Waits with the loop lock held until the operation finishes, false if it could not start
+            bool Wait(pa_operation* op);
+            bool RequestCardProfile(const std::string& name, const std::string& profile);
             void Free();
 
     };

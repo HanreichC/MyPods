@@ -5,6 +5,7 @@
 #include "CmnBluetoothCodecCapability.h"
 #include "Logger.h"
 #include <chrono>
+#include <thread>
 
 
 namespace MagicPodsCore
@@ -12,8 +13,8 @@ namespace MagicPodsCore
 
     nlohmann::json CmnBluetoothCodecCapability::CreateJsonBody()
     {
-        auto bodyJson = nlohmann::json::object();        
-        
+        auto bodyJson = nlohmann::json::object();
+        std::lock_guard lock{infoLock};
         bodyJson["selected"] = info.activeProfile;
 
         auto options =  nlohmann::json::array();
@@ -27,7 +28,10 @@ namespace MagicPodsCore
 
     void CmnBluetoothCodecCapability::Reset()
     {
-        info = {};
+        {
+            std::lock_guard lock{infoLock};
+            info = {};
+        }
         Capability::Reset();
     }
 
@@ -45,23 +49,25 @@ namespace MagicPodsCore
 
     void CmnBluetoothCodecCapability::UpdateCardInfo(const CardInfo &newinfo)
     {
-        if (info != newinfo){
+        {
+            std::lock_guard lock{infoLock};
+            if (info == newinfo)
+                return;
             info = newinfo;
-
-            if (!isAvailable)
-                isAvailable = true;
-
-            Logger::Debug("%s, (%s)",info.name.c_str(),info.activeProfile.c_str());
-            for(auto &profile: info.profiles){
-                Logger::Debug("    %s: %s", profile.first.c_str(), profile.second.c_str());
-            }
-
-            _onChanged.FireEvent(*this);        
         }
+        isAvailable = true;
+
+        Logger::Debug("%s, (%s)",newinfo.name.c_str(),newinfo.activeProfile.c_str());
+        for(auto &profile: newinfo.profiles){
+            Logger::Debug("    %s: %s", profile.first.c_str(), profile.second.c_str());
+        }
+
+        _onChanged.FireEvent(*this);
     }
 
     bool CmnBluetoothCodecCapability::IsValidSelected(const std::string &selected)
     {
+        std::lock_guard lock{infoLock};
         for(auto &profile: info.profiles){
             if (profile.first == selected)
                 return true;            
@@ -100,9 +106,23 @@ void CmnBluetoothCodecCapability::SetFromJson(const nlohmann::json &json)
             std::string selected = capability["selected"].get<std::string>();
             if (IsValidSelected(selected))
             {
-                auto pac = device.GetAudioClient();
-                pac->SetCardProfile(pac->GetNameFromMac(device.GetAddress()), selected);                
                 Logger::Debug("CmnBluetoothCodecCapability::SetFromJson set option to %s", selected.c_str());
+                // Switching waits for PipeWire, so keep it off the API thread; the newest pick wins.
+                // ponytail: detached like AapAudioSwitch, a device removed mid-switch would outlive `this`.
+                int id = ++request;
+                std::thread([this, selected, id]()
+                {
+                    std::lock_guard lock{switching};
+                    if (id != request)
+                        return;
+                    auto pac = device.GetAudioClient();
+                    if (!pac->SetCardProfile(pac->GetNameFromMac(device.GetAddress()), selected))
+                    {
+                        Logger::Error("CmnBluetoothCodecCapability: %s was not applied", selected.c_str());
+                        // no card event follows, so the UI still shows the pick: resend the active codec
+                        _onChanged.FireEvent(*this);
+                    }
+                }).detach();
             }
             else
             {

@@ -235,6 +235,16 @@
         <source></source>
         <translation>Stummschaltung ein/aus:</translation>
     </message>
+    <message id="battery.bluetooth_codec.off">
+        <location filename="../qml/pages/BatteryPage.qml" line="70"/>
+        <source></source>
+        <translation>Aus</translation>
+    </message>
+    <message id="battery.bluetooth_codec.calls">
+        <location filename="../qml/pages/BatteryPage.qml" line="79"/>
+        <source></source>
+        <translation>%1 (Telefonate)</translation>
+    </message>
     <message id="battery.bluetooth_codec">
         <location filename="../qml/pages/BatteryPage.qml" line="337"/>
         <source></source>
