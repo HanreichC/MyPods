@@ -356,7 +356,7 @@ QQC2.ApplicationWindow {
                             anchors.right: parent.right
                             anchors.rightMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
-                            text: Math.round(volumeSlider.value) + "%"
+                            text: qsTrId("format.percent").arg(Math.round(volumeSlider.value))
                             color: MP.Theme.secondaryText
                             font.pixelSize: 11
                             font.weight: Font.DemiBold

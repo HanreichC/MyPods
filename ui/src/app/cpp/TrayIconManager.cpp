@@ -230,7 +230,7 @@ QString TrayIconManager::trayTooltipText() const
         if (!batteryAvailable(batteryPart)) {
             return;
         }
-        parts.append(QStringLiteral("%1: %2%").arg(label).arg(batteryPart.value(QStringLiteral("battery")).toInt()));
+        parts.append(QStringLiteral("%1: %2").arg(label, qtTrId("format.percent").arg(batteryPart.value(QStringLiteral("battery")).toInt())));
     };
 
     appendBattery(batteryData.value(QStringLiteral("single")).toMap(),
@@ -293,8 +293,7 @@ void TrayIconManager::addHeadphoneAction(const QVariantMap &headphone)
     const QString address = headphone.value(QStringLiteral("address")).toString();
     const QString name = headphone.value(QStringLiteral("name")).toString();
     const bool connected = headphone.value(QStringLiteral("connected")).toBool();
-    const QString actionText = QStringLiteral("%1 %2")
-                                   .arg(connected ? qtTrId("tray.disconnect") : qtTrId("tray.connect"), name);
+    const QString actionText = (connected ? qtTrId("tray.disconnect_device") : qtTrId("tray.connect_device")).arg(name);
 
     QAction *action = menu->addAction(actionText);
     if (connected) {

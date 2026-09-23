@@ -15,10 +15,17 @@ import magicpods as MP
 QQC2.ComboBox {
     id: control
     flat: true
+    // Sized to the longest option, so no language gets cut off
+    implicitContentWidthPolicy: QQC2.ComboBox.WidestText
     implicitHeight: 36
     font.pixelSize: 17
     Material.foreground: MP.Theme.secondaryText
     opacity: enabled ? 1 : 0.4
+
+    // A new model (language switch, refreshed options) resets ComboBox to index 0 without
+    // re-running the caller's currentIndex binding; overriding it for a moment re-applies it.
+    Binding on currentIndex { id: reapplyIndex; when: false; value: -1 }
+    onModelChanged: { reapplyIndex.when = true; reapplyIndex.when = false; }
 
     background: Rectangle {
         radius: 10

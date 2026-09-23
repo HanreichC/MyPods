@@ -13,7 +13,7 @@ find_package(Qt6 6.9 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2 
 find_package(LayerShellQt QUIET)
 
 qt_standard_project_setup(REQUIRES 6.8
-    I18N_TRANSLATED_LANGUAGES en
+    I18N_TRANSLATED_LANGUAGES en de
 )
 
 set(QML_IMPORT_PATH "${CMAKE_BINARY_DIR}/qml" CACHE STRING "Qt Creator extra qml import paths" FORCE)

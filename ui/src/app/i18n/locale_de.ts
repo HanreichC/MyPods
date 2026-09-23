@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="en_US">
+<TS version="2.1" language="de_DE">
 <context>
     <name></name>
     <message id="headphones.help.bluetooth_not_found.header">
         <location filename="../qml/pages/HeadphonesPage.qml" line="67"/>
         <source></source>
-        <translation>Bluetooth adapter not found</translation>
+        <translation>Kein Bluetooth-Adapter gefunden</translation>
     </message>
     <message id="headphones.help.bluetooth_not_found.description">
         <location filename="../qml/pages/HeadphonesPage.qml" line="68"/>
         <source></source>
-        <translation>Connect a Bluetooth adapter</translation>
+        <translation>Schließe einen Bluetooth-Adapter an</translation>
     </message>
     <message id="headphones.help.bluetooth_no_paired_headphones.header">
         <location filename="../qml/pages/HeadphonesPage.qml" line="75"/>
         <source></source>
-        <translation>No paired headphones</translation>
+        <translation>Keine gekoppelten Kopfhörer</translation>
     </message>
     <message id="headphones.help.no_paired_headphones.description">
         <location filename="../qml/pages/HeadphonesPage.qml" line="76"/>
         <source></source>
-        <translation>Pair headphones to computer and restart the application</translation>
+        <translation>Kopple Kopfhörer mit dem Computer und starte die App neu</translation>
     </message>
     <message id="headphones.bluetooth">
         <location filename="../qml/pages/HeadphonesPage.qml" line="85"/>
@@ -36,41 +36,41 @@
     <message id="headphones.headphones">
         <location filename="../qml/pages/HeadphonesPage.qml" line="108"/>
         <source></source>
-        <translation>Headphones</translation>
+        <translation>Kopfhörer</translation>
     </message>
     <message id="menu.battery">
         <location filename="../qml/main.qml" line="147"/>
         <location filename="../qml/pages/BatteryPage.qml" line="46"/>
         <source></source>
-        <translation>Control</translation>
+        <translation>Steuerung</translation>
     </message>
     <message id="battery.connect_headphones.header">
         <location filename="../qml/pages/BatteryPage.qml" line="84"/>
         <source></source>
-        <translation>Connect headphones</translation>
+        <translation>Kopfhörer verbinden</translation>
     </message>
     <message id="battery.connect_headphones.description">
         <location filename="../qml/pages/BatteryPage.qml" line="85"/>
         <source></source>
-        <translation>Connect headphones to display their battery level and adjust settings</translation>
+        <translation>Verbinde Kopfhörer, um ihren Ladestand zu sehen und Einstellungen anzupassen</translation>
     </message>
     <message id="battery.battery_single">
         <location filename="../qml/pages/BatteryPage.qml" line="167"/>
         <location filename="../cpp/TrayIconManager.cpp" line="223"/>
         <source></source>
-        <translation>Charge</translation>
+        <translation>Akku</translation>
     </message>
     <message id="battery.battery_left">
         <location filename="../qml/pages/BatteryPage.qml" line="174"/>
         <location filename="../cpp/TrayIconManager.cpp" line="225"/>
         <source></source>
-        <translation>Left</translation>
+        <translation>Links</translation>
     </message>
     <message id="battery.battery_right">
         <location filename="../qml/pages/BatteryPage.qml" line="181"/>
         <location filename="../cpp/TrayIconManager.cpp" line="227"/>
         <source></source>
-        <translation>Right</translation>
+        <translation>Rechts</translation>
     </message>
     <message id="battery.battery_case">
         <location filename="../qml/pages/BatteryPage.qml" line="188"/>
@@ -81,169 +81,169 @@
     <message id="battery.anc_off">
         <location filename="../qml/pages/BatteryPage.qml" line="223"/>
         <source></source>
-        <translation>Off</translation>
+        <translation>Aus</translation>
     </message>
     <message id="battery.anc_tra">
         <location filename="../qml/pages/BatteryPage.qml" line="246"/>
         <source></source>
-        <translation>Transparency</translation>
+        <translation>Transparenz</translation>
     </message>
     <message id="battery.anc_adaptive">
         <location filename="../qml/pages/BatteryPage.qml" line="269"/>
         <source></source>
-        <translation>Adaptive</translation>
+        <translation>Adaptiv</translation>
     </message>
     <message id="battery.anc_wind">
         <location filename="../qml/pages/BatteryPage.qml" line="292"/>
         <source></source>
-        <translation>Wind cancellation</translation>
+        <translation>Windgeräuschreduzierung</translation>
     </message>
     <message id="battery.anc_anc">
         <location filename="../qml/pages/BatteryPage.qml" line="315"/>
         <source></source>
-        <translation>Noise cancellation</translation>
+        <translation>Geräuschunterdrückung</translation>
     </message>
     <message id="battery.capabilities.header">
         <location filename="../qml/pages/BatteryPage.qml" line="331"/>
         <source></source>
-        <translation>Options</translation>
+        <translation>Optionen</translation>
     </message>
     <message id="battery.conversation_awareness">
         <location filename="../qml/pages/BatteryPage.qml" line="399"/>
         <source></source>
-        <translation>Conversation awareness:</translation>
+        <translation>Konversationserkennung:</translation>
     </message>
     <message id="battery.personalized_volume">
         <location filename="../qml/pages/BatteryPage.qml" line="415"/>
         <source></source>
-        <translation>Personalized volume:</translation>
+        <translation>Personalisierte Lautstärke:</translation>
     </message>
     <message id="battery.adaptive_audio_noise">
         <location filename="../qml/pages/BatteryPage.qml" line="431"/>
         <source></source>
-        <translation>Adaptive mode:</translation>
+        <translation>Adaptiver Modus:</translation>
     </message>
     <message id="battery.adaptive_audio_noise.more">
         <location filename="../qml/pages/BatteryPage.qml" line="435"/>
         <source></source>
-        <translation>More noise</translation>
+        <translation>Mehr Geräusche</translation>
     </message>
     <message id="battery.adaptive_audio_noise.default">
         <location filename="../qml/pages/BatteryPage.qml" line="435"/>
         <source></source>
-        <translation>Default</translation>
+        <translation>Standard</translation>
     </message>
     <message id="battery.adaptive_audio_noise.less">
         <location filename="../qml/pages/BatteryPage.qml" line="435"/>
         <source></source>
-        <translation>Less noise</translation>
+        <translation>Weniger Geräusche</translation>
     </message>
     <message id="battery.anc_one_airpod">
         <location filename="../qml/pages/BatteryPage.qml" line="464"/>
         <source></source>
-        <translation>ANC with one AirPod:</translation>
+        <translation>Geräuschunterdrückung mit einem AirPod:</translation>
     </message>
     <message id="battery.press_and_hold_duration">
         <location filename="../qml/pages/BatteryPage.qml" line="480"/>
         <source></source>
-        <translation>Press and hold duration:</translation>
+        <translation>Dauer für Drücken und Halten:</translation>
     </message>
     <message id="battery.press_and_hold_duration.default">
         <location filename="../qml/pages/BatteryPage.qml" line="484"/>
         <source></source>
-        <translation>Default</translation>
+        <translation>Standard</translation>
     </message>
     <message id="battery.press_and_hold_duration.shorter">
         <location filename="../qml/pages/BatteryPage.qml" line="484"/>
         <source></source>
-        <translation>Shorter</translation>
+        <translation>Kürzer</translation>
     </message>
     <message id="battery.press_and_hold_duration.shortest">
         <location filename="../qml/pages/BatteryPage.qml" line="484"/>
         <source></source>
-        <translation>Shortest</translation>
+        <translation>Am kürzesten</translation>
     </message>
     <message id="battery.press_speed">
         <location filename="../qml/pages/BatteryPage.qml" line="498"/>
         <source></source>
-        <translation>Press speed:</translation>
+        <translation>Drückgeschwindigkeit:</translation>
     </message>
     <message id="battery.press_speed.default">
         <location filename="../qml/pages/BatteryPage.qml" line="502"/>
         <source></source>
-        <translation>Default</translation>
+        <translation>Standard</translation>
     </message>
     <message id="battery.press_speed.slower">
         <location filename="../qml/pages/BatteryPage.qml" line="502"/>
         <source></source>
-        <translation>Slower</translation>
+        <translation>Langsamer</translation>
     </message>
     <message id="battery.press_speed.slowest">
         <location filename="../qml/pages/BatteryPage.qml" line="502"/>
         <source></source>
-        <translation>Slowest</translation>
+        <translation>Am langsamsten</translation>
     </message>
     <message id="battery.tone_volume">
         <location filename="../qml/pages/BatteryPage.qml" line="516"/>
         <source></source>
-        <translation>Tone volume:</translation>
+        <translation>Tonlautstärke:</translation>
     </message>
     <message id="battery.volume_swipe">
         <location filename="../qml/pages/BatteryPage.qml" line="543"/>
         <source></source>
-        <translation>Volume swipe:</translation>
+        <translation>Lautstärke durch Streichen:</translation>
     </message>
     <message id="battery.volume_swipe_length">
         <location filename="../qml/pages/BatteryPage.qml" line="560"/>
         <source></source>
-        <translation>Volume swipe length:</translation>
+        <translation>Streichlänge für Lautstärke:</translation>
     </message>
     <message id="battery.volume_swipe_length.default">
         <location filename="../qml/pages/BatteryPage.qml" line="564"/>
         <source></source>
-        <translation>Default</translation>
+        <translation>Standard</translation>
     </message>
     <message id="battery.volume_swipe_length.longer">
         <location filename="../qml/pages/BatteryPage.qml" line="564"/>
         <source></source>
-        <translation>Longer</translation>
+        <translation>Länger</translation>
     </message>
     <message id="battery.volume_swipe_length.longest">
         <location filename="../qml/pages/BatteryPage.qml" line="564"/>
         <source></source>
-        <translation>Longest</translation>
+        <translation>Am längsten</translation>
     </message>
     <message id="battery.end_call">
         <location filename="../qml/pages/BatteryPage.qml" line="578"/>
         <source></source>
-        <translation>End call:</translation>
+        <translation>Anruf beenden:</translation>
     </message>
     <message id="battery.end_call.twice">
         <location filename="../qml/pages/BatteryPage.qml" line="582"/>
         <location filename="../qml/pages/BatteryPage.qml" line="600"/>
         <source></source>
-        <translation>Press twice</translation>
+        <translation>Zweimal drücken</translation>
     </message>
     <message id="battery.end_call.once">
         <location filename="../qml/pages/BatteryPage.qml" line="582"/>
         <location filename="../qml/pages/BatteryPage.qml" line="600"/>
         <source></source>
-        <translation>Press once</translation>
+        <translation>Einmal drücken</translation>
     </message>
     <message id="battery.mute_unmute">
         <location filename="../qml/pages/BatteryPage.qml" line="596"/>
         <source></source>
-        <translation>Mute and unmute:</translation>
+        <translation>Stummschaltung ein/aus:</translation>
     </message>
     <message id="battery.bluetooth_codec">
         <location filename="../qml/pages/BatteryPage.qml" line="337"/>
         <source></source>
-        <translation>Bluetooth codec:</translation>
+        <translation>Bluetooth-Codec:</translation>
     </message>
     <message id="Error.service_api_wrong">
         <location filename="../qml/main.qml" line="56"/>
         <source></source>
-        <translation>MyPods core version mismatch. Please update MyPods.</translation>
+        <translation>Die Version von MyPods Core passt nicht. Bitte aktualisiere MyPods.</translation>
     </message>
     <message id="menu.headphones">
         <location filename="../qml/main.qml" line="152"/>
@@ -256,39 +256,39 @@
         <location filename="../qml/pages/SettingsPage.qml" line="16"/>
         <location filename="../cpp/TrayIconManager.cpp" line="152"/>
         <source></source>
-        <translation>Settings</translation>
+        <translation>Einstellungen</translation>
     </message>
     <message id="menu.about">
         <location filename="../qml/main.qml" line="162"/>
         <location filename="../qml/pages/AboutPage.qml" line="14"/>
         <source></source>
-        <translation>About</translation>
+        <translation>Über</translation>
     </message>
     <message id="about.button.home_page">
         <location filename="../qml/pages/AboutPage.qml" line="47"/>
         <source></source>
-        <translation>Home page</translation>
+        <translation>Website</translation>
     </message>
     <message id="about.packages">
         <location filename="../qml/pages/AboutPage.qml" line="65"/>
         <source></source>
-        <translation>Packages</translation>
+        <translation>Pakete</translation>
     </message>
     <message id="about.not_installed">
         <location filename="../qml/pages/AboutPage.qml" line="79"/>
         <location filename="../qml/pages/AboutPage.qml" line="86"/>
         <source></source>
-        <translation>Not installed</translation>
+        <translation>Nicht installiert</translation>
     </message>
     <message id="about.not_connected">
         <location filename="../qml/pages/AboutPage.qml" line="17"/>
         <source></source>
-        <translation>Not connected</translation>
+        <translation>Nicht verbunden</translation>
     </message>
     <message id="about.install">
         <location filename="../qml/pages/AboutPage.qml" line="101"/>
         <source></source>
-        <translation>Install</translation>
+        <translation>Installieren</translation>
     </message>
     <message id="about.support">
         <location filename="../qml/pages/AboutPage.qml" line="109"/>
@@ -298,7 +298,7 @@
     <message id="about.item.issue">
         <location filename="../qml/pages/AboutPage.qml" line="114"/>
         <source></source>
-        <translation>Report issue:</translation>
+        <translation>Problem melden:</translation>
     </message>
     <message id="about.item.community">
         <location filename="../qml/pages/AboutPage.qml" line="123"/>
@@ -308,42 +308,42 @@
     <message id="settings.other">
         <location filename="../qml/pages/SettingsPage.qml" line="114"/>
         <source></source>
-        <translation>Other</translation>
+        <translation>Sonstiges</translation>
     </message>
     <message id="settings.add_shortcut_to_menu">
         <location filename="../qml/pages/SettingsPage.qml" line="173"/>
         <source></source>
-        <translation>Add shortcut to menu:</translation>
+        <translation>Zum Anwendungsmenü hinzufügen:</translation>
     </message>
     <message id="settings.add_shortcut_to_menu.description">
         <location filename="../qml/pages/SettingsPage.qml" line="174"/>
         <source></source>
-        <translation>Adds the application to the application menu under "Utilities".</translation>
+        <translation>Fügt die App dem Anwendungsmenü unter „Dienstprogramme“ hinzu.</translation>
     </message>
     <message id="settings.appearance">
         <location filename="../qml/pages/SettingsPage.qml" line="1"/>
         <source></source>
-        <translation>Appearance</translation>
+        <translation>Erscheinungsbild</translation>
     </message>
     <message id="settings.tray_icon_theme">
         <location filename="../qml/pages/SettingsPage.qml" line="97"/>
         <source></source>
-        <translation>Tray icon theme:</translation>
+        <translation>Design des Tray-Symbols:</translation>
     </message>
     <message id="settings.tray_icon_theme.auto">
         <location filename="../qml/pages/SettingsPage.qml" line="103"/>
         <source></source>
-        <translation>Auto</translation>
+        <translation>Automatisch</translation>
     </message>
     <message id="settings.tray_icon_theme.light">
         <location filename="../qml/pages/SettingsPage.qml" line="104"/>
         <source></source>
-        <translation>Light</translation>
+        <translation>Hell</translation>
     </message>
     <message id="settings.tray_icon_theme.dark">
         <location filename="../qml/pages/SettingsPage.qml" line="105"/>
         <source></source>
-        <translation>Dark</translation>
+        <translation>Dunkel</translation>
     </message>
     <message id="settings.popup">
         <location filename="../qml/pages/SettingsPage.qml" line="75"/>
@@ -353,56 +353,56 @@
     <message id="settings.headphones_animation">
         <location filename="../qml/pages/SettingsPage.qml" line="81"/>
         <source></source>
-        <translation>Headphones animation:</translation>
+        <translation>Kopfhörer-Animation:</translation>
     </message>
     <message id="settings.headphones_animation.description">
         <location filename="../qml/pages/SettingsPage.qml" line="103"/>
         <source></source>
-        <translation>Shows the AirPods and Beats animation, similar to iPhone, when you open the headphones case. Connect the headphones once for initial setup.</translation>
+        <translation>Zeigt beim Öffnen des Case die AirPods- und Beats-Animation wie auf dem iPhone. Verbinde die Kopfhörer einmal für die Ersteinrichtung.</translation>
     </message>
     <message id="tray.socket_error_tooltip">
         <location filename="../cpp/TrayIconManager.cpp" line="206"/>
         <source></source>
-        <translation>If the issue persists, please try restarting the app.</translation>
+        <translation>Wenn das Problem weiterhin besteht, starte die App neu.</translation>
     </message>
     <message id="tray.disconnected">
         <location filename="../cpp/TrayIconManager.cpp" line="211"/>
         <location filename="../cpp/TrayIconManager.cpp" line="232"/>
         <source></source>
-        <translation>Headphones disconnected</translation>
+        <translation>Kopfhörer getrennt</translation>
     </message>
     <message id="tray.exit">
         <location filename="../cpp/TrayIconManager.cpp" line="159"/>
         <source></source>
-        <translation>Exit</translation>
+        <translation>Beenden</translation>
     </message>
     <message id="tray.disconnect">
         <location filename="../qml/PopupAnimation.qml" line="354"/>
         <location filename="../cpp/TrayIconManager.cpp" line="283"/>
         <source></source>
-        <translation>Disconnect</translation>
+        <translation>Trennen</translation>
     </message>
     <message id="tray.connect">
         <location filename="../qml/PopupAnimation.qml" line="354"/>
         <location filename="../cpp/TrayIconManager.cpp" line="283"/>
         <source></source>
-        <translation>Connect</translation>
+        <translation>Verbinden</translation>
     </message>
     <message id="battery.spatial_audio">
         <source></source>
-        <translation>Spatial audio:</translation>
+        <translation>3D-Audio:</translation>
     </message>
     <message id="battery.spatial_audio.off">
         <source></source>
-        <translation>Off</translation>
+        <translation>Aus</translation>
     </message>
     <message id="battery.spatial_audio.fixed">
         <source></source>
-        <translation>Fixed</translation>
+        <translation>Fixiert</translation>
     </message>
     <message id="battery.spatial_audio.head_tracked">
         <source></source>
-        <translation>Head tracked</translation>
+        <translation>Kopfbewegung folgen</translation>
     </message>
     <message id="battery.equalizer">
         <source></source>
@@ -410,35 +410,35 @@
     </message>
     <message id="battery.auto_switch">
         <source></source>
-        <translation>Connect to this computer:</translation>
+        <translation>Mit diesem Computer verbinden:</translation>
     </message>
     <message id="battery.auto_switch.automatically">
         <source></source>
-        <translation>Automatically</translation>
+        <translation>Automatisch</translation>
     </message>
     <message id="battery.auto_switch.last_connected">
         <source></source>
-        <translation>When last connected</translation>
+        <translation>Wenn zuletzt verbunden</translation>
     </message>
     <message id="battery.ear_detection">
         <source></source>
-        <translation>Automatic ear detection:</translation>
+        <translation>Automatische Ohrerkennung:</translation>
     </message>
     <message id="battery.moved">
         <source></source>
-        <translation>Playing on %1</translation>
+        <translation>Wiedergabe auf %1</translation>
     </message>
     <message id="battery.moved_other">
         <source></source>
-        <translation>Playing on another device</translation>
+        <translation>Wiedergabe auf einem anderen Gerät</translation>
     </message>
     <message id="battery.move_here">
         <source></source>
-        <translation>Move here</translation>
+        <translation>Hierher holen</translation>
     </message>
     <message id="battery.noise_level">
         <source></source>
-        <translation>Noise control strength:</translation>
+        <translation>Stärke der Geräuschkontrolle:</translation>
     </message>
     <message id="battery.noise_level.normal">
         <source></source>
@@ -454,61 +454,61 @@
     </message>
     <message id="battery.concert_hall_room">
         <source></source>
-        <translation>Room:</translation>
+        <translation>Raum:</translation>
     </message>
     <message id="battery.concert_hall_room.silent">
         <source></source>
-        <translation>Silent room</translation>
+        <translation>Stiller Raum</translation>
     </message>
     <message id="battery.concert_hall_room.living">
         <source></source>
-        <translation>Living room</translation>
+        <translation>Wohnzimmer</translation>
     </message>
     <message id="battery.concert_hall_room.jazz">
         <source></source>
-        <translation>Jazz club</translation>
+        <translation>Jazzclub</translation>
     </message>
     <message id="battery.concert_hall_room.concert">
         <source></source>
-        <translation>Concert hall</translation>
+        <translation>Konzertsaal</translation>
     </message>
     <message id="battery.concert_hall_angle">
         <source></source>
-        <translation>Speaker angle:</translation>
+        <translation>Lautsprecherwinkel:</translation>
     </message>
     <message id="battery.smart_audio_tune">
         <source></source>
-        <translation>Smart audio tune:</translation>
+        <translation>Smart Audio Tune:</translation>
     </message>
     <message id="battery.anc_phone_mode">
         <source></source>
-        <translation>Noise control during calls:</translation>
+        <translation>Geräuschkontrolle bei Anrufen:</translation>
     </message>
     <message id="battery.voice_prompts">
         <source></source>
-        <translation>Voice prompts:</translation>
+        <translation>Sprachansagen:</translation>
     </message>
     <message id="battery.auto_connection_zik">
         <source></source>
-        <translation>Connect automatically:</translation>
+        <translation>Automatisch verbinden:</translation>
     </message>
     <message id="battery.auto_power_off">
         <source></source>
-        <translation>Auto power off:</translation>
+        <translation>Automatisch ausschalten:</translation>
     </message>
     <message id="battery.auto_power_off.never">
         <source></source>
-        <translation>Never</translation>
+        <translation>Nie</translation>
     </message>
     <message id="tray.popup.connected">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Connected</translation>
+        <translation>Verbunden</translation>
     </message>
     <message id="tray.popup.play">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Play</translation>
+        <translation>Wiedergabe</translation>
     </message>
     <message id="tray.popup.pause">
         <location filename="../qml/TrayPopup.qml" line="0"/>
@@ -518,47 +518,47 @@
     <message id="tray.popup.previous">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Previous</translation>
+        <translation>Zurück</translation>
     </message>
     <message id="tray.popup.next">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Next</translation>
+        <translation>Weiter</translation>
     </message>
     <message id="tray.popup.volume">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Volume</translation>
+        <translation>Lautstärke</translation>
     </message>
     <message id="tray.popup.volume_down">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Turn Volume Down</translation>
+        <translation>Leiser</translation>
     </message>
     <message id="tray.popup.volume_up">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Turn Volume Up</translation>
+        <translation>Lauter</translation>
     </message>
     <message id="tray.popup.mute">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Mute</translation>
+        <translation>Stummschalten</translation>
     </message>
     <message id="tray.popup.unmute">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>Unmute</translation>
+        <translation>Ton einschalten</translation>
     </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>MyPods Settings…</translation>
+        <translation>MyPods-Einstellungen …</translation>
     </message>
     <message id="settings.language">
         <location filename="../qml/pages/SettingsPage.qml" line="0"/>
         <source></source>
-        <translation>Language</translation>
+        <translation>Sprache</translation>
     </message>
     <message id="settings.language.system">
         <location filename="../qml/pages/SettingsPage.qml" line="0"/>
@@ -568,17 +568,17 @@
     <message id="format.percent">
         <location filename="../qml/components/BatteryRing.qml" line="0"/>
         <source></source>
-        <translation>%1%</translation>
+        <translation>%1 %</translation>
     </message>
     <message id="tray.connect_device">
         <location filename="../cpp/TrayIconManager.cpp" line="0"/>
         <source></source>
-        <translation>Connect %1</translation>
+        <translation>%1 verbinden</translation>
     </message>
     <message id="tray.disconnect_device">
         <location filename="../cpp/TrayIconManager.cpp" line="0"/>
         <source></source>
-        <translation>Disconnect %1</translation>
+        <translation>%1 trennen</translation>
     </message>
 </context>
 </TS>

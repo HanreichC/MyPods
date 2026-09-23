@@ -31,6 +31,7 @@ cat > magicpods.desktop <<EOF
 Type=Application
 Name=MyPods
 Comment=The control center for your Bluetooth headphones
+Comment[de]=Die Kontrollzentrale für deine Bluetooth-Kopfhörer
 Exec=magicpods
 Icon=magicpods
 Terminal=false

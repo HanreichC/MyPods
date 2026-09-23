@@ -27,10 +27,11 @@ public:
                              std::function<void()> exitApplication,
                              QObject *parent = nullptr);
 
+    void updateTrayIcon();
+
 private:
     void updateState(const QVariantMap &json);
     void handleDataReceived(const QVariant &json);
-    void updateTrayIcon();
     void rebuildMenu();
     bool batteryAvailable(const QVariantMap &batteryPart) const;
     int trayBattery() const; // -1 when no earbud level is available

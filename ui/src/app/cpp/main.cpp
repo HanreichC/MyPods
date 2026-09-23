@@ -6,6 +6,9 @@
 #include <QQmlApplicationEngine>
 #include <QTranslator>
 #include <QLocale>
+#include <QDir>
+#include <QRegularExpression>
+#include <QSettings>
 #include <QIcon>
 #include <QLibraryInfo>
 #include <QQmlContext>
@@ -135,18 +138,32 @@ int main(int argc, char *argv[]) {
     }
     app.installTranslator(&englishTranslation);
 
-    QTranslator localizedTranslation;
-    if (QLocale().language() != QLocale::English
-        && localizedTranslation.load(QLocale(),
-                                     QStringLiteral("locale"),
-                                     QStringLiteral("_"),
-                                     QStringLiteral(":/i18n/"))) {
-        app.installTranslator(&localizedTranslation);
-    }
-
     const bool gameScopeMode = !qEnvironmentVariableIsEmpty("GAMESCOPE_WAYLAND_DISPLAY");
 
     QQmlApplicationEngine engine;
+
+    // Qt.uiLanguage: "" follows the system, otherwise a code like "de" (Settings > Language).
+    // Stored locally, not in the daemon, so the first frame is already in the right language.
+    QTranslator localizedTranslation;
+    auto applyLanguage = [&]() {
+        const QLocale locale = engine.uiLanguage().isEmpty() ? QLocale::system() : QLocale(engine.uiLanguage());
+        QLocale::setDefault(locale);
+        app.removeTranslator(&localizedTranslation);
+        if (localizedTranslation.load(locale, QStringLiteral("locale"), QStringLiteral("_"), QStringLiteral(":/i18n/"))) {
+            app.installTranslator(&localizedTranslation);
+        }
+        engine.retranslate();
+    };
+    engine.setUiLanguage(QSettings().value(QStringLiteral("language")).toString());
+    applyLanguage();
+    QObject::connect(&engine, &QQmlEngine::uiLanguageChanged, [&]() {
+        QSettings().setValue(QStringLiteral("language"), engine.uiLanguage());
+        applyLanguage();
+    });
+    QStringList languages = QDir(QStringLiteral(":/i18n")).entryList({QStringLiteral("locale_*.qm")});
+    languages.replaceInStrings(QRegularExpression(QStringLiteral("^locale_|\\.qm$")), QString());
+    engine.rootContext()->setContextProperty("availableLanguages", languages);
+
     BackendManager backendManager;
     DesktopManager desktopManager;
     Backend backend;
@@ -245,6 +262,8 @@ int main(int argc, char *argv[]) {
     TrayIconManager trayIconManager(&trayIcon, &trayMenu, &backend, toggleMainWindow, [&app]() {
         app.quit();
     });
+    // The menu is rebuilt on every open; only the tooltip needs a nudge
+    QObject::connect(&engine, &QQmlEngine::uiLanguageChanged, &trayIconManager, &TrayIconManager::updateTrayIcon);
 
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         trayIcon.setContextMenu(&trayMenu);

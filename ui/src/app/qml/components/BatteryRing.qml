@@ -59,7 +59,7 @@ Column {
 
         Text {
             anchors.centerIn: parent
-            text: root.battery + "%"
+            text: qsTrId("format.percent").arg(root.battery)
             color: MP.Theme.text
             font.pixelSize: Math.round(root.size * 0.24)
             font.weight: Font.DemiBold

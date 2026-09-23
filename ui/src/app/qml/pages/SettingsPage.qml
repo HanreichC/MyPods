@@ -13,7 +13,6 @@ Components.ScrollPage {
 
     property bool settingAnimation: true
 
-    readonly property int mWidth: MP.Units.gridUnit * 8
     title: qsTrId("menu.settings")
 
     // "auto" | "light" | "dark" <-> picker index; shared by Appearance and Tray icon theme
@@ -102,7 +101,6 @@ Components.ScrollPage {
             label: qsTrId("settings.appearance")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 enabled: cppBackend?.connected ?? false
                 model: [
                     qsTrId("settings.tray_icon_theme.auto"),
@@ -115,6 +113,22 @@ Components.ScrollPage {
                     if (cppBackend)
                         cppBackend.setSetting("magicpods", "appearance", MP.Theme.appearance);
                 }
+            }
+        }
+
+        MP.FormRow {
+            iconSource: MP.Theme.asset("icons/icon-globe.svg")
+            iconColor: MP.Theme.accent
+            label: qsTrId("settings.language")
+
+            // Index 0 follows the system; each language is named in itself (HIG)
+            Components.Picker {
+                model: [qsTrId("settings.language.system")].concat(availableLanguages.map(code => {
+                    const name = code === "en" ? "English" : Qt.locale(code).nativeLanguageName;
+                    return name.charAt(0).toUpperCase() + name.slice(1);
+                }))
+                currentIndex: availableLanguages.indexOf(Qt.uiLanguage) + 1
+                onActivated: Qt.uiLanguage = currentIndex > 0 ? availableLanguages[currentIndex - 1] : ""
             }
         }
 
@@ -160,7 +174,6 @@ Components.ScrollPage {
             label: qsTrId("settings.tray_icon_theme")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 enabled: cppBackend?.connected ?? false
                 model: [
                     qsTrId("settings.tray_icon_theme.auto"),

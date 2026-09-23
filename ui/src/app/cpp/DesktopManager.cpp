@@ -64,6 +64,7 @@ R"([Desktop Entry]
 Type=Application
 Name=MyPods
 Comment=The control center for your Bluetooth headphones
+Comment[de]=Die Kontrollzentrale für deine Bluetooth-Kopfhörer
 Exec=%1
 Icon=%2
 Terminal=false

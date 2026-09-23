@@ -194,7 +194,6 @@ Components.ScrollPage {
             }
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: (rootPage.bluetoothCodec?.options ?? []).map(function (option) {
                     return option[0];
                 })
@@ -227,7 +226,6 @@ Components.ScrollPage {
             label: qsTrId("battery.spatial_audio")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.spatial_audio.off"), qsTrId("battery.spatial_audio.fixed")].concat((rootPage.spatialAudioData?.headTracking ?? true) ? [qsTrId("battery.spatial_audio.head_tracked")] : [])
                 currentIndex: rootPage.spatialAudioData?.selected ?? 0
                 enabled: !(rootPage.spatialAudioData?.readonly ?? true)
@@ -246,7 +244,6 @@ Components.ScrollPage {
             label: qsTrId("battery.equalizer")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: rootPage.equalizerData?.options ?? []
                 currentIndex: (rootPage.equalizerData?.options ?? []).indexOf(rootPage.equalizerData?.selected)
                 enabled: !(rootPage.equalizerData?.readonly ?? true)
@@ -265,7 +262,6 @@ Components.ScrollPage {
             label: qsTrId("battery.auto_switch")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.auto_switch.automatically"), qsTrId("battery.auto_switch.last_connected")]
                 currentIndex: rootPage.autoSwitchData?.selected ?? 0
                 enabled: !(rootPage.autoSwitchData?.readonly ?? true)
@@ -301,7 +297,6 @@ Components.ScrollPage {
             label: qsTrId("battery.noise_level")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.noise_level.normal"), qsTrId("battery.noise_level.max")]
                 currentIndex: (rootPage.ancData?.level ?? 1) - 1
                 enabled: !(rootPage.ancData?.readonly ?? true) && noiseControl.selectedAnc !== noiseControl.ancModes.OFF
@@ -341,7 +336,6 @@ Components.ScrollPage {
                 label: modelData.label
 
                 Components.Picker {
-                    implicitWidth: rootPage.mWidth
                     model: row.modelData.options
                     currentIndex: row.cap?.selected ?? -1
                     enabled: !(row.cap?.readonly ?? true)
@@ -394,7 +388,6 @@ Components.ScrollPage {
             label: qsTrId("battery.adaptive_audio_noise")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.adaptive_audio_noise.more"), qsTrId("battery.adaptive_audio_noise.default"), qsTrId("battery.adaptive_audio_noise.less")]
                 currentIndex: {
                     const val = rootPage.adaptiveAudioNoiseData?.selected;
@@ -442,7 +435,6 @@ Components.ScrollPage {
             label: qsTrId("battery.press_and_hold_duration")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.press_and_hold_duration.default"), qsTrId("battery.press_and_hold_duration.shorter"), qsTrId("battery.press_and_hold_duration.shortest")]
                 currentIndex: rootPage.pressAndHoldDurationData?.selected ?? 0
                 enabled: !(rootPage.pressAndHoldDurationData?.readonly ?? true)
@@ -461,7 +453,6 @@ Components.ScrollPage {
             label: qsTrId("battery.press_speed")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.press_speed.default"), qsTrId("battery.press_speed.slower"), qsTrId("battery.press_speed.slowest")]
                 currentIndex: rootPage.pressSpeedData?.selected ?? 0
                 enabled: !(rootPage.pressSpeedData?.readonly ?? true)
@@ -505,7 +496,7 @@ Components.ScrollPage {
                     Layout.preferredWidth: 44
                     horizontalAlignment: Text.AlignRight
                     color: MP.Theme.secondaryText
-                    text: Math.round(toneVolumeSlider.value) + "%"
+                    text: qsTrId("format.percent").arg(Math.round(toneVolumeSlider.value))
                 }
             }
         }
@@ -534,7 +525,6 @@ Components.ScrollPage {
             label: qsTrId("battery.volume_swipe_length")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.volume_swipe_length.default"), qsTrId("battery.volume_swipe_length.longer"), qsTrId("battery.volume_swipe_length.longest")]
                 currentIndex: rootPage.volumeSwipeLengthData?.selected ?? 0
                 enabled: (!(rootPage.volumeSwipeLengthData?.readonly ?? true) && volumeSwipe.checked)
@@ -553,7 +543,6 @@ Components.ScrollPage {
             label: qsTrId("battery.end_call")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
                 currentIndex: (rootPage.endCallData?.selected === 3) ? 1 : 0
                 enabled: !(rootPage.endCallData?.readonly ?? true)
@@ -572,7 +561,6 @@ Components.ScrollPage {
             label: qsTrId("battery.mute_unmute")
 
             Components.Picker {
-                implicitWidth: rootPage.mWidth
                 model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
                 currentIndex: (rootPage.endCallData?.selected === 2) ? 1 : 0
                 enabled: false
