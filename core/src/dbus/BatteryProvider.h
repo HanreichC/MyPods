@@ -11,7 +11,9 @@
 #include <string>
 #include <vector>
 
+#ifndef _WIN32
 namespace sdbus { class IConnection; class IObject; }
+#endif
 
 namespace MagicPodsCore
 {
@@ -33,6 +35,7 @@ namespace MagicPodsCore
     private:
         BatteryProvider();
         ~BatteryProvider();
+#ifndef _WIN32 // no sdbus on Windows, so nothing to hold
         struct Entry;
         std::mutex _lock;
         std::unique_ptr<sdbus::IConnection> _connection;
@@ -40,5 +43,6 @@ namespace MagicPodsCore
         std::map<std::string, std::unique_ptr<Entry>> _entries;
         bool _registered = false;
         void Register();
+#endif
     };
 }

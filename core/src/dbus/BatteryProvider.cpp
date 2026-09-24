@@ -34,10 +34,8 @@ namespace MagicPodsCore
     }
 
 #ifdef _WIN32
-    struct BatteryProvider::Entry {};
     BatteryProvider::BatteryProvider() = default;
     BatteryProvider::~BatteryProvider() = default;
-    void BatteryProvider::Register() {}
     void BatteryProvider::Set(const std::string &, std::optional<uint8_t>) {}
 #else
     static constexpr const char *ROOT = "/org/mypods/battery";
