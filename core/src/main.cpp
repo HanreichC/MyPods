@@ -19,6 +19,9 @@
 #include "Config.h"
 #include "settings/SettingsService.h"
 #include "settings/JsonToTomlConverter.h"
+#ifdef _WIN32
+#include <winrt/base.h>
+#endif
 
 using namespace MagicPodsCore;
 
@@ -109,7 +112,7 @@ void HandleConnectDeviceRequest(auto *ws, const nlohmann::json& json, uWS::OpCod
         return;
     }
 
-    device->ConnectAsync([device, ws, &json, opCode, &app, &devicesInfoFetcher](const sdbus::Error* error) {
+    device->ConnectAsync([device, ws, &json, opCode, &app, &devicesInfoFetcher](const std::string* error) {
         app.getLoop()->defer([device, ws, &json, opCode, &app, &devicesInfoFetcher]() {
             auto response = MakeGetDeviceResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
@@ -129,7 +132,7 @@ void HandleDisconnectDeviceRequest(auto *ws, const nlohmann::json& json, uWS::Op
         return;
     }
 
-    device->DisconnectAsync([device, ws, &json, opCode, &app, &devicesInfoFetcher](const sdbus::Error* error) {
+    device->DisconnectAsync([device, ws, &json, opCode, &app, &devicesInfoFetcher](const std::string* error) {
         app.getLoop()->defer([device, ws, &json, opCode, &app, &devicesInfoFetcher]() {
             auto response = MakeGetDeviceResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
@@ -153,7 +156,7 @@ void HandleGetDefaultBluetoothAdapterRequest(auto *ws, const nlohmann::json& jso
 void HandleEnableDefaultBluetoothAdapter(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, uWS::App& app, DevicesInfoFetcher& devicesInfoFetcher) {
     Logger::Info("HandleEnableDefaultBluetoothAdapter");
 
-    devicesInfoFetcher.EnableBluetoothAdapterAsync([ws, &app, &devicesInfoFetcher, opCode](const sdbus::Error* error) {
+    devicesInfoFetcher.EnableBluetoothAdapterAsync([ws, &app, &devicesInfoFetcher, opCode](const std::string* error) {
         app.getLoop()->defer([ws, &app, &devicesInfoFetcher, opCode](){
             auto response = MakeGetDefaultBluetoothAdapterResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
@@ -164,7 +167,7 @@ void HandleEnableDefaultBluetoothAdapter(auto *ws, const nlohmann::json& json, u
 void HandleDisableDefaultBluetoothAdapter(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, uWS::App& app, DevicesInfoFetcher& devicesInfoFetcher) {
     Logger::Info("HandleDisableDefaultBluetoothAdapter");
 
-    devicesInfoFetcher.DisableBluetoothAdapterAsync([ws, &app, &devicesInfoFetcher, opCode](const sdbus::Error* error) {
+    devicesInfoFetcher.DisableBluetoothAdapterAsync([ws, &app, &devicesInfoFetcher, opCode](const std::string* error) {
         app.getLoop()->defer([ws, &app, &devicesInfoFetcher, opCode](){
             auto response = MakeGetDefaultBluetoothAdapterResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
@@ -431,9 +434,14 @@ int main(int argc, char** argv) {
         Logger::Info("Selftest: %d failure(s)", failures);
         return failures == 0 ? 0 : 1;
     }
+#ifndef _WIN32
     // Emulated AirPods Max through the real audio path, needs PipeWire: magicpodscore --emulate-airpods
     if (argc > 1 && std::string{argv[1]} == "--emulate-airpods")
         return EmulateAirPods();
+#else
+    // Bluetooth, media sessions and audio devices are WinRT/COM; every thread of the daemon joins this apartment
+    winrt::init_apartment(winrt::apartment_type::multi_threaded);
+#endif
 
     std::shared_ptr<SettingsService> settingsService = std::make_shared<SettingsService>(SettingsService::GetConfigPath("config.toml"));
     StartListeningLogSettings(*settingsService);

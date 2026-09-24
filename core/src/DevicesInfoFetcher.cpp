@@ -13,6 +13,11 @@
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
 #include "device/ZikDevice.h"
+#ifdef _WIN32
+#include "ble_ads/WinRtBleAdvertisingService.h"
+#else
+#include "ble_ads/DBusBasedBleAdvertisingService.h"
+#endif
 
 #include <regex>
 #include <iostream>
@@ -59,7 +64,11 @@ namespace MagicPodsCore {
 
     DevicesInfoFetcher::DevicesInfoFetcher(const std::shared_ptr<SettingsService> &settingsService): _settingsService{settingsService} {
         _audioClient = std::make_shared<PulseAudioClient>();
+#ifdef _WIN32
+        _bleService = std::make_shared<WinRtBleAdvertisingService>(_dbusService);
+#else
         _bleService = std::make_shared<DBusBasedBleAdvertisingService>(_dbusService);
+#endif
         _onSettingsChangeId = _settingsService->GetOnSettingUpdateEvent().Subscribe([this](size_t id, const UpdatedSettingNotification& notification){
         if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "animation")
                 UpdateBleState();
@@ -174,7 +183,7 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         _dbusService.EnableBluetoothAdapter();
     }
 
-    void DevicesInfoFetcher::EnableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback) {
+    void DevicesInfoFetcher::EnableBluetoothAdapterAsync(BtCallback&& callback) {
         _dbusService.EnableBluetoothAdapterAsync(std::move(callback));
     }
 
@@ -182,7 +191,7 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         _dbusService.DisableBluetoothAdapter();
     }
 
-    void DevicesInfoFetcher::DisableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback) {
+    void DevicesInfoFetcher::DisableBluetoothAdapterAsync(BtCallback&& callback) {
         _dbusService.DisableBluetoothAdapterAsync(std::move(callback));
     }
 

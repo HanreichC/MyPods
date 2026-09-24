@@ -3,6 +3,7 @@
 
 #include "AapAudioSwitchCapability.h"
 #include "media/MprisClient.h"
+#include "dbus/DBusService.h"
 #include "sdk/aap/Aes.h"
 #include <cstdio>
 #include <thread>
@@ -131,11 +132,11 @@ namespace MagicPodsCore
         irk = device.LoadSettingString("irk").value_or("");
         try
         {
-            localMac = sdbus::createProxy("org.bluez", "/org/bluez/hci0")->getProperty("Address").onInterface("org.bluez.Adapter1").get<std::string>();
+            localMac = DBusService::GetAdapterAddress();
         }
-        catch (const sdbus::Error &e)
+        catch (const std::exception &e)
         {
-            Logger::Error("AutoSwitch: no adapter address, cannot talk to other devices: %s", e.getMessage().c_str());
+            Logger::Error("AutoSwitch: no adapter address, cannot talk to other devices: %s", e.what());
         }
 
         // ponytail: worker threads capture `this`; devices live until they are unpaired, a shared_ptr handle would close that gap
@@ -328,9 +329,9 @@ namespace MagicPodsCore
                 {
                     device.Connect();
                 }
-                catch (const sdbus::Error &e)
+                catch (const std::exception &e)
                 {
-                    Logger::Error("AutoSwitch: connect failed: %s", e.getMessage().c_str());
+                    Logger::Error("AutoSwitch: connect failed: %s", e.what());
                     MprisClient::Instance().Play(paused);
                     busy = false;
                     return;
@@ -362,7 +363,11 @@ namespace MagicPodsCore
             }
             for (auto &other : others)
             {
+#ifdef _WIN32
+                device.SendData(MediaInformation(other, localMac, "Windows"));
+#else
                 device.SendData(MediaInformation(other, localMac, "Linux"));
+#endif
                 device.SendData(ShowNearbyUI(other));
                 device.SendData(HijackRequest(other));
             }

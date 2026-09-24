@@ -1,8 +1,8 @@
 name: AppImage
 
+# Every branch builds and tests; only main publishes a release
 on:
   push:
-    branches: [main]
     paths-ignore: ['**.md', 'docs/**', 'captures/**']
   workflow_dispatch:
 
@@ -15,8 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: podman run --rm -v "$PWD:/workspace:Z" -w /workspace docker.io/library/ubuntu:22.04 ./appimage.sh
-      - run: >
-          gh release create "build-$GITHUB_RUN_NUMBER" MyPods-x86_64.AppImage
-          --target "$GITHUB_SHA" --title "MyPods build $GITHUB_RUN_NUMBER" --generate-notes
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyPods-x86_64.AppImage
+          path: MyPods-x86_64.AppImage
+      # Same release as the Windows workflow: both attach to the tag of the commit
+      - name: Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          tag="build-${GITHUB_SHA::7}"
+          gh release create "$tag" --target "$GITHUB_SHA" --title "MyPods build ${GITHUB_SHA::7}" --generate-notes || true
+          gh release upload "$tag" MyPods-x86_64.AppImage --clobber
         env:
           GH_TOKEN: ${{ github.token }}

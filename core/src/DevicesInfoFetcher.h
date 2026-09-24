@@ -8,7 +8,7 @@
 #include "Event.h"
 #include "./dbus/DBusService.h"
 #include "./pulseaudio/PulseAudioClient.h"
-#include "./ble_ads/DBusBasedBleAdvertisingService.h"
+#include "./ble_ads/BleAdvertisingService.h"
 
 #include <string>
 #include <vector>
@@ -18,7 +18,6 @@
 #include <map>
 #include <array>
 #include <mutex>
-#include <sdbus-c++/sdbus-c++.h>
 #include <nlohmann/json.hpp>
 #include "settings/SettingsService.h"
 
@@ -35,7 +34,7 @@ namespace MagicPodsCore {
     private:
         DBusService _dbusService{};
         std::shared_ptr<PulseAudioClient> _audioClient{};
-        std::shared_ptr<DBusBasedBleAdvertisingService> _bleService{};
+        std::shared_ptr<BleAdvertisingService> _bleService{};
         std::shared_ptr<SettingsService> _settingsService{};
         size_t _onSettingsChangeId = 0;
         bool _bleScanActive = false;
@@ -70,9 +69,9 @@ namespace MagicPodsCore {
             return _dbusService.IsBluetoothAdapterPowered().GetValue();
         }
         void EnableBluetoothAdapter(); // TODO: выпилить?
-        void EnableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void EnableBluetoothAdapterAsync(BtCallback&& callback);
         void DisableBluetoothAdapter(); // TODO: выпилить?
-        void DisableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void DisableBluetoothAdapterAsync(BtCallback&& callback);
 
         Event<std::shared_ptr<Device>>& GetOnActiveDeviceChangedEvent() {
             return _onActiveDeviceChangedEvent;

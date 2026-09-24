@@ -1,0 +1,10 @@
+{
+  "$comment": "Windows build only (the Linux build takes these from the distribution): OpenSSL for the AirPods' AES, libuv and zlib for uWebSockets",
+  "name": "mypods",
+  "version-string": "0.1.0",
+  "dependencies": [
+    { "name": "openssl", "platform": "windows" },
+    { "name": "libuv", "platform": "windows" },
+    { "name": "zlib", "platform": "windows" }
+  ]
+}

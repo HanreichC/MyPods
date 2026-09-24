@@ -12,17 +12,23 @@
 #include <set>
 #include <vector>
 #include <regex>
-#include <sdbus-c++/sdbus-c++.h>
 #include <iostream>
 
 namespace MagicPodsCore {
 
+    // The Bluetooth adapter and its paired devices. Linux: BlueZ over D-Bus. Windows: WinRT (DBusService_win.cpp).
     class DBusService {
     private:
+#ifdef _WIN32
+        struct Native;
+        std::unique_ptr<Native> _native;
+        std::map<std::string, std::shared_ptr<DBusDeviceInfo>> _knownDevices{}; // WinRT device id -> device
+#else
         std::unique_ptr<sdbus::IProxy> _rootProxy{};
         std::unique_ptr<sdbus::IProxy> _defaultBluetoothAdapterProxy{};
 
         std::map<sdbus::ObjectPath, std::shared_ptr<DBusDeviceInfo>> _knownDevices{};
+#endif
         std::set<std::shared_ptr<DBusDeviceInfo>> _pairedDevices{};
 
         Event<std::shared_ptr<DBusDeviceInfo>> _onDeviceAddedEvent{};
@@ -33,6 +39,12 @@ namespace MagicPodsCore {
 
     public:
         explicit DBusService();
+#ifdef _WIN32
+        ~DBusService();
+#endif
+
+        // Address of this computer's adapter, "AA:BB:CC:DD:EE:FF". Throws if there is none.
+        static std::string GetAdapterAddress();
 
         std::set<std::shared_ptr<DBusDeviceInfo>> GetAllDevices();
         std::set<std::shared_ptr<DBusDeviceInfo>> GetPairedDevices();
@@ -42,10 +54,11 @@ namespace MagicPodsCore {
         }
 
         void EnableBluetoothAdapter();
-        void EnableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void EnableBluetoothAdapterAsync(BtCallback&& callback);
         void DisableBluetoothAdapter();
-        void DisableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void DisableBluetoothAdapterAsync(BtCallback&& callback);
 
+#ifndef _WIN32
         void SetDiscoveryFilter(const std::map<std::string, sdbus::Variant>& filter);
         void SetDiscoveryFilterAsync(const std::map<std::string, sdbus::Variant>& filter, std::function<void(const sdbus::Error*)>&& callback);
 
@@ -53,6 +66,7 @@ namespace MagicPodsCore {
         void StartDiscoveryAsync(std::function<void(const sdbus::Error*)>&& callback);
         void StopDiscovery();
         void StopDiscoveryAsync(std::function<void(const sdbus::Error*)>&& callback);
+#endif
 
         Event<std::shared_ptr<DBusDeviceInfo>>& GetOnDeviceAddedEvent()
         {
@@ -70,6 +84,10 @@ namespace MagicPodsCore {
         }
 
     private:
+#ifdef _WIN32
+        void TryCreateDevice(const std::string& id);
+        void TryRemoveDevice(const std::string& id);
+#else
         void FetchDevices();
 
         std::shared_ptr<DBusDeviceInfo> TryCreateDevice(sdbus::ObjectPath objectPath, std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces);
@@ -77,6 +95,7 @@ namespace MagicPodsCore {
 
         bool TryUpdateInterfaceAddedForDevice(sdbus::ObjectPath objectPath, std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces);
         bool TryUpdateInterfaceRemovedForDevice(sdbus::ObjectPath objectPath);
+#endif
     };
 
 }

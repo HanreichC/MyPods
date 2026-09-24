@@ -4,6 +4,7 @@
 
 #include "TestsAapBle.h"
 #include "device/capabilities/aap/AppAnimationCapability.h"
+#include "dbus/DBusDeviceInfo.h"
 #include "StringUtils.h"
 #include "Logger.h"
 #include <cstring>
@@ -18,6 +19,13 @@ TestsAapBle::TestsAapBle()
     // so their 16-byte encrypted tail was re-encrypted with this key (first 11 bytes are real).
     std::string enc = "000102030405060708090a0b0c0d0e0f";
 
+#ifdef _WIN32
+    // AirPods Max A2DP node; the vendor id follows its 4-digit source (0001 = Bluetooth SIG)
+    Test("VID/PID from a Windows hardware id", DBusDeviceInfo::ParseVidPid(R"(BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&200a)") == std::array<unsigned short, 2>{0x004C, 0x200A} &&
+                                               DBusDeviceInfo::ParseVidPid(R"(BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}_LOCALMFG&0002)") == std::array<unsigned short, 2>{0, 0});
+#else
+    Test("VID/PID from a BlueZ modalias", DBusDeviceInfo::ParseVidPid("bluetooth:v004Cp200Ad0001") == std::array<unsigned short, 2>{0x004C, 0x200A});
+#endif
     Test("TestAirPodsMaxInEar_utp_22", TestAirPodsMaxInEar_utp_22());
     Test("TestAirPodsMaxPopupAnimation", TestAirPodsMaxPopupAnimation());
     Test("TestAirPodsMax2PopupAnimation", TestAirPodsMax2PopupAnimation());

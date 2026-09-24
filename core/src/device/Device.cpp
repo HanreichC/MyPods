@@ -113,7 +113,7 @@ namespace MagicPodsCore {
         _deviceInfo->Connect();
     }
 
-    void Device::ConnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
+    void Device::ConnectAsync(BtCallback&& callback) {
         _deviceInfo->ConnectAsync(std::move(callback));
     }
 
@@ -121,7 +121,7 @@ namespace MagicPodsCore {
         _deviceInfo->Disconnect();
     }
 
-    void Device::DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
+    void Device::DisconnectAsync(BtCallback&& callback) {
         _deviceInfo->DisconnectAsync(std::move(callback));
     }
 

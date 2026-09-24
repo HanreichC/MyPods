@@ -25,6 +25,7 @@
 #include "capabilities/aap/AapEarDetectionCapability.h"
 #include "capabilities/aap/AapAudioSwitchCapability.h"
 #include "capabilities/aap/AapAudioEffectsCapabilities.h"
+#include "sdk/aap/Aes.h"
 #include <algorithm>
 #include <thread>
 
@@ -38,7 +39,7 @@ namespace MagicPodsCore
     AapDevice::AapDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo,
         std::shared_ptr<PulseAudioClient> audioClient,
         std::shared_ptr<SettingsService> settingsService,
-        std::shared_ptr<DBusBasedBleAdvertisingService> bleService) : Device(deviceInfo, audioClient, settingsService), _bleService{bleService}
+        std::shared_ptr<BleAdvertisingService> bleService) : Device(deviceInfo, audioClient, settingsService), _bleService{bleService}
     {
         if (_bleService) // none in the emulator (tests/EmulateAirPods.cpp)
             _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MagicPodsCore::BleAdertisingData& adData){
@@ -98,7 +99,25 @@ namespace MagicPodsCore
         _onAnimationTriggered.FireEvent(json);
     }
 
-    std::unique_ptr<AapDevice> AapDevice::Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<DBusBasedBleAdvertisingService> bleService)
+    bool AapDevice::IsOwnAdvertisement(const BleAdertisingData &ad, const std::string &irk) const
+    {
+        if (!irk.empty())
+            return Aes::VerifyRPA(ad.GetAddress(), irk);
+        // ponytail: RSSI guess, so a second pair of the same model right next to you gets mixed up.
+        // Copying irk/enc from a Linux config.toml upgrades to the real check.
+        return !Client::SupportsL2CAP() && ad.GetRssi() >= -60;
+    }
+
+    const std::vector<uint8_t> *AapDevice::OwnProximityMessage(const BleAdertisingData &ad)
+    {
+        for (const auto &[company, bytes] : ad.GetManufacturerData())
+            if (company == GetVendorId() && bytes.size() >= 27 && bytes[0] == 0x07 &&
+                ((bytes[4] << 8) | bytes[3]) == GetProductId() && IsOwnAdvertisement(ad, LoadSettingString("irk").value_or("")))
+                return &bytes;
+        return nullptr;
+    }
+
+    std::unique_ptr<AapDevice> AapDevice::Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<BleAdvertisingService> bleService)
     {
         auto device = std::make_unique<AapDevice>(deviceInfo, audioClient, settingsService, bleService);
 
@@ -127,9 +146,13 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<AapAdaptiveAudioNoiseCapability>(*device));
         device->capabilities.push_back(std::make_unique<AppAnimationCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapEarDetectionCapability>(*device));
-        device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));
+        // Handing the audio over is AAP smart routing; without it there is nothing to negotiate with
+        if (Client::SupportsL2CAP())
+            device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));
+#ifndef _WIN32 // effects run in PipeWire (AudioEffects.h)
         device->capabilities.push_back(std::make_unique<AapSpatialAudioCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapEqualizerCapability>(*device));
+#endif
 
         device->_clientStartData.push_back(AapInit{}.Request());
         device->_clientStartData.push_back(AapEnableNotifications{AapNotificationsMode::Unknown2}.Request());

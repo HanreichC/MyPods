@@ -44,10 +44,12 @@ static void ensureEnvDefaults() {
         }
     }
 
+#ifdef Q_OS_LINUX
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
         const bool hasWayland = !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY");
         qputenv("QT_QPA_PLATFORM", hasWayland ? "wayland;xcb" : "xcb");
     }
+#endif
 
 
     if (qEnvironmentVariableIsEmpty("QML_XHR_ALLOW_FILE_READ")) {

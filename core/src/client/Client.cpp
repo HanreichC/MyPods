@@ -8,9 +8,19 @@
 #include "StringUtils.h"
 
 #include <thread>
+#include <cstring>
+#include <exception>
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <exception>
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/l2cap.h>
+#include <bluetooth/rfcomm.h>
+#include <bluetooth/sdp.h>
+#include <bluetooth/sdp_lib.h>
+#endif
 
 namespace MagicPodsCore {
     Client::Client(const std::string& address, unsigned short port, ClientConnectionType connectionType)
@@ -24,6 +34,10 @@ namespace MagicPodsCore {
 
         if (_isStarted)
             return;
+        if (_connectionType == ClientConnectionType::L2CAP && !SupportsL2CAP()) {
+            Logger::Info("%s L2CAP needs a kernel driver on this platform, settings over AAP stay unavailable", _address.c_str());
+            return;
+        }
         _isStarted = true;
 
         Logger::Info("%s Start Bluetooth client", _address.c_str());
@@ -43,7 +57,7 @@ namespace MagicPodsCore {
                 if (!data.has_value())
                     break;
 
-                ssize_t sendedBytesLength = send(_socket, data.value().data(), data.value().size(), 0);
+                SocketSend(data.value().data(), data.value().size());
                 Logger::Debug("s:%s",StringUtils::BytesToHexString(data.value().data(), data.value().size()).c_str());
                 //std::this_thread::sleep_for(std::chrono::milliseconds{500}); //Return if the user's feedback is bad.
             }
@@ -57,7 +71,7 @@ namespace MagicPodsCore {
             std::vector<unsigned char> vectorBuffer(1024); // optimize
             while(_isStarted) {
                 memset(buffer, 0, sizeof(buffer));
-                ssize_t receivedBytesLength = recv(_socket, buffer, sizeof(buffer), 0);
+                long receivedBytesLength = SocketReceive(buffer, sizeof(buffer));
                 if (receivedBytesLength > 0) {
                     Logger::Trace("r:%s", StringUtils::BytesToHexString(buffer, receivedBytesLength).c_str());
                     vectorBuffer.assign(buffer, buffer + receivedBytesLength);
@@ -84,13 +98,53 @@ namespace MagicPodsCore {
             return;
         _isStarted = false;
 
-        close(_socket);
+        SocketClose();
 
         Logger::Info("Stop Bluetooth client, server addr %s", _address.c_str());
     }
 
     void Client::SendData(const std::vector<unsigned char>& data) {
         _outcomeMessagesQueue.Put(data);
+    }
+
+    bool Client::ConnectToSocket(int attemptsNumber) {
+        bool isConnected{false};
+
+        while (true) {
+            --attemptsNumber;
+            Logger::Info("%s Attempt to connect. Left %d", _address.c_str(), attemptsNumber);
+            switch (_connectionType)
+            {
+            case ClientConnectionType::L2CAP:
+                isConnected = ConnectToSocketL2CAP();
+                break;
+            case ClientConnectionType::RFCOMM:
+                isConnected = ConnectToSocketRFCOMM();
+                break;
+            }
+            if (attemptsNumber <= 0 || isConnected || !_isStarted) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO: вероятно delay можно выставить для connect()
+        }
+        return isConnected;
+    }
+
+#ifndef _WIN32
+    bool Client::SupportsL2CAP() {
+        return true;
+    }
+
+    long Client::SocketSend(const unsigned char* data, size_t length) {
+        return send(_socket, data, length, 0);
+    }
+
+    long Client::SocketReceive(unsigned char* buffer, size_t length) {
+        return recv(_socket, buffer, length, 0);
+    }
+
+    void Client::SocketClose() {
+        close(_socket);
     }
 
     bool Client::ConnectToSocketL2CAP() {
@@ -145,29 +199,6 @@ namespace MagicPodsCore {
         }
 
         return true;
-    }
-
-    bool Client::ConnectToSocket(int attemptsNumber) {
-        bool isConnected{false};
-
-        while (true) {
-            --attemptsNumber;
-            Logger::Info("%s Attempt to connect. Left %d", _address.c_str(), attemptsNumber);
-            switch (_connectionType)
-            {
-            case ClientConnectionType::L2CAP:
-                isConnected = ConnectToSocketL2CAP();
-                break;
-            case ClientConnectionType::RFCOMM:
-                isConnected = ConnectToSocketRFCOMM();
-                break;
-            }
-            if (attemptsNumber <= 0 || isConnected || !_isStarted) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO: вероятно delay можно выставить для connect()
-        }
-        return isConnected;
     }
 
     std::optional<uint8_t> Client::RetrieveServicePortRFCOMM(uint8_t* uuid, const char* deviceAddress)
@@ -262,6 +293,7 @@ namespace MagicPodsCore {
 
         return channel;
     }
+#endif
 
     std::unique_ptr<Client> Client::CreateL2CAP(const std::string& address, unsigned short port) {
         return std::unique_ptr<Client>(new Client(address, port, ClientConnectionType::L2CAP));

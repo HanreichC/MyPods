@@ -1,0 +1,37 @@
+<!--
+  MyPods MSI (WiX v5). Built by .github/workflows/windows.yml:
+    wix build packaging/windows/MyPods.wxs -arch x64 -d Version=0.1.N -d DeployDir=deploy -o MyPods-x64.msi
+  DeployDir is magicpods.exe after windeployqt, with the daemon in modules\.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <!-- The UpgradeCode never changes: it is how a newer MSI finds and replaces an older install -->
+  <Package Name="MyPods" Manufacturer="MyPods" Version="$(Version)" Scope="perMachine"
+           UpgradeCode="4C040DE7-72B0-401B-B2A2-71364E7ED02D">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MyPods is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="MyPodsIcon" SourceFile="ui\src\app\magicpods.ico" />
+    <Property Id="ARPPRODUCTICON" Value="MyPodsIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/HanreichC/MyPods" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="MyPods">
+        <Files Include="$(DeployDir)\**" />
+
+        <!-- Starts hidden in the tray at login, like the autostart entry install.sh writes on Linux -->
+        <Component Id="Autostart">
+          <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="MyPods"
+                         Type="string" Value="&quot;[INSTALLFOLDER]magicpods.exe&quot; --hidden" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="MyPodsShortcut" Name="MyPods" Description="The control center for your Bluetooth headphones"
+                  Target="[INSTALLFOLDER]magicpods.exe" WorkingDirectory="INSTALLFOLDER" Icon="MyPodsIcon" />
+        <RegistryValue Root="HKLM" Key="Software\MyPods" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+  </Package>
+</Wix>

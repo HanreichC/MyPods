@@ -10,13 +10,30 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <map>
+#include <array>
+#include <memory>
+#include <functional>
+#ifndef _WIN32
 #include <sdbus-c++/sdbus-c++.h>
+#endif
 
 namespace MagicPodsCore {
 
+    // Reply of an asynchronous Bluetooth call: nullptr on success, the error message otherwise.
+    using BtCallback = std::function<void(const std::string* error)>;
+
+    // A paired Bluetooth device. Linux: a BlueZ object over D-Bus. Windows: WinRT's BluetoothDevice
+    // (DBusDeviceInfo_win.cpp); the name stays so the rest of the daemon doesn't care which.
     class DBusDeviceInfo {
     private:
+#ifdef _WIN32
+        struct Native;
+        std::unique_ptr<Native> _native;
+        friend class DBusService;
+#else
         std::unique_ptr<sdbus::IProxy> _deviceProxy{};
+#endif
 
         std::string _address{};
         unsigned short _productId{};
@@ -33,7 +50,12 @@ namespace MagicPodsCore {
         ObservableVariable<int16_t> _rssi{0};
 
     public:
+#ifdef _WIN32
+        explicit DBusDeviceInfo(uint64_t address);
+        ~DBusDeviceInfo();
+#else
         explicit DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces);
+#endif
 
         DBusDeviceInfo(const DBusDeviceInfo& info) = delete;
         DBusDeviceInfo(DBusDeviceInfo&& info) noexcept = delete;
@@ -93,18 +115,33 @@ namespace MagicPodsCore {
         }
 
         void Connect();
-        void ConnectAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void ConnectAsync(BtCallback&& callback);
         void Disconnect();
-        void DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void DisconnectAsync(BtCallback&& callback);
 
+#ifndef _WIN32
         void InterfaceAdded(const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces);
+#endif
 
         friend auto operator<=>(const DBusDeviceInfo& t1, const DBusDeviceInfo& t2) {
             return t1.GetAddress() <=> t2.GetAddress();
         }
 
-    private:
+        // "v004Cp200A" in a BlueZ modalias, "VID&0001004C_PID&200A" in a Windows hardware id
         static std::array<unsigned short, 2> ParseVidPid(const std::string& modalias);
     };
+
+#ifndef _WIN32
+    inline auto ToSdbusCallback(BtCallback callback) {
+        return [callback](const sdbus::Error* error) {
+            if (!callback)
+                return;
+            if (!error)
+                return callback(nullptr);
+            auto message = error->getMessage();
+            callback(&message);
+        };
+    }
+#endif
 
 }

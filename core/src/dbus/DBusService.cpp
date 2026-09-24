@@ -31,6 +31,10 @@ namespace MagicPodsCore {
         FetchDevices();
     }
 
+    std::string DBusService::GetAdapterAddress() {
+        return sdbus::createProxy("org.bluez", "/org/bluez/hci0")->getProperty("Address").onInterface("org.bluez.Adapter1").get<std::string>();
+    }
+
     std::set<std::shared_ptr<DBusDeviceInfo>> DBusService::GetAllDevices() {
         std::set<std::shared_ptr<DBusDeviceInfo>> devices;
         for (const auto& [path, device] : _knownDevices) {
@@ -47,16 +51,16 @@ namespace MagicPodsCore {
         _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(true).uponReplyInvoke([this](const sdbus::Error* err) {});
     }
 
-    void DBusService::EnableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback) {
-        _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(true).uponReplyInvoke(callback);
+    void DBusService::EnableBluetoothAdapterAsync(BtCallback&& callback) {
+        _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(true).uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 
     void DBusService::DisableBluetoothAdapter() {
         _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(false).uponReplyInvoke([this](const sdbus::Error* err) {});
     }
 
-    void DBusService::DisableBluetoothAdapterAsync(std::function<void(const sdbus::Error*)>&& callback) {
-        _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(false).uponReplyInvoke(callback);
+    void DBusService::DisableBluetoothAdapterAsync(BtCallback&& callback) {
+        _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(false).uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 
     void DBusService::SetDiscoveryFilter(const std::map<std::string, sdbus::Variant> &filter) {

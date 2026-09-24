@@ -2,3 +2,10 @@ build/
 captures/*.txt
 *.AppImage
 aqtinstall.log
+
+# Windows build (vcpkg manifest mode, windeployqt, WiX)
+vcpkg_installed/
+deploy/
+*.msi
+*.wixpdb
+*.pdb

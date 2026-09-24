@@ -145,6 +145,10 @@ void SettingsService::SaveSetting(const std::string& container, const std::strin
 }
 
 std::string SettingsService::GetConfigPath(const std::string &fileName) {
+#ifdef _WIN32
+    if (const char* appData = std::getenv("APPDATA"))
+        return std::string(appData) + "\\mypods\\" + fileName;
+#endif
     if (const char* xdg = std::getenv("XDG_CONFIG_HOME"))
         return std::string(xdg) + "/mypods/" + fileName;
 

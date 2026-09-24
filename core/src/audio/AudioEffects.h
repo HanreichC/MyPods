@@ -8,11 +8,17 @@
 #include <mutex>
 #include <optional>
 #include <string>
-#include <sys/types.h>
 #include <vector>
+#ifndef _WIN32
+#include <sys/types.h>
+#endif
 
 namespace MagicPodsCore
 {
+#ifdef _WIN32
+    using pid_t = int; // members only, the chain never runs on Windows
+#endif
+
     enum class SpatialMode : int
     {
         Off = 0,
@@ -31,6 +37,8 @@ namespace MagicPodsCore
 
     // Spatial audio and equalizer as a PipeWire filter-chain sink in front of the headphones
     // (runs `pipewire -c <generated conf>` as a child process, the documented way to host a filter-chain).
+    // Windows has no user-space equivalent (it would take an APO driver): Apply/Stop/SetYaw do nothing there
+    // and the capabilities are not offered, while the presets still serve the Parrot Zik's on-device EQ.
     class AudioEffects
     {
     public:

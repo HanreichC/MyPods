@@ -3,6 +3,7 @@
 // License: GPL-3.0
 
 #include "AapBatteryCapability.h"
+#include "AppAnimationCapability.h"
 
 namespace MagicPodsCore
 {
@@ -37,12 +38,24 @@ namespace MagicPodsCore
             battery.UpdateBattery(b);
 
         });
+
+        // No AAP battery without L2CAP: the advertisement's stands in (1 % steps with the ENC key, 10 % without)
+        if (!Client::SupportsL2CAP())
+            leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad){
+                if (!this->device.GetConnected())
+                    return;
+                if (auto message = this->device.OwnProximityMessage(ad))
+                    if (auto data = AppAnimationCapability::ParseBle(*message, this->device.GetProductId(), this->device.LoadSettingString("enc").value_or("")))
+                        battery.UpdateBattery(data->batteryData);
+            });
     }
 
     AapBatteryCapability::~AapBatteryCapability()
     {
         battery.GetBatteryChangedEvent().Unsubscribe(batteryChangedEventId);
         watcher.GetEvent().Unsubscribe(watcherBatteryChangedEventId);
+        if (leEventId != 0)
+            device.GetLeDataReceived().Unsubscribe(leEventId);
     }
 
 }

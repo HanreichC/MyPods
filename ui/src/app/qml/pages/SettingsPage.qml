@@ -137,6 +137,8 @@ Components.ScrollPage {
             iconColor: MP.Theme.accent
             label: qsTrId("settings.add_shortcut_to_menu")
             tooltip: qsTrId("settings.add_shortcut_to_menu.description")
+            // a .desktop entry; on Windows the installer creates the Start menu shortcut
+            visible: Qt.platform.os !== "windows"
 
             Components.Toggle {
                 id: menuShortcutSwitch

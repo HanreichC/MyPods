@@ -207,6 +207,11 @@ KMDF-Profiltreiber (Vorlage: Microsoft `bthecho`, Referenz: nefarius/BthPS3) ink
 Signatur-Problematik. Ohne Treiber wären nur BLE-Features möglich (Popup, Akku,
 Ohrerkennung) — Code dafür liegt fertig in AirPodsDesktop.
 
+*Nachtrag 2026-09-24:* Die treiberlose Stufe ist umgesetzt (Branch `windows`, siehe README →
+Windows). Die Plattformschicht (BlueZ/PulseAudio/MPRIS bzw. WinRT/Core Audio/SMTC) hat je
+eine Implementierung, alles darüber ist gemeinsam. L2CAP meldet unter Windows
+`Client::SupportsL2CAP() == false`; ein späterer Treiber wird nur in `Client_win.cpp` angebunden.
+
 **P5 — Forschung (optional)**
 18. Herzfrequenz Pro 3: eigene Captures (Apple-DID-Spoof + Notifications auf `FF FF FF FF FF`),
     unbekannte Opcodes protokollieren. Offen in der gesamten Community — hier wäre MyPods der Erste.

@@ -8,13 +8,15 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
-#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#ifndef _WIN32
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 
 namespace MagicPodsCore
 {
@@ -176,6 +178,20 @@ namespace MagicPodsCore
         return std::string("s ") + SINK_NAME + " Props { params = [" + params + " ] }\n";
     }
 
+#ifdef _WIN32
+    AudioEffects &AudioEffects::Instance()
+    {
+        static AudioEffects instance;
+        return instance;
+    }
+
+    AudioEffects::AudioEffects() = default;
+    AudioEffects::~AudioEffects() = default;
+    std::string AudioEffects::Apply(const std::string &sink, const std::string &, EffectsConfig) { return sink; }
+    void AudioEffects::Stop() {}
+    void AudioEffects::StopLocked() {}
+    void AudioEffects::SetYaw(double) {}
+#else
     static pid_t Spawn(const std::vector<const char *> &argv, int *stdinFd)
     {
         int fds[2] = {-1, -1};
@@ -331,4 +347,5 @@ namespace MagicPodsCore
         if (write(_ctlFd, cmd.data(), cmd.size()) < 0)
             Logger::Debug("AudioEffects: pw-cli not accepting commands");
     }
+#endif
 }

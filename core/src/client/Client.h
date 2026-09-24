@@ -9,15 +9,7 @@
 #include "Event.h"
 #include "BlockingQueue.h"
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/l2cap.h>
-#include <bluetooth/rfcomm.h>
-#include <bluetooth/sdp.h>
-#include <bluetooth/sdp_lib.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -41,7 +33,7 @@ namespace MagicPodsCore {
 
         ClientConnectionType _connectionType{};
 
-        int _socket{};
+        std::intptr_t _socket{-1}; // fd on Linux, SOCKET on Windows
         bool _isStarted{false};
 
         std::mutex _startStopMutex{};
@@ -51,6 +43,10 @@ namespace MagicPodsCore {
         Event<std::vector<unsigned char>> _onReceivedDataEvent{};
 
     public:
+        // AAP needs an L2CAP channel. Linux opens one from user space; Windows only allows it from a
+        // kernel-mode profile driver: true there once the MyPods AAP driver (driver/windows) is installed.
+        static bool SupportsL2CAP();
+
         void Start(const std::function<void(Client&)>& justAfterStartLogic = {});
         void Stop();
 
@@ -65,10 +61,16 @@ namespace MagicPodsCore {
         void SendData(const std::vector<unsigned char>& data);
 
     private:
-        inline bool ConnectToSocketL2CAP();
-        inline bool ConnectToSocketRFCOMM();
-        inline bool ConnectToSocket(int attemptsNumber);
-        inline static std::optional<uint8_t> RetrieveServicePortRFCOMM(uint8_t* uuid, const char* deviceAddress);
+        bool ConnectToSocketL2CAP();
+        bool ConnectToSocketRFCOMM();
+        bool ConnectToSocket(int attemptsNumber);
+        // Platform socket calls, byte count or <= 0 on error/close like send()/recv()
+        long SocketSend(const unsigned char* data, size_t length);
+        long SocketReceive(unsigned char* buffer, size_t length);
+        void SocketClose();
+#ifndef _WIN32
+        static std::optional<uint8_t> RetrieveServicePortRFCOMM(uint8_t* uuid, const char* deviceAddress);
+#endif
 
     private:
         explicit Client(const std::string& address, unsigned short port, ClientConnectionType connectionType);

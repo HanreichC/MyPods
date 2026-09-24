@@ -4,7 +4,9 @@
 
 #pragma once
 
+#ifndef _WIN32
 #include <pulse/pulseaudio.h>
+#endif
 #include <iostream>
 #include <string>
 #include <vector>
@@ -28,6 +30,9 @@ namespace MagicPodsCore{
     }
     };
     
+    // Sound server access for codec display, output switching and effects. Windows has no A2DP/HFP
+    // profiles or codecs to pick and routes to connected headphones itself, so there it's an empty
+    // stub (PulseAudioClient_win.cpp) and the capabilities that need it stay hidden.
     class PulseAudioClient{
         public:
             PulseAudioClient();
@@ -44,6 +49,7 @@ namespace MagicPodsCore{
             }
         private:
             Event<CardInfo> _onAudioCardPropertyChangedEvent{};
+#ifndef _WIN32
             std::atomic<bool> ready{false};
             pa_threaded_mainloop* ml {nullptr};
             pa_context* ctx {nullptr};
@@ -52,6 +58,7 @@ namespace MagicPodsCore{
             bool Wait(pa_operation* op);
             bool RequestCardProfile(const std::string& name, const std::string& profile);
             void Free();
+#endif
 
     };
 }

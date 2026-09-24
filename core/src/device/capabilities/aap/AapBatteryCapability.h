@@ -17,6 +17,7 @@ namespace MagicPodsCore
 
         AapBatteryWatcher watcher{};
         size_t watcherBatteryChangedEventId;
+        size_t leEventId = 0;
 
     protected:
         nlohmann::json CreateJsonBody() override;

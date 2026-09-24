@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <iomanip>
+#include <sstream>
 #include <vector>
 #include <cstdint>
 
@@ -36,10 +37,14 @@ namespace MagicPodsCore {
         static std::string Format(const std::string& format, const Args&... args) {
             const size_t bufferLength = 512;
             char buffer[bufferLength];
+            #ifdef __GNUC__
             #pragma GCC diagnostic push // for suppressing warnings related with passing string literals
             #pragma GCC diagnostic ignored "-Wformat-security"
+            #endif
             int stringLength = std::snprintf(buffer, bufferLength, format.c_str(), args...);
+            #ifdef __GNUC__
             #pragma GCC diagnostic pop
+            #endif
             return std::string(buffer, stringLength);
         }
 

@@ -13,7 +13,6 @@
 #include "pulseaudio/PulseAudioClient.h"
 #include "settings/SettingsService.h"
 
-#include <sdbus-c++/sdbus-c++.h>
 #include <iostream>
 #include <vector>
 #include <nlohmann/json.hpp>
@@ -100,10 +99,10 @@ namespace MagicPodsCore {
 
 
         void Connect(); // TODO: может полностью перейти на Async?
-        void ConnectAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void ConnectAsync(BtCallback&& callback);
 
         void Disconnect(); // TODO: может полностью перейти на Async?
-        void DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback);
+        void DisconnectAsync(BtCallback&& callback);
 
         void SetCapabilities(const nlohmann::json &json);
 

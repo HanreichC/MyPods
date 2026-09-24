@@ -142,16 +142,16 @@ namespace MagicPodsCore {
         _deviceProxy->callMethod("Connect").onInterface("org.bluez.Device1").dontExpectReply();
     }
 
-    void DBusDeviceInfo::ConnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
-        _deviceProxy->callMethodAsync("Connect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(callback);
+    void DBusDeviceInfo::ConnectAsync(BtCallback&& callback) {
+        _deviceProxy->callMethodAsync("Connect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 
     void DBusDeviceInfo::Disconnect() {
         _deviceProxy->callMethod("Disconnect").onInterface("org.bluez.Device1").dontExpectReply();
     }
 
-    void DBusDeviceInfo::DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
-        _deviceProxy->callMethodAsync("Disconnect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(callback);
+    void DBusDeviceInfo::DisconnectAsync(BtCallback&& callback) {
+        _deviceProxy->callMethodAsync("Disconnect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 
     std::array<unsigned short, 2> DBusDeviceInfo::ParseVidPid(const std::string& modalias) {

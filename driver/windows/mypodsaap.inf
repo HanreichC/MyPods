@@ -1,0 +1,67 @@
+;
+; mypodsaap.inf - MyPods AAP driver: L2CAP channel to paired AirPods (PSM 0x1001) for magicpodscore.
+; License: GPL-3.0
+;
+; Loads on the device node Windows creates for MyPods' local Bluetooth service
+; {d4c9e179-5e77-4fab-b53e-3ed22c52b087} (registered by install.ps1 / the installer).
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Bluetooth
+ClassGuid   = {e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
+Provider    = %ProviderName%
+CatalogFile = mypodsaap.cat
+DriverVer   = 01/01/2026,0.1.0.0
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+mypodsaap.sys = 1
+
+[Manufacturer]
+%ProviderName% = MyPods, NTamd64.10.0...16299
+
+[MyPods.NTamd64.10.0...16299]
+; compatible id, the same on every adapter (the hardware id ends in the adapter's manufacturer)
+%DeviceDesc% = MyPodsAap, BTHENUM\{d4c9e179-5e77-4fab-b53e-3ed22c52b087}
+
+[MyPodsAap.NT]
+CopyFiles = MyPodsAap.CopyFiles
+
+[MyPodsAap.CopyFiles]
+mypodsaap.sys
+
+[MyPodsAap.NT.HW]
+AddReg = MyPodsAap.Security
+
+[MyPodsAap.Security]
+; SYSTEM and administrators full access, interactive users read/write (the daemon runs as the user)
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;IU)"
+
+[MyPodsAap.NT.Services]
+AddService = mypodsaap, 0x00000002, MyPodsAap.Service
+
+[MyPodsAap.Service]
+DisplayName   = %ServiceDesc%
+ServiceType   = 1               ; SERVICE_KERNEL_DRIVER
+StartType     = 3               ; SERVICE_DEMAND_START
+ErrorControl  = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary = %13%\mypodsaap.sys
+
+[MyPodsAap.NT.Wdf]
+KmdfService = mypodsaap, MyPodsAap.WdfSection
+
+[MyPodsAap.WdfSection]
+KmdfLibraryVersion = 1.15
+
+[Strings]
+ProviderName = "MyPods"
+DiskName     = "MyPods AAP driver"
+DeviceDesc   = "MyPods AirPods (AAP)"
+ServiceDesc  = "MyPods AAP driver"

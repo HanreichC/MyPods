@@ -7,7 +7,7 @@
 #include "Event.h"
 #include "Device.h"
 #include "sdk/aap/setters/AapRequest.h"
-#include "ble_ads/DBusBasedBleAdvertisingService.h"
+#include "ble_ads/BleAdvertisingService.h"
 #include "settings/SettingsService.h"
 #include "audio/AudioEffects.h"
 #include <atomic>
@@ -17,7 +17,7 @@ namespace MagicPodsCore
     class AapDevice : public Device
     {
     private:
-        std::shared_ptr<DBusBasedBleAdvertisingService> _bleService{};
+        std::shared_ptr<BleAdvertisingService> _bleService{};
         size_t _getOnAdReceivedEventId = 0;
         Event<const std::vector<unsigned char>> _onResponseDataRecived{};
         Event<const BleAdertisingData> _onLeDataReceived{};        
@@ -25,7 +25,7 @@ namespace MagicPodsCore
         void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
 
     public:
-        explicit AapDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<DBusBasedBleAdvertisingService> bleService);
+        explicit AapDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<BleAdvertisingService> bleService);
         ~AapDevice() override;
         Event<const std::vector<unsigned char>> &GetResponseDataRecived()
         {
@@ -54,6 +54,12 @@ namespace MagicPodsCore
         void RouteAudio();
         EffectsConfig LoadEffectsConfig();
         void FireAnimation(const nlohmann::json &json);
-        static std::unique_ptr<AapDevice> Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<DBusBasedBleAdvertisingService> bleService);
+
+        // Whether `ad` comes from these AirPods: its rotating address resolves with the IRK. Without AAP
+        // (Windows) no IRK can be fetched unless it was imported, then the nearby ad of the same model counts.
+        bool IsOwnAdvertisement(const BleAdertisingData &ad, const std::string &irk) const;
+        // Their proximity message (Apple type 0x07) in `ad`, nullptr if there is none
+        const std::vector<uint8_t> *OwnProximityMessage(const BleAdertisingData &ad);
+        static std::unique_ptr<AapDevice> Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<BleAdvertisingService> bleService);
     };
 }

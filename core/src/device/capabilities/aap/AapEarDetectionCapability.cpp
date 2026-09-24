@@ -11,6 +11,23 @@ namespace MagicPodsCore
 
     AapEarDetectionCapability::AapEarDetectionCapability(AapDevice &device) : AapCapability("earDetection", false, device)
     {
+        if (Client::SupportsL2CAP())
+            return;
+        option = device.LoadSettingInt("earDetection").value_or(1) != 0;
+        // byte 5 of the proximity message: bit 1 this pod in ear, bit 3 the other one
+        leEventId = device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad)
+        {
+            if (!this->device.GetConnected())
+                return;
+            if (auto message = this->device.OwnProximityMessage(ad))
+                Update((*message)[5] & 0x02 ? 0 : 1, (*message)[5] & 0x08 ? 0 : 1);
+        });
+    }
+
+    AapEarDetectionCapability::~AapEarDetectionCapability()
+    {
+        if (leEventId != 0)
+            device.GetLeDataReceived().Unsubscribe(leEventId);
     }
 
     nlohmann::json AapEarDetectionCapability::CreateJsonBody()
@@ -40,9 +57,16 @@ namespace MagicPodsCore
         }
         if (data[4] != 0x06)
             return;
+        Update(data[6], data[7]);
+    }
 
-        primary = data[6];
-        secondary = data[7];
+    void AapEarDetectionCapability::Update(int newPrimary, int newSecondary)
+    {
+        // advertisements repeat several times a second, only changes count
+        if (isAvailable && newPrimary == primary && newSecondary == secondary)
+            return;
+        primary = newPrimary;
+        secondary = newSecondary;
         int inEar = (primary == 0) + (secondary == 0);
         int before = device.podsInEar.exchange(inEar);
         isAvailable = true;
@@ -80,7 +104,10 @@ namespace MagicPodsCore
             return;
         }
         option = capability["selected"].get<bool>();
-        device.SendData({0x04, 0x00, 0x04, 0x00, 0x09, 0x00, EAR_DETECTION_CONFIG, static_cast<unsigned char>(option ? 0x01 : 0x02), 0x00, 0x00, 0x00});
+        if (Client::SupportsL2CAP())
+            device.SendData({0x04, 0x00, 0x04, 0x00, 0x09, 0x00, EAR_DETECTION_CONFIG, static_cast<unsigned char>(option ? 0x01 : 0x02), 0x00, 0x00, 0x00});
+        else
+            device.SaveSettingInt("earDetection", option);
         _onChanged.FireEvent(*this);
     }
 }

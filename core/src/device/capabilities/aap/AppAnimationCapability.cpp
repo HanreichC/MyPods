@@ -37,7 +37,8 @@ namespace MagicPodsCore
 
         leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t id, const BleAdertisingData& adData){
 
-            if (irk.size() == 0 || enc.size() == 0)
+            // without AAP the keys can't be fetched, IsOwnAdvertisement then falls back to proximity
+            if ((irk.size() == 0 || enc.size() == 0) && Client::SupportsL2CAP())
             return;
 
             auto data = adData.GetManufacturerData();
@@ -48,7 +49,7 @@ namespace MagicPodsCore
             for (const auto& [company_id, bytes] : data)
             {
                 if (company_id == this->device.GetVendorId() && bytes.size() >= 27 && bytes[0] == 0x07){
-                    if (!Aes::VerifyRPA(adData.GetAddress(), irk))
+                    if (!this->device.IsOwnAdvertisement(adData, irk))
                         continue;
 
                     std::optional<bleData> toFire{};

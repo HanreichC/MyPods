@@ -15,9 +15,20 @@
 #include <QThread>
 #include <QTimer>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <tlhelp32.h>
+#else
 #include <csignal>
+#endif
 
 namespace {
+
+#ifdef Q_OS_WIN
+const QString kBackendFile = QStringLiteral("magicpodscore.exe");
+#else
+const QString kBackendFile = QStringLiteral("magicpodscore");
+#endif
 
 QString normalizedPath(const QString &path)
 {
@@ -103,9 +114,9 @@ QString BackendManager::binaryPath() const
 
     for (const QString &root : std::as_const(roots)) {
         const QDir dir(root);
-        appendUniquePath(candidates, dir.filePath(QStringLiteral("modules/magicpodscore")));
-        appendUniquePath(candidates, dir.filePath(QStringLiteral("bin/modules/magicpodscore")));
-        appendUniquePath(candidates, dir.filePath(QStringLiteral("../bin/modules/magicpodscore")));
+        appendUniquePath(candidates, dir.filePath(QStringLiteral("modules/") + kBackendFile));
+        appendUniquePath(candidates, dir.filePath(QStringLiteral("bin/modules/") + kBackendFile));
+        appendUniquePath(candidates, dir.filePath(QStringLiteral("../bin/modules/") + kBackendFile));
     }
 
     appendUniquePath(candidates, QStandardPaths::findExecutable(QStringLiteral("magicpodscore")));
@@ -122,7 +133,15 @@ QString BackendManager::binaryPath() const
 bool BackendManager::isProcessAlive(qint64 pid) const
 {
     if (pid <= 0) return false;
+#ifdef Q_OS_WIN
+    HANDLE process = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
+    if (!process) return false;
+    const bool alive = WaitForSingleObject(process, 0) == WAIT_TIMEOUT;
+    CloseHandle(process);
+    return alive;
+#else
     return ::kill(static_cast<pid_t>(pid), 0) == 0;
+#endif
 }
 
 bool BackendManager::isRunning() const
@@ -130,6 +149,17 @@ bool BackendManager::isRunning() const
     if (ownsBackend && pid > 0)
         return isProcessAlive(pid);
 
+#ifdef Q_OS_WIN
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE)
+        return false;
+    PROCESSENTRY32W entry{sizeof(entry)};
+    bool found = false;
+    for (BOOL more = Process32FirstW(snapshot, &entry); more && !found; more = Process32NextW(snapshot, &entry))
+        found = kBackendFile.compare(QString::fromWCharArray(entry.szExeFile), Qt::CaseInsensitive) == 0;
+    CloseHandle(snapshot);
+    return found;
+#else
     QProcess pgrep;
     pgrep.start(QStringLiteral("pgrep"), {QStringLiteral("-x"), QStringLiteral("magicpodscore")});
     if (!pgrep.waitForFinished(2000)) {
@@ -137,10 +167,20 @@ bool BackendManager::isRunning() const
         return false;
     }
     return pgrep.exitCode() == 0;
+#endif
 }
 
 void BackendManager::stopProcess()
 {
+#ifdef Q_OS_WIN
+    // ponytail: a console process without a window has no graceful stop signal; the daemon keeps
+    // nothing to flush (settings are written on change), so it is terminated right away.
+    if (HANDLE process = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, static_cast<DWORD>(pid))) {
+        TerminateProcess(process, 0);
+        WaitForSingleObject(process, 3000);
+        CloseHandle(process);
+    }
+#else
     ::kill(static_cast<pid_t>(pid), SIGTERM);
     for (int i = 0; i < 30; ++i) {
         QThread::msleep(100);
@@ -148,6 +188,7 @@ void BackendManager::stopProcess()
     }
     if (isProcessAlive(pid))
         ::kill(static_cast<pid_t>(pid), SIGKILL);
+#endif
     pid = 0;
     ownsBackend = false;
 }
@@ -215,6 +256,12 @@ bool BackendManager::start()
     process.setProgram(path);
     process.setWorkingDirectory(QFileInfo(path).absolutePath());
     process.setProcessEnvironment(backendProcessEnvironment());
+#ifdef Q_OS_WIN
+    // the daemon is a console program (for --selftest); started from the tray app it gets no window
+    process.setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *args) {
+        args->flags |= CREATE_NO_WINDOW;
+    });
+#endif
 
     qint64 newPid = 0;
     if (!process.startDetached(&newPid) || newPid <= 0) {
@@ -263,6 +310,11 @@ QString BackendManager::version()
     proc.setProcessChannelMode(QProcess::MergedChannels);
     proc.setWorkingDirectory(QFileInfo(path).absolutePath());
     proc.setProcessEnvironment(backendProcessEnvironment());
+#ifdef Q_OS_WIN
+    proc.setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *args) {
+        args->flags |= CREATE_NO_WINDOW;
+    });
+#endif
     proc.start(path, {QStringLiteral("-version")});
     if (!proc.waitForStarted(3000) || !proc.waitForFinished(5000)) {
         proc.kill();

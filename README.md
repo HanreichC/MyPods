@@ -2,13 +2,13 @@
 
 **Use AirPods and other Bluetooth headphones on Linux the way they feel on a Mac.**
 
-MyPods is a Linux desktop app and background daemon for Apple AirPods and other Bluetooth
-headphones. It shows the familiar lid-open popup with an animation, reads the exact battery level,
+MyPods is a Linux (and, with fewer features, Windows) desktop app and background daemon for Apple
+AirPods and other Bluetooth headphones. It shows the familiar lid-open popup with an animation, reads the exact battery level,
 switches noise control, pauses playback when you take a pod out, and hands the AirPods back and
 forth between your iPhone and your computer, just like "Connect to This Mac: Automatically".
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
-![Platform: Linux](https://img.shields.io/badge/platform-Linux-lightgrey.svg)
+![Platform: Linux | Windows](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)
 ![Qt 6.9+](https://img.shields.io/badge/Qt-6.9%2B-41cd52.svg)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599c.svg)
 
@@ -33,6 +33,7 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 - [How it works](#how-it-works)
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Windows](#windows)
 - [One-time system setup](#one-time-system-setup)
 - [Usage](#usage)
 - [Configuration](#configuration)
@@ -107,8 +108,7 @@ and the active Bluetooth codec.
 | Samsung | Galaxy Buds series (see above) | Inherited from MagicPodsCore, not tested by this project |
 | Generic | Any Hands-Free (HFP) headset | Battery and codec only |
 
-Linux only. Windows support is intentionally out of scope: AirPods settings run over L2CAP, and
-Windows has no user-space L2CAP API. The reasoning is documented in [docs/PLAN.md](docs/PLAN.md).
+Linux gets every feature. Windows gets the subset that works without a kernel driver, see [Windows](#windows).
 
 ---
 
@@ -234,6 +234,41 @@ rm -rf ~/.config/mypods   # optional: settings and stored AirPods keys
 
 ---
 
+## Windows
+
+Download `MyPods-x64.msi` from the [latest release](https://github.com/HanreichC/MyPods/releases/latest)
+and install it. It installs to `C:\Program Files\MyPods`, adds a Start menu entry and starts MyPods
+hidden in the tray at login. Settings live in `%APPDATA%\mypods\config.toml`.
+
+Windows only lets kernel-mode drivers open L2CAP channels, and every AirPods setting travels over
+L2CAP (AAP). MyPods ships no driver, so on Windows it does what user space allows:
+
+| Feature | Windows |
+|---------|---------|
+| Device list, connect/disconnect, Bluetooth on/off | Yes (WinRT, Bluetooth audio driver) |
+| Lid-open popup with animation | Yes, from the BLE advertisements |
+| AirPods battery in the app and tray | Yes, from the advertisements: 10 % steps, 1 % with imported keys |
+| Ear detection (pause/resume) | Yes, from the advertisements; on/off is stored locally |
+| Tray popup: now playing, media keys, volume | Yes (system media sessions, Core Audio) |
+| Parrot Zik 2.0, Galaxy Buds (RFCOMM) | Yes, all features |
+| HFP battery of other headsets | Yes |
+| Noise control, Conversation Awareness, press/swipe settings | No, needs AAP |
+| Automatic switching with the iPhone ("Move here") | No, needs AAP |
+| Spatial audio, equalizer for AirPods | No, would need an audio driver (APO) |
+| Codec display and switching | No, Windows exposes neither |
+
+**Recognizing your AirPods.** On Linux MyPods fetches the AirPods' IRK and ENC keys over AAP. Without
+AAP it treats the AirPods of your paired model within about a meter as yours, which gets confused
+when a second pair of the same model is right next to you. If you also use MyPods on Linux, copy the
+`irk` and `enc` lines from your AirPods' table in `~/.config/mypods/config.toml` into the same table
+in `%APPDATA%\mypods\config.toml` (the table name is the AirPods' address). MyPods then verifies them
+properly and shows the exact battery.
+
+The L2CAP transport is one function pair in `core/src/client/Client_win.cpp`; with a profile driver
+installed, implementing it there enables every AAP feature without touching the protocol code.
+
+---
+
 ## One-time system setup
 
 For automatic switching between your iPhone and this computer, BlueZ must identify itself as an
@@ -325,6 +360,23 @@ binary and starts it.
 
 For a debug build, use `-DCMAKE_BUILD_TYPE=Debug`. This enables debug logging and runs the
 self-tests on daemon startup.
+
+### Windows
+
+Visual Studio 2022 or newer with the C++ workload, Qt 6.9 for MSVC (with Qt WebSockets) and vcpkg.
+From a *Developer PowerShell*:
+
+```powershell
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
+    -DCMAKE_PREFIX_PATH=C:\Qt\6.9.3\msvc2022_64 `
+    -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+cmake --build build
+build\modules\magicpodscore.exe --selftest
+```
+
+vcpkg installs OpenSSL, libuv and zlib from [vcpkg.json](vcpkg.json). The MSI is built by
+[.github/workflows/windows.yml](.github/workflows/windows.yml) with WiX 5 from
+[packaging/windows/MyPods.wxs](packaging/windows/MyPods.wxs).
 
 ### In VS Code / VSCodium
 

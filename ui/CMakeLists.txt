@@ -8,9 +8,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 6.9: RectangularShadow
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
-# Optional: anchors the tray popup under the panel on Wayland (KDE ships it; the AppImage builds without)
-find_package(LayerShellQt QUIET)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
+if(NOT WIN32)
+    # MPRIS for the tray popup's now playing (Windows asks the system media sessions instead)
+    find_package(Qt6 6.9 REQUIRED COMPONENTS DBus)
+    # Optional: anchors the tray popup under the panel on Wayland (KDE ships it; the AppImage builds without)
+    find_package(LayerShellQt QUIET)
+endif()
 
 qt_standard_project_setup(REQUIRES 6.8
     I18N_TRANSLATED_LANGUAGES en de
@@ -36,7 +40,8 @@ qt_add_executable(magicpods
     src/app/cpp/BackendManager.cpp
     src/app/cpp/DesktopManager.cpp
     src/app/cpp/main.cpp
-    src/app/cpp/MediaController.cpp
+    # listed for AUTOMOC: its implementation is MediaController.cpp or MediaController_win.cpp per platform
+    src/app/cpp/MediaController.h
     src/app/cpp/TrayIcon.cpp
     src/app/cpp/TrayIconManager.cpp
 )
@@ -96,7 +101,6 @@ target_include_directories(magicpods PRIVATE
 
 target_link_libraries(magicpods PRIVATE
     Qt6::Core
-    Qt6::DBus
     Qt6::Gui
     Qt6::Qml
     Qt6::Quick
@@ -104,6 +108,18 @@ target_link_libraries(magicpods PRIVATE
     Qt6::Widgets
     Qt6::WebSockets
 )
+
+if(WIN32)
+    # magicpods.rc: the exe's icon (Explorer, taskbar, installer shortcuts)
+    target_sources(magicpods PRIVATE src/app/cpp/MediaController_win.cpp src/app/magicpods.rc)
+    set_target_properties(magicpods PROPERTIES CXX_STANDARD 20) # C++/WinRT's coroutines
+    target_compile_definitions(magicpods PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_compile_options(magicpods PRIVATE /utf-8 /bigobj)
+    target_link_libraries(magicpods PRIVATE windowsapp ole32)
+else()
+    target_sources(magicpods PRIVATE src/app/cpp/MediaController.cpp)
+    target_link_libraries(magicpods PRIVATE Qt6::DBus)
+endif()
 
 if(LayerShellQt_FOUND)
     target_link_libraries(magicpods PRIVATE LayerShellQt::Interface)
@@ -118,6 +134,8 @@ target_compile_definitions(magicpods PRIVATE
 qt_add_translations(magicpods
     SOURCE_TARGETS magicpods
     TS_FILE_BASE "${APP_I18N_TS_FILE_BASE}"
+    # the UI uses qsTrId; without it lrelease (e.g. Qt 6.9) drops every message
+    LRELEASE_OPTIONS -idbased
     MERGE_QT_TRANSLATIONS
     QT_TRANSLATION_CATALOGS qtbase
     RESOURCE_PREFIX i18n

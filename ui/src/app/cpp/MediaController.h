@@ -6,7 +6,8 @@
 #include <QObject>
 #include <QVariantMap>
 
-// Now playing (MPRIS) and the default output's volume, for the tray popup.
+// Now playing and the default output's volume, for the tray popup.
+// Linux: MPRIS and pactl (MediaController.cpp). Windows: system media sessions and Core Audio (MediaController_win.cpp).
 class MediaController final : public QObject
 {
     Q_OBJECT
@@ -36,9 +37,13 @@ signals:
 
 private:
     void callPlayer(const QString &method);
+#ifndef Q_OS_WIN
     static QString pactl(const QStringList &args);
+#else
+    QString m_artKey; // title + artist the cover in m_player belongs to
+#endif
 
-    QString m_service;
+    QString m_service; // MPRIS bus name / app user model id of the shown player
     QVariantMap m_player;
     int m_volume = -1;
     bool m_muted = false;

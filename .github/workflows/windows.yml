@@ -1,0 +1,79 @@
+name: Windows MSI
+
+# Every branch builds and tests; only main publishes a release
+on:
+  push:
+    paths-ignore: ['**.md', 'docs/**', 'captures/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  QT_VERSION: 6.9.3
+  VCPKG_DEFAULT_TRIPLET: x64-windows-static-md
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+
+jobs:
+  msi:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2022_64
+          modules: qtwebsockets
+          cache: true
+
+      # OpenSSL, libuv and zlib from vcpkg.json; the built packages are cached between runs
+      - run: New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE
+      - uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_DEFAULT_TRIPLET
+          cmake --build build
+
+      - name: Self-test
+        run: build\modules\magicpodscore.exe --selftest
+
+      - name: Deploy
+        run: |
+          New-Item -ItemType Directory deploy\modules | Out-Null
+          Copy-Item build\magicpods.exe deploy\
+          Copy-Item build\modules\magicpodscore.exe deploy\modules\
+          windeployqt --release --qmldir ui\src\app\qml --no-system-d3d-compiler --no-opengl-sw deploy\magicpods.exe
+          # App-local VC++ runtime for both executables, so no separate redistributable install is needed
+          $crt = Get-ChildItem "$env:VCToolsRedistDir\x64\Microsoft.VC*.CRT" | Select-Object -First 1
+          Copy-Item "$crt\*.dll" deploy\
+          Copy-Item "$crt\*.dll" deploy\modules\
+
+      - name: MSI
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix build packaging\windows\MyPods.wxs -arch x64 -d Version=0.1.${{ github.run_number }} -d "DeployDir=$PWD\deploy" -o MyPods-x64.msi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyPods-x64.msi
+          path: MyPods-x64.msi
+
+      # Same release as the AppImage workflow: both attach to the tag of the commit
+      - name: Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          tag="build-${GITHUB_SHA::7}"
+          gh release create "$tag" --target "$GITHUB_SHA" --title "MyPods build ${GITHUB_SHA::7}" --generate-notes || true
+          gh release upload "$tag" MyPods-x64.msi --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
