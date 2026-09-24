@@ -39,9 +39,10 @@ jobs:
       # Errors also become annotations, readable on the commit without opening the log
       - name: Build
         run: |
+          pip install --quiet ninja # not on the windows-2025 image
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_DEFAULT_TRIPLET 2>&1 | Tee-Object -FilePath build.log
+            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            "-DVCPKG_TARGET_TRIPLET=$env:VCPKG_DEFAULT_TRIPLET" 2>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -eq 0) { cmake --build build 2>&1 | Tee-Object -FilePath build.log -Append }
           if ($LASTEXITCODE -ne 0) {
             Select-String -Path build.log -Pattern 'error|CMake Error|FAILED' | Select-Object -First 15 |
