@@ -3,6 +3,7 @@
 
 #include "BatteryProvider.h"
 #include "Logger.h"
+#include "device/BatteryHistory.h"
 
 #include <algorithm>
 #include <atomic>
@@ -36,7 +37,10 @@ namespace MagicPodsCore
 #ifdef _WIN32
     BatteryProvider::BatteryProvider() = default;
     BatteryProvider::~BatteryProvider() = default;
-    void BatteryProvider::Set(const std::string &, std::optional<uint8_t>) {}
+    void BatteryProvider::Set(const std::string &address, std::optional<uint8_t> percentage)
+    {
+        BatteryHistory::Instance().Record(address, percentage);
+    }
 #else
     static constexpr const char *ROOT = "/org/mypods/battery";
     static constexpr const char *INTERFACE = "org.bluez.BatteryProvider1";
@@ -74,6 +78,7 @@ namespace MagicPodsCore
 
     void BatteryProvider::Set(const std::string &address, std::optional<uint8_t> percentage)
     {
+        BatteryHistory::Instance().Record(address, percentage);
         std::lock_guard lock{_lock};
         try
         {

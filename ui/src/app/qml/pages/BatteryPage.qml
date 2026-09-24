@@ -32,6 +32,7 @@ Components.ScrollPage {
     readonly property var autoSwitchData: capabilities?.autoSwitch ?? null
     readonly property var earDetectionData: capabilities?.earDetection ?? null
     readonly property var deviceInfoData: capabilities?.deviceInfo ?? null
+    readonly property var batteryHistoryData: capabilities?.batteryHistory ?? null
     readonly property var listeningModesData: capabilities?.listeningModes ?? null
     readonly property var allowOffData: capabilities?.allowOff ?? null
     readonly property var micModeData: capabilities?.micMode ?? null
@@ -815,6 +816,102 @@ Components.ScrollPage {
                 checked: rootPage.transparencyTuningData?.conversationBoost ?? false
                 enabled: rootPage.transparencyTuningData?.enabled ?? false
                 onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "conversationBoost")
+            }
+        }
+    }
+
+    // Battery history recorded by the core: the last week, charge cycles, runtime and how it wears
+    MP.Heading {
+        visible: hasInfo && rootPage.batteryHistoryData !== null
+        level: 5
+        Layout.topMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("battery.history.header")
+    }
+
+    Components.Card {
+        visible: hasInfo && rootPage.batteryHistoryData !== null
+        verticalPadding: MP.Units.largeSpacing
+
+        Canvas {
+            id: chart
+            readonly property var points: rootPage.batteryHistoryData?.history ?? []
+            Layout.fillWidth: true
+            Layout.preferredHeight: 96
+            Accessible.role: Accessible.Graphic
+            Accessible.name: qsTrId("battery.history.chart")
+            onPointsChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            readonly property bool dark: MP.Theme.dark
+            onDarkChanged: requestPaint()
+
+            onPaint: {
+                const ctx = getContext("2d");
+                ctx.reset();
+                const end = Date.now() / 1000, start = end - 7 * 24 * 3600;
+                const x = t => (t - start) / (end - start) * width;
+                const y = level => 1 + (height - 2) * (1 - level / 100); // 1 px in, so 0 and 100 % aren't clipped
+
+                ctx.strokeStyle = MP.Theme.separator;
+                ctx.lineWidth = 1;
+                for (const level of [0, 50, 100]) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, Math.round(y(level)) - 0.5);
+                    ctx.lineTo(width, Math.round(y(level)) - 0.5);
+                    ctx.stroke();
+                }
+
+                // a null level is a disconnect: the line breaks there
+                ctx.strokeStyle = MP.Theme.green;
+                ctx.lineWidth = 2;
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                let drawing = false;
+                for (const [t, level] of points) {
+                    if (level === null) {
+                        drawing = false;
+                        continue;
+                    }
+                    drawing ? ctx.lineTo(x(t), y(level)) : ctx.moveTo(x(t), y(level));
+                    drawing = true;
+                }
+                ctx.stroke();
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.bottomMargin: MP.Units.smallSpacing
+            MP.Label { color: MP.Theme.secondaryText; text: qsTrId("battery.history.week_ago") }
+            Item { Layout.fillWidth: true }
+            MP.Label { color: MP.Theme.secondaryText; text: qsTrId("battery.history.now") }
+        }
+
+        Repeater {
+            model: {
+                const h = rootPage.batteryHistoryData;
+                const hours = value => qsTrId("battery.history.hours").arg(Number(value).toLocaleString(Qt.locale(), "f", 1));
+                return [
+                    { label: qsTrId("battery.history.cycles"), tooltip: qsTrId("battery.history.cycles_tooltip"),
+                      value: String(h?.cycles ?? 0) },
+                    { label: qsTrId("battery.history.runtime"), tooltip: qsTrId("battery.history.runtime_tooltip"),
+                      value: h?.runtime !== undefined ? hours(h.runtime) : qsTrId("battery.history.collecting") },
+                    { label: qsTrId("battery.history.health"), tooltip: qsTrId("battery.history.health_tooltip"),
+                      value: h?.health !== undefined ? qsTrId("battery.history.health_value").arg(h.health).arg(hours(h.baselineRuntime))
+                                                     : qsTrId("battery.history.collecting") }
+                ];
+            }
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                label: modelData.label
+                tooltip: modelData.tooltip
+
+                MP.Label {
+                    color: MP.Theme.secondaryText
+                    text: modelData.value
+                    textFormat: Text.PlainText
+                }
             }
         }
     }

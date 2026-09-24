@@ -104,6 +104,7 @@ add_executable(magicpodscore
     src/device/BhfDevice.cpp
     src/device/ZikDevice.cpp
     src/device/DeviceBattery.cpp
+    src/device/BatteryHistory.cpp
     src/dbus/BatteryProvider.cpp
     src/device/Device.cpp
 
