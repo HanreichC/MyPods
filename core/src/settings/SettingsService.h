@@ -5,6 +5,7 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -18,6 +19,10 @@ class SettingsService {
 private:
     toml::table _settings{};
     std::string _filePath;
+    // Settings are written from the AAP reader (keys), the BLE thread (color) and the WebSocket loop.
+    // Recursive: update listeners read settings back on the same thread.
+    // ponytail: a node_view handed out by GetSetting still points into the table; callers read it right away
+    std::recursive_mutex _lock{};
     Event<UpdatedSettingNotification> _onSettingUpdate{};
 
     void LoadFromFile();
@@ -66,6 +71,7 @@ public:
 
 template<typename T>
 void SettingsService::SaveSetting(const std::string& container, const std::string& name, T&& value) {
+    std::lock_guard lock{_lock};
     auto containerTable = _settings[container].as_table();
     if (!containerTable) {
         _settings.insert_or_assign(container, toml::table{});

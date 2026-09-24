@@ -15,6 +15,7 @@
 #include "tests/TestsAapBle.h"
 #include "tests/TestsAapAudio.h"
 #include "tests/TestsZik.h"
+#include "tests/TestsCore.h"
 #include "Logger.h"
 #include "Config.h"
 #include "settings/SettingsService.h"
@@ -430,7 +431,7 @@ int main(int argc, char** argv) {
 
     // Byte-level self-checks without hardware: magicpodscore --selftest
     if (argc > 1 && std::string{argv[1]} == "--selftest") {
-        int failures = TestsSgb{}.failures + TestsAapBle{}.failures + TestsAapAudio{}.failures + TestsZik{}.failures;
+        int failures = TestsSgb{}.failures + TestsAapBle{}.failures + TestsAapAudio{}.failures + TestsZik{}.failures + TestsCore{}.failures;
         Logger::Info("Selftest: %d failure(s)", failures);
         return failures == 0 ? 0 : 1;
     }
@@ -474,7 +475,18 @@ int main(int argc, char** argv) {
         .resetIdleTimeoutOnSend = false,
         .sendPingsAutomatically = true,
         /* Handlers */
-        .upgrade = nullptr,
+        // Browsers don't apply the same-origin policy to WebSockets, so any web page could otherwise read the
+        // AirPods keys and change settings through ws://localhost. They always send Origin, our clients
+        // (the Qt UI, websocat, scripts) don't.
+        .upgrade = [](auto *res, auto *req, auto *context) {
+            if (!req->getHeader("origin").empty()) {
+                Logger::Warn("Rejected WebSocket connection from origin %s", std::string{req->getHeader("origin")}.c_str());
+                res->writeStatus("403 Forbidden")->end();
+                return;
+            }
+            res->template upgrade<PerSocketData>({}, req->getHeader("sec-websocket-key"), req->getHeader("sec-websocket-protocol"),
+                                                 req->getHeader("sec-websocket-extensions"), context);
+        },
         .open = [&initialized](auto* ws) {
             if (!initialized.load()) {
                 Logger::Info("Connection attempted before initialization complete, closing");
@@ -514,7 +526,7 @@ int main(int argc, char** argv) {
             /* You may access ws->getUserData() here */
             Logger::Info("On open websocket closed");
         }
-    }).listen(WEBSOCKET_PORT, LIBUS_LISTEN_EXCLUSIVE_PORT, [&](auto *listen_socket) {
+    }).listen("127.0.0.1", WEBSOCKET_PORT, LIBUS_LISTEN_EXCLUSIVE_PORT, [&](auto *listen_socket) { // loopback only, the API has no authentication
         if (listen_socket) {
             Logger::Info("Listening on port %d", WEBSOCKET_PORT);
 

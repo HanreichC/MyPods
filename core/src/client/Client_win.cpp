@@ -92,9 +92,14 @@ namespace MagicPodsCore {
         return recv(static_cast<SOCKET>(_socket), reinterpret_cast<char*>(buffer), static_cast<int>(length), 0);
     }
 
+    void Client::SocketShutdown() {
+        if (_socket != -1)
+            shutdown(static_cast<SOCKET>(_socket), SD_BOTH);
+    }
+
     void Client::SocketClose() {
-        // also wakes the reading thread: its recv() returns an error
-        closesocket(static_cast<SOCKET>(_socket));
+        if (_socket != -1)
+            closesocket(static_cast<SOCKET>(_socket));
         _socket = -1;
     }
 }

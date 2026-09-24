@@ -27,23 +27,38 @@ void SettingsService::LoadFromFile() {
     try {
         _settings = toml::parse_file(_filePath);
     } catch (const toml::parse_error& e) {
-        throw std::runtime_error("Failed to parse TOML file: " + std::string(e.what()));
+        // Throwing here would stop the daemon on every start (and the UI restarts it in a loop).
+        // Keep the damaged file for recovering the keys by hand and start from the defaults.
+        file.close();
+        std::error_code ignored;
+        std::filesystem::rename(_filePath, _filePath + ".broken", ignored);
+        Logger::Error("Settings file unreadable (%s), moved to %s.broken, using defaults", e.what(), _filePath.c_str());
     }
 }
 
 void SettingsService::WriteToFile() {
     std::filesystem::create_directories(std::filesystem::path(_filePath).parent_path());
 
-    std::ofstream file(_filePath);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file for writing: " + _filePath);
-    }
+    // Write a temporary file and rename it over the old one: a crash or full disk mid-write
+    // must not truncate the settings, they hold the AirPods keys.
+    const std::string tempPath = _filePath + ".tmp";
+    {
+        std::ofstream file(tempPath, std::ios::trunc);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to open file for writing: " + tempPath);
+        }
+        // private before any content lands in it: the keys identify and track the headphones
+        std::filesystem::permissions(tempPath, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
+                                     std::filesystem::perm_options::replace);
 
-    file << _settings;
+        file << _settings;
+        file.flush();
 
-    if (!file.good()) {
-        throw std::runtime_error("Failed to write to file: " + _filePath);
+        if (!file.good()) {
+            throw std::runtime_error("Failed to write to file: " + tempPath);
+        }
     }
+    std::filesystem::rename(tempPath, _filePath);
 }
 
 toml::table SettingsService::GetDefaults() {
@@ -57,16 +72,19 @@ toml::table SettingsService::GetDefaults() {
 }
 
 const toml::table& SettingsService::GetSettingsAll() {
+    std::lock_guard lock{_lock};
     return _settings;
 }
 
 toml::table SettingsService::GetSettingsAllWrapped() {
+    std::lock_guard lock{_lock};
     toml::table wrapped;
     wrapped.insert_or_assign("settings", _settings);
     return wrapped;
 }
 
 const toml::table& SettingsService::GetSettings(const std::string& container) {
+    std::lock_guard lock{_lock};
     auto containerTable = _settings[container].as_table();
     if (!containerTable) {
         _settings.insert_or_assign(container, toml::table{});
@@ -76,6 +94,7 @@ const toml::table& SettingsService::GetSettings(const std::string& container) {
 }
 
 toml::node_view<toml::node> SettingsService::GetSetting(const std::string& container, const std::string& name) {
+    std::lock_guard lock{_lock};
     auto containerTable = _settings[container].as_table();
     if (!containerTable) {
         return toml::node_view<toml::node>{};
@@ -84,6 +103,7 @@ toml::node_view<toml::node> SettingsService::GetSetting(const std::string& conta
 }
 
 void SettingsService::SaveSettings(const toml::table& table) {
+    std::lock_guard lock{_lock};
     auto settingsRoot = table["settings"].as_table();
     if (!settingsRoot) {
         throw std::invalid_argument("Table must contain 'settings' root key");
@@ -117,6 +137,7 @@ void SettingsService::SaveSettings(const toml::table& table) {
 }
 
 void SettingsService::SaveSetting(const std::string& container, const std::string& name, const toml::node& value) {
+    std::lock_guard lock{_lock};
     auto containerTable = _settings[container].as_table();
     if (!containerTable) {
         _settings.insert_or_assign(container, toml::table{});
@@ -130,6 +151,7 @@ void SettingsService::SaveSetting(const std::string& container, const std::strin
 }
 
 void SettingsService::SaveSetting(const std::string& container, const std::string& name, const toml::node_view<const toml::node>& value) {
+    std::lock_guard lock{_lock};
     if (value) {
         auto containerTable = _settings[container].as_table();
         if (!containerTable) {

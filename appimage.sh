@@ -19,6 +19,9 @@ aqt install-qt linux desktop $QT_VERSION linux_gcc_64 -m qtwebsockets -O /opt/qt
 
 CC=gcc-12 CXX=g++-12 cmake -S . -B $BUILD -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$QT
 cmake --build $BUILD -j"$(nproc)"
+# Byte-Checks ohne Hardware; ein Fehler bricht den Build ab (set -e), bevor ein AppImage entsteht
+$BUILD/modules/magicpodscore --selftest
+python3 tools/sniff.py --selftest
 
 cd $BUILD
 rm -rf AppDir && mkdir -p AppDir/usr/bin/modules AppDir/usr/plugins

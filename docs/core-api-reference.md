@@ -9,8 +9,10 @@ All messages are sent as text WebSocket frames in JSON format.
 Connect to the WebSocket at the following address:
 
 ```
-ws://172.0.1.0:2020/
+ws://127.0.0.1:2020/
 ```
+
+The daemon listens on loopback only and rejects connections that send an `Origin` header (browsers).
 
 After connecting to the WebSocket, MagicPodsCore sends an `init` message and then starts sending notifications about changes in `info`, `headphone`, and `defaultbluetooth` states.
 

@@ -306,7 +306,8 @@ void Backend::restartTransport()
         socket.close();
     }
     notifyConnectedChanged();
-    socket.open(QUrl(QStringLiteral("ws://localhost:2020")));
+    // the daemon binds 127.0.0.1 only; "localhost" may resolve to ::1 first
+    socket.open(QUrl(QStringLiteral("ws://127.0.0.1:2020")));
 }
 
 void Backend::sendToSocket(const QByteArray &payload)

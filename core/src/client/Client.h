@@ -9,6 +9,7 @@
 #include "Event.h"
 #include "BlockingQueue.h"
 
+#include <atomic>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -25,7 +26,7 @@ namespace MagicPodsCore {
 
     class Client {
     private:
-        static const int CONNECTION_TO_SOCKET_ATTEMPTS_NUMBER = 1;
+        static const int CONNECTION_TO_SOCKET_ATTEMPTS_NUMBER = 3;
 
         std::string _address{};
         unsigned short _port{};
@@ -34,9 +35,12 @@ namespace MagicPodsCore {
         ClientConnectionType _connectionType{};
 
         std::intptr_t _socket{-1}; // fd on Linux, SOCKET on Windows
-        bool _isStarted{false};
+        std::atomic<bool> _isStarted{false};
 
         std::mutex _startStopMutex{};
+        // joined in Stop(): a thread outliving a session would read the next session's socket or a destroyed Client
+        std::thread _writingThread{};
+        std::thread _readingThread{};
 
         BlockingQueue<std::vector<unsigned char>> _outcomeMessagesQueue{};
 
@@ -47,7 +51,9 @@ namespace MagicPodsCore {
         // kernel-mode profile driver, which MyPods doesn't ship, so AAP features stay off there.
         static bool SupportsL2CAP();
 
-        void Start(const std::function<void(Client&)>& justAfterStartLogic = {});
+        // false when the channel can't be opened (headphones busy, out of range, held by another tool);
+        // the caller stays alive and may try again on the next connection
+        bool Start(const std::function<void(Client&)>& justAfterStartLogic = {});
         void Stop();
 
         bool IsStarted() const {
@@ -67,7 +73,10 @@ namespace MagicPodsCore {
         // Platform socket calls, byte count or <= 0 on error/close like send()/recv()
         long SocketSend(const unsigned char* data, size_t length);
         long SocketReceive(unsigned char* buffer, size_t length);
+        // wakes a recv() blocked in the reading thread; close() alone doesn't on Linux
+        void SocketShutdown();
         void SocketClose();
+        void JoinThreads();
 #ifndef _WIN32
         static std::optional<uint8_t> RetrieveServicePortRFCOMM(uint8_t* uuid, const char* deviceAddress);
 #endif

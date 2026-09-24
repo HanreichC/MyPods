@@ -44,6 +44,7 @@ namespace MagicPodsCore {
         std::vector<std::unique_ptr<Capability>> capabilities{};
         std::vector<size_t> capabilityEventIds{};
         void Init();
+        void StartClient();
 
     public:
         Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);

@@ -64,13 +64,7 @@ namespace MagicPodsCore {
             }
             if (_client){
                 if (_connected){
-                    _client->Start([this](Client& _client) {
-                        for (auto& data: this->_clientStartData){
-                            _client.SendData(data);
-                            std::this_thread::sleep_for(std::chrono::milliseconds(300));
-                        }
-                    });
-                    Logger::Info("%s _client started from PropertiesChanged", GetName().c_str());
+                    StartClient();
                 }
                 else{
                     _client->Stop();
@@ -81,15 +75,23 @@ namespace MagicPodsCore {
 
         _connected = _deviceInfo->GetConnectionStatus().GetValue();
         Logger::Debug("%s: Init:Connected %s",GetName().c_str(), _connected ? "true" : "false");
-        if (_connected && _client){
-            _client->Start([this](Client& _client) {
-                for (auto& data: this->_clientStartData){
-                    _client.SendData(data);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(300));
-                }
-            });
-            Logger::Info("%s _client started from Init", GetName().c_str());
-        }
+        if (_connected && _client)
+            StartClient();
+    }
+
+    void Device::StartClient()
+    {
+        bool started = _client->Start([this](Client& _client) {
+            for (auto& data: this->_clientStartData){
+                _client.SendData(data);
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            }
+        });
+        // audio keeps working without the control channel; the next connection tries again
+        if (started)
+            Logger::Info("%s _client started", GetName().c_str());
+        else
+            Logger::Error("%s control channel unavailable, device settings stay off until it reconnects", GetName().c_str());
     }
 
     Device::~Device()
@@ -97,13 +99,14 @@ namespace MagicPodsCore {
         _deviceInfo->GetConnectionStatus().GetEvent().Unsubscribe(_deviceConnectedStatusChangedEvent);
         _deviceInfo->GetHandsFreeBatteryStatus().GetEvent().Unsubscribe(_deviceHandsFreeBatteryStatusChangedEvent);
 
-        UnsubscribeCapabilitiesChanges();
-        capabilities.clear();
-
+        // the reading thread feeds the capabilities, so it has to be gone before they are
         if (_client) {
             _client->Stop();
             _client->GetOnReceivedDataEvent().Unsubscribe(clientReceivedDataEventId);
         }
+
+        UnsubscribeCapabilitiesChanges();
+        capabilities.clear();
         Logger::Debug("Device::~Device");
 
         //TODO: Unsubscribe all listeners from all events in device. See the event.h

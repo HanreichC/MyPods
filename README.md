@@ -452,7 +452,7 @@ This makes it possible to write alternative front ends, scripts or integrations.
 
 ```bash
 # Example with websocat
-echo '{"method":"GetAll"}' | websocat -n1 ws://localhost:2020/
+echo '{"method":"GetAll"}' | websocat -n1 ws://127.0.0.1:2020/
 ```
 
 Available methods: `GetAll`, `GetDevices`, `ConnectDevice`, `DisconnectDevice`,
@@ -507,7 +507,8 @@ still see it on an older build, `animation = false` disables the scan.
 
 **Noise control and settings are missing.**
 These need an active classic connection (A2DP/HFP). Connect the AirPods first. If they still do not
-show up, make sure no other tool (for example LibrePods) holds the L2CAP channel.
+show up, make sure no other tool (for example LibrePods) holds the L2CAP channel; the daemon log then
+says "control channel unavailable". Audio keeps working, and the next connection tries again.
 
 **Automatic switching does not work.**
 Verify the `DeviceID = bluetooth:004C:0000:0000` line in `/etc/bluetooth/main.conf`, restart
@@ -515,7 +516,7 @@ Bluetooth and reconnect the AirPods. Switching is also skipped while a call is a
 device, and only MPRIS players trigger it.
 
 **The UI says it cannot reach the daemon.**
-Something else might be using port 2020, or an old daemon is still running:
+Something else might be using port 2020 on `127.0.0.1`, or an old daemon is still running:
 `pkill -x magicpodscore` and start MyPods again. Run
 `~/.local/opt/mypods/modules/magicpodscore` in a terminal to see its log.
 
@@ -527,11 +528,13 @@ play to the `mypods_fx` sink.
 
 ## Security
 
-- The daemon's WebSocket API has **no authentication**, and it listens on port 2020 on all network
-  interfaces. Anyone who can reach that port can read device state and change settings. Block the
-  port in your firewall if your machine is on an untrusted network.
-- The AirPods' IRK and ENC keys are stored in plain text in `~/.config/mypods/config.toml`.
-  Keep that file private.
+- The daemon's WebSocket API has **no authentication**. It listens on `127.0.0.1:2020` only, so
+  other machines can't reach it, but every local user and process can. It rejects connections that
+  carry an `Origin` header, which is what stops web pages in your browser from reading the AirPods keys
+  or changing settings through it.
+- The AirPods' IRK and ENC keys are stored in plain text in `~/.config/mypods/config.toml`. The daemon
+  writes that file with mode `0600` and replaces it atomically, so a crash never leaves it half written.
+  If it can't be parsed, it is moved to `config.toml.broken` and MyPods starts with defaults.
 
 ---
 
