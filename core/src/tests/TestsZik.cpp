@@ -19,6 +19,13 @@ static std::vector<unsigned char> Answer(const std::string &xml)
 
 TestsZik::TestsZik()
 {
+    // battery smoothing: in use it only goes down; charging and a fresh connection take the reading
+    Test("Zik battery in use does not rise", ZikBatteryCapability::SmoothedPercent("in_use", 80, "in_use", 81) == 80 &&
+                                             ZikBatteryCapability::SmoothedPercent("in_use", 80, "in_use", 79) == 79);
+    Test("Zik battery rises when charging or reconnected", ZikBatteryCapability::SmoothedPercent("in_use", 80, "charging", 81) == 81 &&
+                                                           ZikBatteryCapability::SmoothedPercent("charging", 90, "in_use", 95) == 95 &&
+                                                           ZikBatteryCapability::SmoothedPercent("", 0, "in_use", 81) == 81);
+
     Test("Zik open session", Zik::Frame(Zik::OpenSession) == std::vector<unsigned char>{0x00, 0x03, 0x00});
 
     // zik2ctl/pyParrotZik: length includes the 3 header bytes, then "GET <query>"

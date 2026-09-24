@@ -22,6 +22,7 @@ namespace MagicPodsCore
     class ZikBatteryCapability : public ZikCapability
     {
         DeviceBattery battery{false};
+        std::string lastState; // state of the previous answer, empty after (re)connecting
 
     protected:
         nlohmann::json CreateJsonBody() override { return battery.CreateJsonBody(); }
@@ -30,6 +31,11 @@ namespace MagicPodsCore
 
     public:
         explicit ZikBatteryCapability(ZikDevice &device);
+
+        // The percentage the UI shows. The Zik estimates it from the battery voltage, which recovers
+        // after load, so in use the reading creeps back up (seen: 76 -> 81 % in 20 min, fw 2.05).
+        // While in use it only goes down; charging, charged or a fresh connection take any value.
+        static short SmoothedPercent(const std::string &previousState, short previous, const std::string &state, short reported);
     };
 
     // /api/audio/noise_control (type off | anc | aoc "street mode", value 1 | 2 = strength)

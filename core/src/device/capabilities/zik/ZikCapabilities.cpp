@@ -39,13 +39,24 @@ namespace MagicPodsCore
             percent = Zik::Attr(xml, "battery", "level");
         short value = battery.GetBatteryStatus()[0].Battery;
         if (percent && !percent->empty())
-            value = static_cast<short>(std::atoi(percent->c_str()));
+            value = SmoothedPercent(lastState, value, *state, static_cast<short>(std::atoi(percent->c_str())));
+        lastState = *state;
         battery.UpdateBattery({DeviceBatteryData(DeviceBatteryType::Single, DeviceBatteryStatus::Connected, value, *state == "charging")});
+    }
+
+    short ZikBatteryCapability::SmoothedPercent(const std::string &previousState, short previous, const std::string &state, short reported)
+    {
+        // ponytail: never rises in use, so charging from a source the Zik doesn't report as charging
+        // shows only after the next connection
+        if (state == "in_use" && previousState == "in_use" && previous > 0 && reported > previous)
+            return previous;
+        return reported;
     }
 
     void ZikBatteryCapability::Reset()
     {
         battery.ClearBattery();
+        lastState.clear();
         Capability::Reset();
     }
 
