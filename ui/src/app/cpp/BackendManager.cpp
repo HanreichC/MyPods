@@ -334,7 +334,8 @@ QString BackendManager::version()
     }
 
     const QString out = QString::fromUtf8(proc.readAll()).trimmed();
-    static const QRegularExpression re(QStringLiteral(R"(magicpodscore\s+(\d+(?:\.\d+)*))"));
+    // the whole version, e.g. 0.2.0.r3.gabc1234: the commit is what tells two builds apart
+    static const QRegularExpression re(QStringLiteral(R"(magicpodscore\s+(\S+))"));
     const auto match = re.match(out);
     return match.hasMatch() ? match.captured(1) : QString{};
 }

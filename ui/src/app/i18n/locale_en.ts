@@ -720,5 +720,9 @@
         <source></source>
         <translation>Connect automatically</translation>
     </message>
+    <message id="about.version_mismatch">
+        <source></source>
+        <translation>The app and the running daemon come from different builds. Restart the daemon (systemctl --user restart mypods-core) or remove the old installation.</translation>
+    </message>
 </context>
 </TS>

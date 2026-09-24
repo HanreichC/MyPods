@@ -8,6 +8,9 @@ if(NOT MSVC)
 endif()
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
+if(NOT MYPODS_VERSION) # built on its own, without the top-level project
+    set(MYPODS_VERSION ${PROJECT_VERSION})
+endif()
 configure_file(config/Config.h.in src/Config.h)
 
 add_executable(magicpodscore

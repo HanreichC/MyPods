@@ -63,13 +63,27 @@ Components.ScrollPage {
             MP.Label { color: MP.Theme.secondaryText; text: Qt.application.version }
         }
 
+        // The running daemon's version; only without a connection the file next to the app is asked
         MP.FormRow {
             label: "MyPods Core"
             MP.Label {
                 color: MP.Theme.secondaryText
-                text: backendManager ? backendManager.version() || qsTrId("about.not_installed") : ""
+                text: (cppBackend && cppBackend.backendVersion)
+                      || (backendManager ? backendManager.version() || qsTrId("about.not_installed") : "")
             }
         }
+    }
+
+    // A daemon from another installation (an old systemd service, a second copy) still running
+    MP.Label {
+        visible: !!cppBackend && cppBackend.backendVersion !== "" && cppBackend.backendVersion !== Qt.application.version
+        Layout.fillWidth: true
+        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.rightMargin: MP.Units.largeSpacing
+        wrapMode: Text.WordWrap
+        color: MP.Theme.secondaryText
+        font.pixelSize: 13
+        text: qsTrId("about.version_mismatch")
     }
 
     // section footer

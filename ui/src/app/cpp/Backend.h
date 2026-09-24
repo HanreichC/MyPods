@@ -15,6 +15,8 @@ class Backend final : public QObject
     Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
     Q_PROPERTY(bool unsupportedApi READ unsupportedApi NOTIFY unsupportedApiChanged)
     Q_PROPERTY(QString backendInfoText READ backendInfoText NOTIFY backendInfoChanged)
+    // Version of the daemon this UI is connected to (not of the file next to the UI), empty when not connected
+    Q_PROPERTY(QString backendVersion READ backendVersion NOTIFY backendInfoChanged)
 
 public:
     explicit Backend(QObject *parent = nullptr);
@@ -23,6 +25,7 @@ public:
     bool connected() const;
     bool unsupportedApi() const;
     QString backendInfoText() const;
+    QString backendVersion() const { return backendVersionValue; }
 
     Q_INVOKABLE void connectSocket();
     Q_INVOKABLE void disconnectSocket();
@@ -65,6 +68,7 @@ private:
     int maxAttempts = -1;
     int reconnectAttempts = 0;
     QString backendInfoTextValue;
+    QString backendVersionValue;
     bool apiReady = false;
     bool unsupportedApiValue = false;
 };

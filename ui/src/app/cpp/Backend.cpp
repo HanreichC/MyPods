@@ -293,6 +293,7 @@ void Backend::setCapability(const QString &capability, const QString &address, c
 void Backend::resetSessionState()
 {
     updateUnsupportedApi(false);
+    backendVersionValue.clear();
     updateBackendInfoText(QString{});
     updateApiReady(false);
 }
@@ -392,6 +393,7 @@ void Backend::handleTextMessageReceived(const QString &message)
                 : QString{};
             const int backendApiVersion = apiIt->get<int>();
 
+            backendVersionValue = backendVersion; // announced with the info text below
             updateBackendInfoText(
                 backendVersion.isEmpty()
                     ? QStringLiteral("API %1").arg(backendApiVersion)

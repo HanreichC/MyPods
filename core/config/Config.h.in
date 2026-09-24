@@ -1,2 +1,3 @@
 #cmakedefine CMAKE_PROJECT_NAME "@PROJECT_NAME@"
-#cmakedefine CMAKE_PROJECT_VERSION "@CMAKE_PROJECT_VERSION@"
+// MyPods version with the commit (top-level CMakeLists.txt), the same the UI shows
+#define CMAKE_PROJECT_VERSION "@MYPODS_VERSION@"

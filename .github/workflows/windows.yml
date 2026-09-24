@@ -19,6 +19,8 @@ jobs:
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # tags and history for the version (CMakeLists.txt)
 
       - uses: jurplel/install-qt-action@v4
         with:

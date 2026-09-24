@@ -617,6 +617,12 @@ Something else might be using port 2020 on `127.0.0.1`, or an old daemon is stil
 `systemctl --user restart mypods-core` (or `pkill -x magicpodscore` without the service) and start
 MyPods again. `journalctl --user -u mypods-core` shows the daemon's log.
 
+**The About page shows different versions.**
+Versions carry the commit they were built from (`0.2.0.r3.gabc1234`, the same form as the Arch
+package's version). "MyPods Core" is the daemon that is actually running. If it differs from the app,
+a daemon from another installation still runs, typically an old `mypods-core` user service:
+`systemctl --user cat mypods-core` shows which binary it starts; restart it or remove the old copy.
+
 **Spatial audio has no effect.**
 Check that `/usr/share/libmysofa/default.sofa` exists (package `libmysofa`) and that applications
 play to the `mypods_fx` sink.
