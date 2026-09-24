@@ -5,6 +5,8 @@
 #include "BlockingQueue.h"
 #include "client/Client.h"
 #include "settings/SettingsService.h"
+#include "device/capabilities/aap/AapDeviceInfoCapability.h"
+#include "StringUtils.h"
 #include "Logger.h"
 
 #include <filesystem>
@@ -61,6 +63,25 @@ TestsCore::TestsCore()
         Test("Settings file private (0600)", perms == (std::filesystem::perms::owner_read | std::filesystem::perms::owner_write));
 #endif
         std::filesystem::remove_all(dir);
+    }
+
+    // AirPods Pro information packet as captured by LibrePods (docs/AAP Definitions.md)
+    {
+        auto packet = StringUtils::HexStringToBytes(
+            "040004001d0002d5000400416972506f64732050726f004133303438004170706c6520496e632e0051584e524848595850360036312e"
+            "313836383034303030323030303030302e323731330036312e313836383034303030323030303030302e3237313300312e302e3000");
+        auto info = AapDeviceInfoCapability::Parse(packet);
+        Test("AAP device info parsed", info && info->name == "AirPods Pro" && info->model == "A3048" &&
+                                           info->manufacturer == "Apple Inc." && info->serial == "QXNRHHYXP6" &&
+                                           info->firmware == "61.1868040002000000.2713");
+        packet.resize(40); // cut off inside the strings
+        Test("AAP device info cut off is ignored", !AapDeviceInfoCapability::Parse(packet));
+
+        Test("AAP rename packet", AapDeviceInfoCapability::RenamePacket("Pods") ==
+                                      std::vector<unsigned char>{0x04, 0x00, 0x04, 0x00, 0x1A, 0x00, 0x01, 0x04, 0x00, 'P', 'o', 'd', 's'});
+        Test("AAP rename rejects bad names", AapDeviceInfoCapability::RenamePacket("").empty() &&
+                                                 AapDeviceInfoCapability::RenamePacket(std::string(33, 'x')).empty() &&
+                                                 AapDeviceInfoCapability::RenamePacket("a\nb").empty());
     }
 }
 

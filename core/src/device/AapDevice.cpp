@@ -23,6 +23,7 @@
 #include "sdk/aap/setters/AapPrivateKeys.h"
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
 #include "capabilities/aap/AapEarDetectionCapability.h"
+#include "capabilities/aap/AapDeviceInfoCapability.h"
 #include "capabilities/aap/AapAudioSwitchCapability.h"
 #include "capabilities/aap/AapAudioEffectsCapabilities.h"
 #include "sdk/aap/Aes.h"
@@ -146,6 +147,7 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<AapAdaptiveAudioNoiseCapability>(*device));
         device->capabilities.push_back(std::make_unique<AppAnimationCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapEarDetectionCapability>(*device));
+        device->capabilities.push_back(std::make_unique<AapDeviceInfoCapability>(*device));
         // Handing the audio over is AAP smart routing; without it there is nothing to negotiate with
         if (Client::SupportsL2CAP())
             device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));

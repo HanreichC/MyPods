@@ -31,6 +31,7 @@ Components.ScrollPage {
     readonly property var equalizerData: capabilities?.equalizer ?? null
     readonly property var autoSwitchData: capabilities?.autoSwitch ?? null
     readonly property var earDetectionData: capabilities?.earDetection ?? null
+    readonly property var deviceInfoData: capabilities?.deviceInfo ?? null
     readonly property int mWidth: MP.Units.gridUnit * 10
 
     // Parrot Zik: plain switches and lists. The core sends selected as bool (switch) or index (list);
@@ -578,6 +579,58 @@ Components.ScrollPage {
                 model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
                 currentIndex: (rootPage.endCallData?.selected === 2) ? 1 : 0
                 enabled: false
+            }
+        }
+    }
+
+    // Name, model number, serial and firmware from the headphones; the name is stored on them
+    MP.Heading {
+        visible: hasInfo && rootPage.deviceInfoData !== null
+        level: 5
+        Layout.topMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("battery.device_info.header")
+    }
+
+    Components.Card {
+        visible: hasInfo && rootPage.deviceInfoData !== null
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.device_info.name")
+
+            QQC2.TextField {
+                implicitWidth: rootPage.mWidth
+                text: rootPage.deviceInfoData?.name ?? ""
+                enabled: !(rootPage.deviceInfoData?.readonly ?? true)
+                maximumLength: rootPage.deviceInfoData?.maxNameBytes ?? 32
+                Accessible.name: qsTrId("battery.device_info.name")
+                onEditingFinished: {
+                    const name = text.trim();
+                    // the core checks the byte length (UTF-8) again and ignores what doesn't fit
+                    if (rootPage.deviceInfoData && name !== "" && name !== rootPage.deviceInfoData.name)
+                        cppBackend.setCapability("deviceInfo", rootPage.currentAddress(), name, "name");
+                }
+            }
+        }
+
+        Repeater {
+            model: [
+                { label: qsTrId("battery.device_info.model"), value: rootPage.deviceInfoData?.model ?? "" },
+                { label: qsTrId("battery.device_info.serial"), value: rootPage.deviceInfoData?.serial ?? "" },
+                { label: qsTrId("battery.device_info.firmware"), value: rootPage.deviceInfoData?.firmware ?? "" }
+            ]
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                visible: modelData.value !== ""
+                label: modelData.label
+
+                MP.Label {
+                    color: MP.Theme.secondaryText
+                    text: modelData.value
+                    textFormat: Text.PlainText
+                }
             }
         }
     }

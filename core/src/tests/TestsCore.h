@@ -5,7 +5,7 @@
 
 namespace MagicPodsCore
 {
-    // Client lifecycle, send queue and settings file. No hardware needed.
+    // Client lifecycle, send queue, settings file, AAP device info and rename. No hardware needed.
     class TestsCore
     {
     public:

@@ -580,6 +580,36 @@
         <source></source>
         <translation>%1%</translation>
     </message>
+    <message id="tray.low_battery">
+        <location filename="../cpp/TrayIconManager.cpp" line="0"/>
+        <source></source>
+        <translation>Battery low: %1 % left</translation>
+    </message>
+    <message id="battery.device_info.header">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Device</translation>
+    </message>
+    <message id="battery.device_info.name">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Name</translation>
+    </message>
+    <message id="battery.device_info.model">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Model number</translation>
+    </message>
+    <message id="battery.device_info.serial">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Serial number</translation>
+    </message>
+    <message id="battery.device_info.firmware">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Firmware</translation>
+    </message>
     <message id="tray.connect_device">
         <location filename="../cpp/TrayIconManager.cpp" line="0"/>
         <source></source>

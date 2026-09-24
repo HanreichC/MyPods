@@ -8,6 +8,7 @@
 
 #include <QIcon>
 #include <QObject>
+#include <QSet>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -55,5 +56,6 @@ private:
     std::function<void()> exitApplication;
     QVariantList headphonesData;
     QVariantMap infoData;
+    QSet<QString> lowBatteryNotified; // LowBattery.h
     bool menuOpen = false;
 };

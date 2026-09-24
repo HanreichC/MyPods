@@ -244,6 +244,18 @@ bool BackendManager::start()
         return true;
     }
 
+#ifndef Q_OS_WIN
+    // Installed as a systemd user service (install.sh): systemd owns the daemon, so ear detection and
+    // switching keep working after the UI quits, and a crashed daemon comes back without the UI.
+    // Fails fast (unit missing, AppImage, no systemd), then the UI starts the daemon itself as before.
+    if (QProcess::execute(QStringLiteral("systemctl"), {QStringLiteral("--user"), QStringLiteral("--quiet"),
+                                                        QStringLiteral("start"), QStringLiteral("mypods-core.service")}) == 0) {
+        qDebug() << "[BackendManager] Backend started by systemd, attach only";
+        ownsBackend = false;
+        return true;
+    }
+#endif
+
     const QString path = binaryPath();
     if (path.isEmpty()) {
         qDebug() << "[BackendManager] Startup failed: binary not found";

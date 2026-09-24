@@ -5,6 +5,7 @@
 #include "TrayIconManager.h"
 
 #include "Backend.h"
+#include "LowBattery.h"
 #include "TrayIcon.h"
 
 #include <QAction>
@@ -89,6 +90,10 @@ void TrayIconManager::handleDataReceived(const QVariant &json)
     updateState(json.toMap());
     updateTrayIcon();
     rebuildMenu();
+
+    const int low = LowBattery::newlyLow(batteryDataFromInfo(infoData), infoData.value(QStringLiteral("address")).toString(), lowBatteryNotified);
+    if (low >= 0 && trayIcon->isVisible())
+        trayIcon->showMessage(infoData.value(QStringLiteral("name")).toString(), qtTrId("tray.low_battery").arg(low), QSystemTrayIcon::Warning);
 }
 
 void TrayIconManager::updateState(const QVariantMap &json)

@@ -76,6 +76,7 @@ add_executable(magicpodscore
     src/device/capabilities/aap/AapVolumeSwipeLengthCapability.cpp
     src/device/capabilities/aap/AapPersonalizedVolumeCapability.cpp
     src/device/capabilities/aap/AapToneVolumeCapability.cpp
+    src/device/capabilities/aap/AapDeviceInfoCapability.cpp
     src/device/capabilities/aap/AapMuteMicrophoneEndCallCapability.cpp
     src/device/capabilities/aap/AapAdaptiveAudioNoiseCapability.cpp
     src/device/capabilities/aap/AppAnimationCapability.cpp

@@ -66,6 +66,8 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Conversation Awareness | On/off and current state. |
 | AirPods module in the menu bar / Control Center | Clicking the tray icon opens a popup right under the panel: battery, noise control, Conversation Awareness, "Move here", what's playing with play/pause/skip, and the output volume. A double click opens the full window. |
 | Press speed, press-and-hold duration, volume swipe, tone volume, personalized volume, mute/end call, ANC with one AirPod | Same settings, written to the AirPods. |
+| Rename the AirPods; model number, serial number and firmware in the "About" pane | Same, in the "Device" section of the device page. The name is stored on the AirPods, so every paired device sees it. |
+| "Low battery" notification | A desktop notification when an AirPod or the Max drops to 10 %. It comes back after charging or once the level is above 20 %. |
 
 Also available: Bluetooth codec display, battery level in the tray icon, autostart,
 a Steam Deck / gamescope mode inherited from MagicPods, and English UI strings with
@@ -217,17 +219,25 @@ No root required.
 | Daemon binary | `~/.local/opt/mypods/modules/magicpodscore` |
 | Start menu entry | `~/.local/share/applications/app.magicpods.desktop` |
 | Autostart entry (starts hidden in the tray) | `~/.config/autostart/app.magicpods.desktop` |
+| Daemon as systemd user service | `~/.config/systemd/user/mypods-core.service` |
 | Icon | `~/.local/share/icons/magicpods.png` |
+
+The daemon runs as a systemd user service, independent of the tray app: ear detection, automatic
+switching and the effects keep working after you quit the tray app, and systemd restarts the daemon
+if it crashes. Its log is in `journalctl --user -u mypods-core`. Without systemd (and in the AppImage)
+the tray app starts the daemon itself, as before.
 
 Run the script again to update. It stops the running instance, reinstalls and starts it again.
 
 **Uninstall**
 
 ```bash
+systemctl --user disable --now mypods-core.service
 pkill -x magicpods; pkill -x magicpodscore
 rm -rf ~/.local/opt/mypods \
        ~/.local/share/applications/app.magicpods.desktop \
        ~/.config/autostart/app.magicpods.desktop \
+       ~/.config/systemd/user/mypods-core.service \
        ~/.local/share/icons/magicpods.png
 rm -rf ~/.config/mypods   # optional: settings and stored AirPods keys
 ```
@@ -409,9 +419,10 @@ framework required. All but one run without hardware.
 python3 tools/sniff.py --selftest
 ```
 
-Two additional standalone checks for the ANC and battery wire paths live in
-[core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp) and
-[core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp); the compile command
+Three additional standalone checks, for the ANC and battery wire paths and the low battery warning, live in
+[core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp),
+[core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp) and
+[ui/tests/LowBatteryCheck.cpp](ui/tests/LowBatteryCheck.cpp); the compile command
 is at the top of each file.
 
 One check does need hardware, because the behavior it guards only exists on a real adapter:
@@ -517,8 +528,8 @@ device, and only MPRIS players trigger it.
 
 **The UI says it cannot reach the daemon.**
 Something else might be using port 2020 on `127.0.0.1`, or an old daemon is still running:
-`pkill -x magicpodscore` and start MyPods again. Run
-`~/.local/opt/mypods/modules/magicpodscore` in a terminal to see its log.
+`systemctl --user restart mypods-core` (or `pkill -x magicpodscore` without the service) and start
+MyPods again. `journalctl --user -u mypods-core` shows the daemon's log.
 
 **Spatial audio has no effect.**
 Check that `/usr/share/libmysofa/default.sofa` exists (package `libmysofa`) and that applications
