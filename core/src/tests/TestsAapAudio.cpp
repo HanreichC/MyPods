@@ -26,6 +26,11 @@ TestsAapAudio::TestsAapAudio()
     Test("MediaInformation length field", info.size() == 14u + (info[12] | (info[13] << 8)));
     Test("MediaInformation btName encoded", std::string(info.begin(), info.end()).find("\x46" "btName" "\x45" "Linux") != std::string::npos);
 
+    Test("Banner name: adapter name, fallback", AapAudioSwitchCapability::BannerName("Chris-Laptop") == "Chris-Laptop" &&
+                                                     AapAudioSwitchCapability::BannerName("") == "Linux");
+    // 31 ASCII bytes and a 2-byte "ä": the cut must not split the character
+    auto banner = AapAudioSwitchCapability::BannerName(std::string(31, 'x') + "\xC3\xA4" + "yz");
+    Test("Banner name: at most 32 bytes, whole characters", banner == std::string(31, 'x'));
     Test("OwnsConnection", AapAudioSwitchCapability::OwnsConnection(true) == StringUtils::HexStringToBytes("0400040009000601000000"));
 
     auto source = AapAudioSwitchCapability::ParseAudioSource(StringUtils::HexStringToBytes("040004000e0066554433221102"));

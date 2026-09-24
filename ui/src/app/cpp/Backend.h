@@ -38,7 +38,6 @@ public:
     Q_INVOKABLE void disableDefaultBluetoothAdapter();
     Q_INVOKABLE void setAnc(const QString &address, int value);
     Q_INVOKABLE void setCapability(const QString &capability, const QString &address, const QVariant &value, const QString &field = QStringLiteral("selected"));
-    Q_INVOKABLE void setLogLevel(int value);
 
 signals:
     void dataReceived(const QVariant &json);

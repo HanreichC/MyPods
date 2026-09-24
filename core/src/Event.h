@@ -6,18 +6,22 @@
 
 #include <functional>
 #include <map>
+#include <mutex>
 
 namespace MagicPodsCore {
 
+    // Subscribed and fired from several threads (D-Bus, AAP reader, MPRIS, PulseAudio, WebSocket loop).
+    // FireEvent calls a snapshot, so listeners may (un)subscribe while it runs.
+    // ponytail: a listener unsubscribed by another thread mid-fire can still get that one call;
+    // owners that go away join their threads first (Device::Shutdown).
     template<typename DataType>
     class Event {
     private:
+        std::mutex _lock{};
         size_t _idForNewListener{};
         std::map<size_t, std::function<void(size_t, const DataType&)>> _listeners{};
 
     public:
-        // TODO: обработать перемещение
-
         size_t Subscribe(std::function<void(size_t, const DataType&)>&& listener);
         void Unsubscribe(size_t listenerId);
         void FireEvent(const DataType& dataType);
@@ -25,21 +29,25 @@ namespace MagicPodsCore {
 
     template<typename DataType>
     size_t Event<DataType>::Subscribe(std::function<void(size_t, const DataType&)>&& listener) {
-        _listeners.emplace(++_idForNewListener, listener);
+        std::lock_guard lock{_lock};
+        _listeners.emplace(++_idForNewListener, std::move(listener));
         return _idForNewListener;
     }
 
     template<typename DataType>
     void Event<DataType>::Unsubscribe(size_t listenerId) {
-        if (_listeners.find(listenerId) != _listeners.end())
-            _listeners.erase(listenerId);
-    }
-    
-    template<typename DataType>
-    void Event<DataType>::FireEvent(const DataType& dataType) {
-        for (auto& [key, value] : _listeners)
-            value(key, dataType);
+        std::lock_guard lock{_lock};
+        _listeners.erase(listenerId);
     }
 
-    //TODO: Should I use a destructor or create a method called UnsubscribeAll?
+    template<typename DataType>
+    void Event<DataType>::FireEvent(const DataType& dataType) {
+        std::map<size_t, std::function<void(size_t, const DataType&)>> listeners;
+        {
+            std::lock_guard lock{_lock};
+            listeners = _listeners;
+        }
+        for (auto& [key, value] : listeners)
+            value(key, dataType);
+    }
 }

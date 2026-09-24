@@ -620,5 +620,85 @@
         <source></source>
         <translation>Disconnect %1</translation>
     </message>
+    <message id="battery.allow_off">
+        <source></source>
+        <translation>Off in Press and Hold</translation>
+    </message>
+    <message id="battery.listening_modes">
+        <source></source>
+        <translation>Press and hold cycles through</translation>
+    </message>
+    <message id="battery.listening_modes.off">
+        <source></source>
+        <translation>Off</translation>
+    </message>
+    <message id="battery.listening_modes.anc">
+        <source></source>
+        <translation>Noise Cancellation</translation>
+    </message>
+    <message id="battery.listening_modes.transparency">
+        <source></source>
+        <translation>Transparency</translation>
+    </message>
+    <message id="battery.listening_modes.adaptive">
+        <source></source>
+        <translation>Adaptive</translation>
+    </message>
+    <message id="battery.mic_mode">
+        <source></source>
+        <translation>Microphone</translation>
+    </message>
+    <message id="battery.mic_mode.automatic">
+        <source></source>
+        <translation>Automatic</translation>
+    </message>
+    <message id="battery.mic_mode.right">
+        <source></source>
+        <translation>Always Right</translation>
+    </message>
+    <message id="battery.mic_mode.left">
+        <source></source>
+        <translation>Always Left</translation>
+    </message>
+    <message id="battery.loud_sound_reduction">
+        <source></source>
+        <translation>Loud Sound Reduction</translation>
+    </message>
+    <message id="battery.hearing_aid">
+        <source></source>
+        <translation>Hearing Aid</translation>
+    </message>
+    <message id="battery.hearing_aid.tooltip">
+        <source></source>
+        <translation>Uses the hearing test set up on an iPhone. Customized transparency is off while the hearing aid is on.</translation>
+    </message>
+    <message id="battery.transparency_tuning.header">
+        <source></source>
+        <translation>Transparency Mode</translation>
+    </message>
+    <message id="battery.transparency_tuning.enabled">
+        <source></source>
+        <translation>Customized Transparency</translation>
+    </message>
+    <message id="battery.transparency_tuning.amplification">
+        <source></source>
+        <translation>Amplification</translation>
+    </message>
+    <message id="battery.transparency_tuning.balance">
+        <source></source>
+        <translation>Balance</translation>
+    </message>
+    <message id="battery.transparency_tuning.tone">
+        <source></source>
+        <translation>Tone</translation>
+    </message>
+    <message id="battery.transparency_tuning.ambient_noise_reduction">
+        <source></source>
+        <translation>Ambient Noise Reduction</translation>
+    </message>
+    <message id="battery.transparency_tuning.conversation_boost">
+        <source></source>
+        <translation>Conversation Boost</translation>
+    </message>
 </context>
 </TS>

@@ -127,7 +127,7 @@ if(LayerShellQt_FOUND)
 endif()
 
 target_compile_definitions(magicpods PRIVATE
-    MAGICPODS_VERSION="${PROJECT_VERSION}"
+    MAGICPODS_VERSION="${CMAKE_PROJECT_VERSION}"
     MAGICPODS_APP_SOURCE_DIR="${APP_SOURCE_DIR}"
 )
 

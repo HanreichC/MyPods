@@ -255,6 +255,19 @@ Umgesetzt im Daemon, ohne neue Abhängigkeit (MPRIS über sdbus-c++, PipeWire al
 **(H)** an echter Hardware offen: Übernahme mit iPhone (braucht DeviceID), Vorzeichen/Skalierung
 der Kopfbewegung, ob die Pro 3 den Head-Tracking-Start von LibrePods akzeptieren.
 
+### 3.7 Stand 2026-09-24: Robustheit und P2/P3-Rest
+
+* P2 #14 erledigt: CA senkt die Lautstärke beim Sprechen auf 30 % (Level 1/2 → runter, 6/8/9 → zurück, wie LibrePods).
+* P3 #16/#17 erledigt: Tastenkürzel als `magicpods --action …` (bindet jede Desktop-Umgebung selbst),
+  PKGBUILD (`packaging/arch`), versionierte Releases per Tag `vX.Y.Z` plus `nightly`.
+* Neu: Modi für Drücken-und-Halten (`0x1A`) + „Aus“ erlauben (`0x34`), Mikrofon (`0x01`), Hörgerät (`0x2C`/`0x33`),
+  Loud Sound Reduction und angepasste Transparenz über ATT (L2CAP PSM `0x1F`, Handles `0x1B`/`0x18`),
+  Akkustand an BlueZ (`BatteryProviderManager1`), Bannername = Bluetooth-Alias des Adapters.
+* Nicht umgesetzt: Kopfgesten — die AirPods liefern nur Kopfbewegung, das Telefon deutet sie, und am Desktop
+  gibt es keinen Anruf anzunehmen.
+* **(H)** offen: ATT-Kanal neben BlueZ, Wertebereiche der Transparenz-Regler, ob der BLE-Scan-Stopp während
+  der Verbindung das A2DP-Stottern wirklich behebt.
+
 ---
 
 ## Quellen

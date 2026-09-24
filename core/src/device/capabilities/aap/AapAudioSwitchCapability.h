@@ -20,7 +20,6 @@ namespace MagicPodsCore
     private:
         std::atomic<int> mode{0}; // 0 = automatically, 1 = when last connected to this computer
         std::string localMac;
-        std::string irk;
         std::string otherDevice; // "iPhone", "iPad", "Mac" … whoever took the audio
         std::string lastA2dp;
         std::vector<std::string> connectedDevices;
@@ -50,6 +49,9 @@ namespace MagicPodsCore
 
         static std::vector<unsigned char> OwnsConnection(bool owns);
         static std::vector<unsigned char> SmartRouting(const std::string &targetMac, const std::vector<unsigned char> &body);
+        // The name the iPhone shows in its "moved to" banner: at most 32 bytes (one OPACK short string),
+        // cut on a UTF-8 character boundary; "Linux" if there is none
+        static std::string BannerName(const std::string &name);
         static std::vector<unsigned char> MediaInformation(const std::string &targetMac, const std::string &selfMac, const std::string &selfName);
         static std::vector<unsigned char> ShowNearbyUI(const std::string &targetMac);
         static std::vector<unsigned char> HijackRequest(const std::string &targetMac);

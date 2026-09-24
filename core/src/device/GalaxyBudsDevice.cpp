@@ -14,9 +14,10 @@ namespace MagicPodsCore
 {
     void GalaxyBudsDevice::OnResponseDataReceived(const std::vector<unsigned char> &data)
     {
-        std::optional<GalaxyBudsResponseData> optionalData = _packet.Extract(data);
-        if (optionalData.has_value())
-            _ResponseDataRecived.FireEvent(optionalData.value());
+        _pending.insert(_pending.end(), data.begin(), data.end());
+        for (const auto &frame : _packet.Split(_pending))
+            if (auto optionalData = _packet.Extract(frame))
+                _ResponseDataRecived.FireEvent(optionalData.value());
     }
 
     GalaxyBudsDevice::GalaxyBudsDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, unsigned short model)

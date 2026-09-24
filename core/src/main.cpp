@@ -20,8 +20,15 @@
 #include "Config.h"
 #include "settings/SettingsService.h"
 #include "settings/JsonToTomlConverter.h"
+#include "audio/AudioEffects.h"
+#include <set>
+#include <thread>
+#include <cstdlib>
 #ifdef _WIN32
 #include <winrt/base.h>
+#else
+#include <csignal>
+#include <pthread.h>
 #endif
 
 using namespace MagicPodsCore;
@@ -31,6 +38,24 @@ int EmulateAirPods(); // tests/EmulateAirPods.cpp
 //Do not forget to change version when API changes
 constexpr int API_VERSION = 0;
 constexpr int WEBSOCKET_PORT = 2020;
+
+// Sockets that are open right now. Only touched on the uWS loop thread (open, close, deferred callbacks):
+// a reply that arrives after its client went away (BlueZ can take seconds to connect) is dropped
+// instead of being written to a freed socket.
+static std::set<void*> openSockets;
+
+// The AirPods keys identify and track the headphones. The UI never needs them, so the API doesn't hand
+// them to every local process; they stay in config.toml (which the Windows import section points to).
+static bool IsSecretSetting(std::string_view name) {
+    return name == "irk" || name == "enc";
+}
+
+static void StripSecrets(nlohmann::json& container) {
+    if (!container.is_object())
+        return;
+    for (auto name : {"irk", "enc"})
+        container.erase(name);
+}
 
 nlohmann::json MakeGetDeviceResponse(DevicesInfoFetcher& devicesInfoFetcher) {
     auto rootObject = nlohmann::json::object();
@@ -63,7 +88,11 @@ nlohmann::json MakeGetDefaultBluetoothAdapterResponse(DevicesInfoFetcher& device
 
 nlohmann::json MakeGetSettingsAllResponse(SettingsService& settingsService) {
     auto wrappedSettings = settingsService.GetSettingsAllWrapped();
-    return TomlToJson(wrappedSettings);
+    auto json = TomlToJson(wrappedSettings);
+    if (json.contains("settings") && json["settings"].is_object())
+        for (auto& [container, values] : json["settings"].items())
+            StripSecrets(values);
+    return json;
 }
 
 nlohmann::json MakeGetSettingsResponse(SettingsService& settingsService, const std::string& container) {
@@ -71,16 +100,17 @@ nlohmann::json MakeGetSettingsResponse(SettingsService& settingsService, const s
     auto wrappedJson = nlohmann::json::object();
     wrappedJson["settings"] = nlohmann::json::object();
     wrappedJson["settings"][container] = TomlToJson(containerSettings);
+    StripSecrets(wrappedJson["settings"][container]);
     return wrappedJson;
 }
 
 nlohmann::json MakeGetSettingResponse(SettingsService& settingsService, const std::string& container, const std::string& setting) {
-    auto settingValue = settingsService.GetSetting(container, setting);
+    auto containerSettings = settingsService.GetSettings(container); // a copy, so the view below stays valid
 
     auto wrappedJson = nlohmann::json::object();
     wrappedJson["settings"] = nlohmann::json::object();
     wrappedJson["settings"][container] = nlohmann::json::object();
-    wrappedJson["settings"][container][setting] = TomlNodeViewToJson(settingValue);
+    wrappedJson["settings"][container][setting] = IsSecretSetting(setting) ? nlohmann::json{} : TomlNodeViewToJson(containerSettings[setting]);
 
     return wrappedJson;
 }
@@ -113,8 +143,10 @@ void HandleConnectDeviceRequest(auto *ws, const nlohmann::json& json, uWS::OpCod
         return;
     }
 
-    device->ConnectAsync([device, ws, &json, opCode, &app, &devicesInfoFetcher](const std::string* error) {
-        app.getLoop()->defer([device, ws, &json, opCode, &app, &devicesInfoFetcher]() {
+    device->ConnectAsync([device, ws, opCode, &app, &devicesInfoFetcher](const std::string* error) {
+        app.getLoop()->defer([device, ws, opCode, &devicesInfoFetcher]() {
+            if (!openSockets.contains(ws))
+                return;
             auto response = MakeGetDeviceResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
         });
@@ -133,8 +165,10 @@ void HandleDisconnectDeviceRequest(auto *ws, const nlohmann::json& json, uWS::Op
         return;
     }
 
-    device->DisconnectAsync([device, ws, &json, opCode, &app, &devicesInfoFetcher](const std::string* error) {
-        app.getLoop()->defer([device, ws, &json, opCode, &app, &devicesInfoFetcher]() {
+    device->DisconnectAsync([device, ws, opCode, &app, &devicesInfoFetcher](const std::string* error) {
+        app.getLoop()->defer([device, ws, opCode, &devicesInfoFetcher]() {
+            if (!openSockets.contains(ws))
+                return;
             auto response = MakeGetDeviceResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
         });
@@ -158,7 +192,9 @@ void HandleEnableDefaultBluetoothAdapter(auto *ws, const nlohmann::json& json, u
     Logger::Info("HandleEnableDefaultBluetoothAdapter");
 
     devicesInfoFetcher.EnableBluetoothAdapterAsync([ws, &app, &devicesInfoFetcher, opCode](const std::string* error) {
-        app.getLoop()->defer([ws, &app, &devicesInfoFetcher, opCode](){
+        app.getLoop()->defer([ws, &devicesInfoFetcher, opCode](){
+            if (!openSockets.contains(ws))
+                return;
             auto response = MakeGetDefaultBluetoothAdapterResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
         });
@@ -169,7 +205,9 @@ void HandleDisableDefaultBluetoothAdapter(auto *ws, const nlohmann::json& json, 
     Logger::Info("HandleDisableDefaultBluetoothAdapter");
 
     devicesInfoFetcher.DisableBluetoothAdapterAsync([ws, &app, &devicesInfoFetcher, opCode](const std::string* error) {
-        app.getLoop()->defer([ws, &app, &devicesInfoFetcher, opCode](){
+        app.getLoop()->defer([ws, &devicesInfoFetcher, opCode](){
+            if (!openSockets.contains(ws))
+                return;
             auto response = MakeGetDefaultBluetoothAdapterResponse(devicesInfoFetcher).dump();
             ws->send(response, opCode, response.length() < 16 * 1024);
         });
@@ -293,6 +331,8 @@ void HandleRequest(auto *ws, std::string_view message, uWS::OpCode opCode, uWS::
 
 void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& devicesInfoFetcher, SettingsService& settingsService) {
     auto onCapabilityChangedListener = [&app, &devicesInfoFetcher](std::shared_ptr<Device> device, const Capability& newValues) {
+        if (!device)
+            return; // unpaired while the event was on its way
         if (auto activeDevice = devicesInfoFetcher.GetActiveDevice(); activeDevice && activeDevice->GetAddress() == device->GetAddress()) {
             Logger::Info("onCapabilityChanged Broadcast was triggered");
             app.getLoop()->defer([&app, &devicesInfoFetcher](){
@@ -324,7 +364,10 @@ void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& device
         });
     };
 
-    auto onAnimationTriggered = [&app](nlohmann::json newValue) {
+    auto onAnimationTriggered = [&app, &settingsService](nlohmann::json newValue) {
+        // the BLE scan may also run for automatic switching, so the popup setting is checked here
+        if (!settingsService.GetValue<bool>("magicpods", "animation").value_or(true))
+            return;
         Logger::Info("onAnimationTriggered Broadcast was triggered");
         app.getLoop()->defer([&app, newValue]() {
             auto response = newValue.dump();
@@ -376,6 +419,8 @@ void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& device
 
         std::string container{notification.GetContainerName()};
         std::string setting{notification.GetSettingName()};
+        if (IsSecretSetting(setting))
+            return;
 
         app.getLoop()->defer([&app, &settingsService, container, setting]() {
             auto response = MakeGetSettingResponse(settingsService, container, setting).dump();
@@ -411,9 +456,8 @@ void StartListeningLogSettings(SettingsService &settingsService) {
     return;
     #endif
 
-    const auto currentSettingsLogLevel = settingsService.GetSetting("magicpods", "logLevel");
-    if (currentSettingsLogLevel.is_integer()) {
-        Logger::SetLoggingLevelForGlobalLogger(currentSettingsLogLevel.as_integer()->get());
+    if (auto currentSettingsLogLevel = settingsService.GetValue<int64_t>("magicpods", "logLevel")) {
+        Logger::SetLoggingLevelForGlobalLogger(*currentSettingsLogLevel);
     }
 
     settingsService.GetOnSettingUpdateEvent().Subscribe([](size_t listenerId, const UpdatedSettingNotification& notification) {
@@ -439,6 +483,23 @@ int main(int argc, char** argv) {
     // Emulated AirPods Max through the real audio path, needs PipeWire: magicpodscore --emulate-airpods
     if (argc > 1 && std::string{argv[1]} == "--emulate-airpods")
         return EmulateAirPods();
+
+    // SIGTERM (systemd, the UI) and SIGINT take the effect chain down too; its pipewire process would
+    // otherwise outlive the daemon. Blocked before any thread starts, so only the thread below gets them.
+    sigset_t stopSignals;
+    sigemptyset(&stopSignals);
+    sigaddset(&stopSignals, SIGTERM);
+    sigaddset(&stopSignals, SIGINT);
+    pthread_sigmask(SIG_BLOCK, &stopSignals, nullptr);
+    std::thread([stopSignals]() {
+        int signal = 0;
+        sigwait(&stopSignals, &signal);
+        Logger::Info("Signal %d, stopping", signal);
+        AudioEffects::Instance().Stop();
+        // settings are written on every change and BlueZ ends the discovery of a client that goes away,
+        // so nothing else needs an orderly shutdown
+        std::_Exit(0);
+    }).detach();
 #else
     // Bluetooth, media sessions and audio devices are WinRT/COM; every thread of the daemon joins this apartment
     winrt::init_apartment(winrt::apartment_type::multi_threaded);
@@ -494,6 +555,7 @@ int main(int argc, char** argv) {
                 return;
             }
             Logger::Info("On open websocket connected");
+            openSockets.insert(ws);
             ws->subscribe("onCapabilityChanged");
             ws->subscribe("OnConnectedChanged");
             ws->subscribe("OnActiveDeviceChanged");
@@ -503,12 +565,8 @@ int main(int argc, char** argv) {
             InitHandshake(ws);
         },
         .message = [&app, &devicesInfoFetcher, &settingsService](auto *ws, std::string_view message, uWS::OpCode opCode) {
+            Logger::Debug("Received: %s", std::string{message}.c_str());
             HandleRequest(ws, message, opCode, app, *devicesInfoFetcher, *settingsService);
-
-            /* This is the opposite of what you probably want; compress if message is LARGER than 16 kb
-             * the reason we do the opposite here; compress if SMALLER than 16 kb is to allow for
-             * benchmarking of large message sending without compression */
-            Logger::Info("Received: %s", std::string{message}.c_str());
         },
         .dropped = [](auto */*ws*/, std::string_view /*message*/, uWS::OpCode /*opCode*/) {
             /* A message was dropped due to set maxBackpressure and closeOnBackpressureLimit limit */
@@ -522,8 +580,8 @@ int main(int argc, char** argv) {
         .pong = [](auto */*ws*/, std::string_view) {
             /* Not implemented yet */
         },
-        .close = [](auto */*ws*/, int /*code*/, std::string_view /*message*/) {
-            /* You may access ws->getUserData() here */
+        .close = [](auto *ws, int /*code*/, std::string_view /*message*/) {
+            openSockets.erase(ws);
             Logger::Info("On open websocket closed");
         }
     }).listen("127.0.0.1", WEBSOCKET_PORT, LIBUS_LISTEN_EXCLUSIVE_PORT, [&](auto *listen_socket) { // loopback only, the API has no authentication
@@ -538,7 +596,14 @@ int main(int argc, char** argv) {
             TestsAapAudio aapAudio;
             #endif
 
-            devicesInfoFetcher = std::make_unique<DevicesInfoFetcher>(settingsService);
+            try {
+                devicesInfoFetcher = std::make_unique<DevicesInfoFetcher>(settingsService);
+            } catch (const std::exception& e) {
+                // systemd (Restart=on-failure) or the UI start the daemon again, so a USB adapter plugged in
+                // later or a bluetoothd that is still starting is picked up
+                Logger::Error("Bluetooth unavailable (%s), exiting", e.what());
+                std::_Exit(1);
+            }
 
             SubscribeAndHandleBroadcastEvents(app, *devicesInfoFetcher, *settingsService);
 

@@ -31,6 +31,7 @@ namespace MagicPodsCore
 
     public:
         explicit ZikDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
+        ~ZikDevice() override { Shutdown(); }
 
         Event<std::string> &GetAnswerEvent() { return _onAnswer; }
 

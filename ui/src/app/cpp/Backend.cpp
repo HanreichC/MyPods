@@ -282,16 +282,6 @@ void Backend::setCapability(const QString &capability, const QString &address, c
     });
 }
 
-void Backend::setLogLevel(int value)
-{
-    sendJson({
-        {QStringLiteral("method"), QStringLiteral("SetLogLevel")},
-        {QStringLiteral("arguments"), QVariantMap{
-             {QStringLiteral("selected"), value},
-         }},
-    });
-}
-
 void Backend::resetSessionState()
 {
     updateUnsupportedApi(false);

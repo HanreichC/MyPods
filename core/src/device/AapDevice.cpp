@@ -26,8 +26,13 @@
 #include "capabilities/aap/AapDeviceInfoCapability.h"
 #include "capabilities/aap/AapAudioSwitchCapability.h"
 #include "capabilities/aap/AapAudioEffectsCapabilities.h"
+#include "capabilities/aap/AapControlCapability.h"
+#include "capabilities/aap/AapAttCapabilities.h"
 #include "sdk/aap/Aes.h"
+#include "sdk/aap/Att.h"
+#include "sdk/aap/enums/AapModelIds.h"
 #include <algorithm>
+#include <optional>
 #include <thread>
 
 namespace MagicPodsCore
@@ -50,6 +55,7 @@ namespace MagicPodsCore
     
     AapDevice::~AapDevice()
     {
+        Shutdown();
         if (_bleService && _getOnAdReceivedEventId != 0)
             _bleService->GetOnAdReceivedEvent().Unsubscribe(_getOnAdReceivedEventId);
     }
@@ -62,6 +68,105 @@ namespace MagicPodsCore
     void AapDevice::SendData(const std::vector<unsigned char> &data)
     {
         _client->SendData(data);
+    }
+
+    bool AapDevice::HasAttSettings(unsigned short productId)
+    {
+        switch (static_cast<AapModelIds>(productId))
+        {
+        case AapModelIds::airpodspro2: case AapModelIds::airpodsprousbc: case AapModelIds::airpodspro3:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    void AapDevice::OnClientStarted()
+    {
+        if (!_attClient || _attClient->IsStarted())
+            return;
+        // Runs on the client worker, so the connect may block. Without it only these settings stay hidden.
+        if (!_attClient->Start())
+        {
+            Logger::Info("%s: no ATT channel, Loud Sound Reduction and transparency tuning stay hidden", GetName().c_str());
+            return;
+        }
+        AttRead(Att::LOUD_SOUND_REDUCTION);
+        AttRead(Att::TRANSPARENCY);
+        AttWrite(Att::TRANSPARENCY + 1, {0x01}); // notifications, e.g. when the iPhone changes the tuning
+    }
+
+    void AapDevice::OnClientStopped()
+    {
+        if (!_attClient)
+            return;
+        _attClient->Stop();
+        std::lock_guard lock{_attLock};
+        _attQueue.clear();
+        _attBusy = false;
+    }
+
+    void AapDevice::AttRead(unsigned char handle)
+    {
+        AttQueue(Att::Read(handle), handle);
+    }
+
+    void AapDevice::AttWrite(unsigned char handle, const std::vector<unsigned char> &value)
+    {
+        AttQueue(Att::Write(handle, value), 0);
+    }
+
+    void AapDevice::AttQueue(std::vector<unsigned char> pdu, unsigned char readHandle)
+    {
+        if (!_attClient || !_attClient->IsStarted())
+            return;
+        std::lock_guard lock{_attLock};
+        // a request the AirPods never answered must not hold the queue forever
+        if (_attBusy && std::chrono::steady_clock::now() - _attSentAt > std::chrono::seconds(2))
+            _attBusy = false;
+        _attQueue.emplace_back(std::move(pdu), readHandle);
+        AttSendNextLocked();
+    }
+
+    void AapDevice::AttSendNextLocked()
+    {
+        if (_attBusy || _attQueue.empty())
+            return;
+        auto [pdu, readHandle] = std::move(_attQueue.front());
+        _attQueue.pop_front();
+        _attBusy = true;
+        _attReading = readHandle;
+        _attSentAt = std::chrono::steady_clock::now();
+        _attClient->SendData(pdu);
+    }
+
+    void AapDevice::OnAttData(const std::vector<unsigned char> &data)
+    {
+        if (data.empty())
+            return;
+        std::optional<std::pair<unsigned char, std::vector<unsigned char>>> value;
+        switch (data[0])
+        {
+        case Att::READ_RSP:
+        case Att::WRITE_RSP:
+        case Att::ERROR_RSP:
+        {
+            std::lock_guard lock{_attLock};
+            if (data[0] == Att::READ_RSP && _attReading != 0)
+                value.emplace(_attReading, std::vector<unsigned char>(data.begin() + 1, data.end()));
+            if (data[0] == Att::ERROR_RSP && data.size() >= 5)
+                Logger::Info("%s: ATT request 0x%02x on handle 0x%02x refused (0x%02x)", GetName().c_str(), data[1], data[2], data[4]);
+            _attBusy = false;
+            AttSendNextLocked();
+            break;
+        }
+        case Att::NOTIFY:
+            if (data.size() >= 3)
+                value.emplace(data[1], std::vector<unsigned char>(data.begin() + 3, data.end()));
+            break;
+        }
+        if (value)
+            _onAttValue.FireEvent(*value);
     }
 
     EffectsConfig AapDevice::LoadEffectsConfig()
@@ -148,6 +253,17 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<AppAnimationCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapEarDetectionCapability>(*device));
         device->capabilities.push_back(std::make_unique<AapDeviceInfoCapability>(*device));
+        // Each appears once the AirPods report it, so models without the setting don't show it
+        using Kind = AapControlCapability::Kind;
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("listeningModes", 0x1A, Kind::ListeningModes, *device));
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("allowOff", 0x34, Kind::Toggle, *device));
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("micMode", 0x01, Kind::Choice, *device, std::vector<int>{0, 1, 2}));
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("hearingAid", 0x2C, Kind::HearingAid, *device));
+        if (HasAttSettings(deviceInfo->GetProductId()))
+        {
+            device->capabilities.push_back(std::make_unique<AapLoudSoundReductionCapability>(*device));
+            device->capabilities.push_back(std::make_unique<AapTransparencyCapability>(*device));
+        }
         // Handing the audio over is AAP smart routing; without it there is nothing to negotiate with
         if (Client::SupportsL2CAP())
             device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));
@@ -161,12 +277,20 @@ namespace MagicPodsCore
         device->_clientStartData.push_back(AapEnableNotifications{AapNotificationsMode::Unknown1}.Request());
         if (AapInitExt::IsSupported(deviceInfo->GetProductId()))
             device->_clientStartData.push_back(AapInitExt{}.Request());
-        
-        if (!device->LoadSettingString("irk").has_value() || !device->LoadSettingString("enc").has_value())
-            device->_clientStartData.push_back(AapPrivateKeys{}.Request());
-        
-        //TODO: Add initData to client
+        // Asked on every connection: deleting the stored keys takes effect on the next one, and AirPods that
+        // were reset and paired again come with new keys
+        device->_clientStartData.push_back(AapPrivateKeys{}.Request());
+
         device->_client = Client::CreateL2CAP(deviceInfo->GetAddress(), 0x1001);
+        if (Client::SupportsL2CAP() && HasAttSettings(deviceInfo->GetProductId()))
+        {
+            device->_attClient = Client::CreateL2CAP(deviceInfo->GetAddress(), Att::PSM);
+            auto *raw = device.get();
+            device->_attDataEventId = device->_attClient->GetOnReceivedDataEvent().Subscribe([raw](size_t, const std::vector<unsigned char> &data)
+            {
+                raw->OnAttData(data);
+            });
+        }
 
         device->Init();
         return device;

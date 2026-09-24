@@ -620,5 +620,85 @@
         <source></source>
         <translation>%1 trennen</translation>
     </message>
+    <message id="battery.allow_off">
+        <source></source>
+        <translation>Aus bei Drücken und Halten</translation>
+    </message>
+    <message id="battery.listening_modes">
+        <source></source>
+        <translation>Drücken und Halten wechselt zwischen</translation>
+    </message>
+    <message id="battery.listening_modes.off">
+        <source></source>
+        <translation>Aus</translation>
+    </message>
+    <message id="battery.listening_modes.anc">
+        <source></source>
+        <translation>Geräuschunterdrückung</translation>
+    </message>
+    <message id="battery.listening_modes.transparency">
+        <source></source>
+        <translation>Transparenz</translation>
+    </message>
+    <message id="battery.listening_modes.adaptive">
+        <source></source>
+        <translation>Adaptiv</translation>
+    </message>
+    <message id="battery.mic_mode">
+        <source></source>
+        <translation>Mikrofon</translation>
+    </message>
+    <message id="battery.mic_mode.automatic">
+        <source></source>
+        <translation>Automatisch</translation>
+    </message>
+    <message id="battery.mic_mode.right">
+        <source></source>
+        <translation>Immer rechts</translation>
+    </message>
+    <message id="battery.mic_mode.left">
+        <source></source>
+        <translation>Immer links</translation>
+    </message>
+    <message id="battery.loud_sound_reduction">
+        <source></source>
+        <translation>Reduzierung lauter Geräusche</translation>
+    </message>
+    <message id="battery.hearing_aid">
+        <source></source>
+        <translation>Hörgerät</translation>
+    </message>
+    <message id="battery.hearing_aid.tooltip">
+        <source></source>
+        <translation>Nutzt den auf einem iPhone eingerichteten Hörtest. Die angepasste Transparenz ist aus, solange das Hörgerät an ist.</translation>
+    </message>
+    <message id="battery.transparency_tuning.header">
+        <source></source>
+        <translation>Transparenzmodus</translation>
+    </message>
+    <message id="battery.transparency_tuning.enabled">
+        <source></source>
+        <translation>Angepasste Transparenz</translation>
+    </message>
+    <message id="battery.transparency_tuning.amplification">
+        <source></source>
+        <translation>Verstärkung</translation>
+    </message>
+    <message id="battery.transparency_tuning.balance">
+        <source></source>
+        <translation>Balance</translation>
+    </message>
+    <message id="battery.transparency_tuning.tone">
+        <source></source>
+        <translation>Klang</translation>
+    </message>
+    <message id="battery.transparency_tuning.ambient_noise_reduction">
+        <source></source>
+        <translation>Umgebungsgeräuschreduzierung</translation>
+    </message>
+    <message id="battery.transparency_tuning.conversation_boost">
+        <source></source>
+        <translation>Gesprächsverstärkung</translation>
+    </message>
 </context>
 </TS>

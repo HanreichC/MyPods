@@ -19,12 +19,9 @@ jobs:
         with:
           name: MyPods-x86_64.AppImage
           path: MyPods-x86_64.AppImage
-      # Same release as the Windows workflow: both attach to the tag of the commit
+      # A v* tag makes a versioned release, main updates "nightly" (same as the Windows workflow)
       - name: Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          tag="build-${GITHUB_SHA::7}"
-          gh release create "$tag" --target "$GITHUB_SHA" --title "MyPods build ${GITHUB_SHA::7}" --generate-notes || true
-          gh release upload "$tag" MyPods-x86_64.AppImage --clobber
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        run: sh .github/release.sh MyPods-x86_64.AppImage
         env:
           GH_TOKEN: ${{ github.token }}

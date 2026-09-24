@@ -36,29 +36,35 @@ void SettingsService::LoadFromFile() {
     }
 }
 
-void SettingsService::WriteToFile() {
-    std::filesystem::create_directories(std::filesystem::path(_filePath).parent_path());
-
+bool SettingsService::WriteToFile() {
     // Write a temporary file and rename it over the old one: a crash or full disk mid-write
     // must not truncate the settings, they hold the AirPods keys.
+    // Never throws: it runs on the AAP reader and D-Bus threads, where an exception ends the daemon.
     const std::string tempPath = _filePath + ".tmp";
-    {
-        std::ofstream file(tempPath, std::ios::trunc);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open file for writing: " + tempPath);
-        }
-        // private before any content lands in it: the keys identify and track the headphones
-        std::filesystem::permissions(tempPath, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
-                                     std::filesystem::perm_options::replace);
+    try {
+        std::filesystem::create_directories(std::filesystem::path(_filePath).parent_path());
+        {
+            std::ofstream file(tempPath, std::ios::trunc);
+            if (!file.is_open())
+                throw std::runtime_error("cannot open " + tempPath);
+            // private before any content lands in it: the keys identify and track the headphones
+            std::filesystem::permissions(tempPath, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
+                                         std::filesystem::perm_options::replace);
 
-        file << _settings;
-        file.flush();
+            file << _settings;
+            file.flush();
 
-        if (!file.good()) {
-            throw std::runtime_error("Failed to write to file: " + tempPath);
+            if (!file.good())
+                throw std::runtime_error("cannot write " + tempPath);
         }
+        std::filesystem::rename(tempPath, _filePath);
+        return true;
+    } catch (const std::exception& e) {
+        std::error_code ignored;
+        std::filesystem::remove(tempPath, ignored);
+        Logger::Error("Settings not saved (%s), keeping them in memory", e.what());
+        return false;
     }
-    std::filesystem::rename(tempPath, _filePath);
 }
 
 toml::table SettingsService::GetDefaults() {
@@ -71,11 +77,6 @@ toml::table SettingsService::GetDefaults() {
     return defaults;
 }
 
-const toml::table& SettingsService::GetSettingsAll() {
-    std::lock_guard lock{_lock};
-    return _settings;
-}
-
 toml::table SettingsService::GetSettingsAllWrapped() {
     std::lock_guard lock{_lock};
     toml::table wrapped;
@@ -83,87 +84,11 @@ toml::table SettingsService::GetSettingsAllWrapped() {
     return wrapped;
 }
 
-const toml::table& SettingsService::GetSettings(const std::string& container) {
+toml::table SettingsService::GetSettings(const std::string& container) {
     std::lock_guard lock{_lock};
-    auto containerTable = _settings[container].as_table();
-    if (!containerTable) {
-        _settings.insert_or_assign(container, toml::table{});
-        containerTable = _settings[container].as_table();
-    }
-    return *containerTable;
-}
-
-toml::node_view<toml::node> SettingsService::GetSetting(const std::string& container, const std::string& name) {
-    std::lock_guard lock{_lock};
-    auto containerTable = _settings[container].as_table();
-    if (!containerTable) {
-        return toml::node_view<toml::node>{};
-    }
-    return (*containerTable)[name];
-}
-
-void SettingsService::SaveSettings(const toml::table& table) {
-    std::lock_guard lock{_lock};
-    auto settingsRoot = table["settings"].as_table();
-    if (!settingsRoot) {
-        throw std::invalid_argument("Table must contain 'settings' root key");
-    }
-
-    for (const auto& [containerName, containerData] : *settingsRoot) {
-        if (auto incomingContainer = containerData.as_table()) {
-            auto existingContainer = _settings[containerName].as_table();
-            if (!existingContainer) {
-                _settings.insert_or_assign(containerName, toml::table{});
-                existingContainer = _settings[containerName].as_table();
-            }
-
-            for (const auto& [key, value] : *incomingContainer) {
-                existingContainer->insert_or_assign(key, value);
-            }
-        }
-    }
-
-    WriteToFile();
-
-    for (const auto& [containerName, containerData] : *settingsRoot) {
-        if (auto incomingContainer = containerData.as_table()) {
-            auto existingContainer = _settings[containerName].as_table();
-            for (const auto& [key, value] : *incomingContainer) {
-                auto savedValue = (*existingContainer)[key];
-                _onSettingUpdate.FireEvent(UpdatedSettingNotification{containerName, key, savedValue});
-            }
-        }
-    }
-}
-
-void SettingsService::SaveSetting(const std::string& container, const std::string& name, const toml::node& value) {
-    std::lock_guard lock{_lock};
-    auto containerTable = _settings[container].as_table();
-    if (!containerTable) {
-        _settings.insert_or_assign(container, toml::table{});
-        containerTable = _settings[container].as_table();
-    }
-    containerTable->insert_or_assign(name, value);
-    WriteToFile();
-
-    auto savedValue = (*containerTable)[name];
-    _onSettingUpdate.FireEvent(UpdatedSettingNotification{container, name, savedValue});
-}
-
-void SettingsService::SaveSetting(const std::string& container, const std::string& name, const toml::node_view<const toml::node>& value) {
-    std::lock_guard lock{_lock};
-    if (value) {
-        auto containerTable = _settings[container].as_table();
-        if (!containerTable) {
-            _settings.insert_or_assign(container, toml::table{});
-            containerTable = _settings[container].as_table();
-        }
-        containerTable->insert_or_assign(name, *value.node());
-        WriteToFile();
-
-        auto savedValue = (*containerTable)[name];
-        _onSettingUpdate.FireEvent(UpdatedSettingNotification{container, name, savedValue});
-    }
+    if (auto containerTable = _settings[container].as_table())
+        return *containerTable;
+    return {};
 }
 
 std::string SettingsService::GetConfigPath(const std::string &fileName) {
@@ -177,6 +102,6 @@ std::string SettingsService::GetConfigPath(const std::string &fileName) {
     if (const char* home = std::getenv("HOME"))
         return std::string(home) + "/.config/mypods/" + fileName;
 
-    throw std::runtime_error("Cannot determine config path");    
+    throw std::runtime_error("Cannot determine config path");
 }
 }

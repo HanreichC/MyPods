@@ -37,6 +37,12 @@ namespace MagicPodsCore
 
         leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t id, const BleAdertisingData& adData){
 
+            std::string irk, enc; // copies: the AAP reader replaces the members when new keys arrive
+            {
+                std::lock_guard<std::mutex> lock(locker);
+                irk = this->irk;
+                enc = this->enc;
+            }
             // without AAP the keys can't be fetched, IsOwnAdvertisement then falls back to proximity
             if ((irk.size() == 0 || enc.size() == 0) && Client::SupportsL2CAP())
             return;
@@ -106,11 +112,16 @@ namespace MagicPodsCore
 
         watcherEventId = watcher.GetEvent().Subscribe([this](size_t id, AapPrivateKeysArgs mode)
                                                     {
-                                                        // Save to headphones settings
-                                                        this->irk = StringUtils::BytesToHexString(mode.IRK);
-                                                        this->device.SaveSettingString("irk", this->irk);
-                                                        this->enc = StringUtils::BytesToHexString(mode.ENC);
-                                                        this->device.SaveSettingString("enc", this->enc);
+                                                        // Asked for on every connection; written only when they changed (reset and paired again, or deleted)
+                                                        auto newIrk = StringUtils::BytesToHexString(mode.IRK);
+                                                        auto newEnc = StringUtils::BytesToHexString(mode.ENC);
+                                                        std::lock_guard<std::mutex> lock(locker);
+                                                        if (newIrk != this->device.LoadSettingString("irk").value_or(""))
+                                                            this->device.SaveSettingString("irk", newIrk);
+                                                        if (newEnc != this->device.LoadSettingString("enc").value_or(""))
+                                                            this->device.SaveSettingString("enc", newEnc);
+                                                        this->irk = newIrk;
+                                                        this->enc = newEnc;
                                                     });
     }
 

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MyPods
+Comment=The control center for your Bluetooth headphones
+Comment[de]=Die Kontrollzentrale für deine Bluetooth-Kopfhörer
+Exec=/usr/lib/mypods/magicpods
+Icon=magicpods
+Terminal=false
+Categories=Utility;
+StartupWMClass=MyPods

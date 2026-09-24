@@ -84,6 +84,8 @@ add_executable(magicpodscore
     src/device/capabilities/zik/ZikCapabilities.cpp
     src/device/capabilities/aap/AapAudioSwitchCapability.cpp
     src/device/capabilities/aap/AapAudioEffectsCapabilities.cpp
+    src/device/capabilities/aap/AapControlCapability.cpp
+    src/device/capabilities/aap/AapAttCapabilities.cpp
 
     src/device/capabilities/sgb/GalaxyBudsCapability.cpp
     src/device/capabilities/sgb/GalaxyBudsAncCapability.cpp
@@ -98,6 +100,7 @@ add_executable(magicpodscore
     src/device/BhfDevice.cpp
     src/device/ZikDevice.cpp
     src/device/DeviceBattery.cpp
+    src/dbus/BatteryProvider.cpp
     src/device/Device.cpp
 
     src/DevicesInfoFetcher.cpp

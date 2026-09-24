@@ -20,13 +20,14 @@ private:
     toml::table _settings{};
     std::string _filePath;
     // Settings are written from the AAP reader (keys), the BLE thread (color) and the WebSocket loop.
-    // Recursive: update listeners read settings back on the same thread.
-    // ponytail: a node_view handed out by GetSetting still points into the table; callers read it right away
-    std::recursive_mutex _lock{};
+    // Readers get copies, and update events fire after the lock is released, so a listener that takes
+    // its own lock and then reads settings can't deadlock against a writer.
+    std::mutex _lock{};
     Event<UpdatedSettingNotification> _onSettingUpdate{};
 
     void LoadFromFile();
-    void WriteToFile();
+    // false when the file couldn't be written; the value stays in memory and the next write tries again
+    bool WriteToFile();
     static toml::table GetDefaults();
 
     static void MergeDefaults(toml::table& settings, const toml::table& defaults) {
@@ -49,18 +50,30 @@ private:
 
 public:
     SettingsService(const std::string& filePath);
-    const toml::table& GetSettingsAll();
     toml::table GetSettingsAllWrapped();
-    const toml::table& GetSettings(const std::string& container);
-    toml::node_view<toml::node> GetSetting(const std::string& container, const std::string& name);
+    // Copy of one container, empty if it doesn't exist
+    toml::table GetSettings(const std::string& container);
 
-    void SaveSettings(const toml::table& table);
+    // The setting if it exists and has type T (bool, int64_t, double, std::string)
+    template<typename T>
+    std::optional<T> GetValue(const std::string& container, const std::string& name) {
+        std::lock_guard lock{_lock};
+        auto containerTable = _settings[container].as_table();
+        if (!containerTable)
+            return std::nullopt;
+        auto node = (*containerTable)[name];
+        if constexpr (std::is_same_v<T, bool>)
+            return node.is_boolean() ? std::optional<T>{node.as_boolean()->get()} : std::nullopt;
+        else if constexpr (std::is_same_v<T, std::string>)
+            return node.is_string() ? std::optional<T>{node.as_string()->get()} : std::nullopt;
+        else if constexpr (std::is_integral_v<T>)
+            return node.is_integer() ? std::optional<T>{static_cast<T>(node.as_integer()->get())} : std::nullopt;
+        else
+            return node.template value<T>();
+    }
 
     template<typename T>
     void SaveSetting(const std::string& container, const std::string& name, T&& value);
-
-    void SaveSetting(const std::string& container, const std::string& name, const toml::node& value);
-    void SaveSetting(const std::string& container, const std::string& name, const toml::node_view<const toml::node>& value);
 
     Event<UpdatedSettingNotification>& GetOnSettingUpdateEvent() {
         return _onSettingUpdate;
@@ -71,17 +84,19 @@ public:
 
 template<typename T>
 void SettingsService::SaveSetting(const std::string& container, const std::string& name, T&& value) {
-    std::lock_guard lock{_lock};
-    auto containerTable = _settings[container].as_table();
-    if (!containerTable) {
-        _settings.insert_or_assign(container, toml::table{});
-        containerTable = _settings[container].as_table();
+    std::optional<UpdatedSettingNotification> notification;
+    {
+        std::lock_guard lock{_lock};
+        auto containerTable = _settings[container].as_table();
+        if (!containerTable) {
+            _settings.insert_or_assign(container, toml::table{});
+            containerTable = _settings[container].as_table();
+        }
+        containerTable->insert_or_assign(name, std::forward<T>(value));
+        WriteToFile();
+        notification.emplace(container, name, *(*containerTable)[name].node());
     }
-    containerTable->insert_or_assign(name, std::forward<T>(value));
-    WriteToFile();
-
-    auto savedValue = (*containerTable)[name];
-    _onSettingUpdate.FireEvent(UpdatedSettingNotification{container, name, savedValue});
+    _onSettingUpdate.FireEvent(*notification);
 }
 
 }

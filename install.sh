@@ -24,36 +24,16 @@ install -m755 build/magicpods "$DEST/"
 install -m755 build/modules/magicpodscore "$DEST/modules/"
 install -m644 ui/src/app/qml/assets/images/logo-512.png "$DATA/icons/magicpods.png"
 
+# Desktop-Eintrag und Unit sind dieselben wie im Paket (packaging/linux), nur mit den Pfaden unter $DEST.
 # Gleicher Dateiname wie DesktopManager, damit der Schalter in den Einstellungen ihn erkennt
-cat > "$DATA/applications/app.magicpods.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=MyPods
-Comment=The control center for your Bluetooth headphones
-Exec=$DEST/magicpods
-Icon=$DATA/icons/magicpods.png
-Terminal=false
-Categories=Utility;
-StartupWMClass=MyPods
-EOF
+sed -e "s|/usr/lib/mypods|$DEST|" -e "s|^Icon=.*|Icon=$DATA/icons/magicpods.png|" \
+    packaging/linux/app.magicpods.desktop > "$DATA/applications/app.magicpods.desktop"
 sed "s|^Exec=.*|& --hidden|" "$DATA/applications/app.magicpods.desktop" > "$AUTOSTART/app.magicpods.desktop"
 
 # Der Daemon laeuft als User-Service, unabhaengig von der Oberflaeche: Ohrerkennung und Umschalten
 # bleiben aktiv, wenn das Tray-Programm beendet wird, und systemd startet ihn nach einem Absturz neu.
 # Die UI startet ihn ueber systemctl (BackendManager), statt ihn selbst zu starten.
-cat > "$UNITS/mypods-core.service" <<EOF
-[Unit]
-Description=MyPods daemon for AirPods and Bluetooth headphones
-After=pipewire.service pipewire-pulse.service
-
-[Service]
-ExecStart=$DEST/modules/magicpodscore
-Restart=on-failure
-RestartSec=3
-
-[Install]
-WantedBy=default.target
-EOF
+sed "s|/usr/lib/mypods|$DEST|" packaging/linux/mypods-core.service > "$UNITS/mypods-core.service"
 if systemctl --user daemon-reload 2>/dev/null; then
     systemctl --user enable --now mypods-core.service
 else

@@ -38,13 +38,19 @@ namespace MagicPodsCore {
         ObservableVariable<bool> _isBluetoothAdapterPowered{false};
 
     public:
+        // Linux: uses BlueZ's first adapter, throws std::runtime_error if there is none
         explicit DBusService();
 #ifdef _WIN32
         ~DBusService();
+#else
+        // D-Bus path of the adapter in use, e.g. "/org/bluez/hci0"
+        static std::string GetAdapterPath();
 #endif
 
         // Address of this computer's adapter, "AA:BB:CC:DD:EE:FF". Throws if there is none.
         static std::string GetAdapterAddress();
+        // The adapter's name as other Bluetooth devices see it. Throws if there is none.
+        static std::string GetAdapterAlias();
 
         std::set<std::shared_ptr<DBusDeviceInfo>> GetAllDevices();
         std::set<std::shared_ptr<DBusDeviceInfo>> GetPairedDevices();
@@ -88,8 +94,6 @@ namespace MagicPodsCore {
         void TryCreateDevice(const std::string& id);
         void TryRemoveDevice(const std::string& id);
 #else
-        void FetchDevices();
-
         std::shared_ptr<DBusDeviceInfo> TryCreateDevice(sdbus::ObjectPath objectPath, std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces);
         bool TryRemoveDevice(sdbus::ObjectPath objectPath);
 

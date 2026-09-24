@@ -561,6 +561,22 @@ MagicPodsCore::TestsSgb::TestsSgb()
     Test("GalaxyBudsHelper.FindByName5", TestFindByName5());
     Test("GalaxyBudsPacket.TestExtract1", TestExtract1());
     Test("GalaxyBudsPacket.TestEncode1", TestEncode1());
+    {
+        // RFCOMM delivers a stream: a stray byte, a whole packet and the start of the next in one read
+        std::vector<unsigned char> raw = {253, 61, 0, 97, 2, 8, 100, 100, 1, 1, 17, 0, 0, 0, 255, 34, 0, 0, 84, 1, 84, 1, 7, 0, 4, 221, 0, 4, 4, 16, 0, 1, 0, 0, 17, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 255, 1, 1, 0, 15, 84, 221};
+        GalaxyBudsPacket packet(GalaxyBudsModelIds::GalaxyBuds3Pro);
+        std::vector<unsigned char> pending{0x42};
+        pending.insert(pending.end(), raw.begin(), raw.end());
+        pending.insert(pending.end(), raw.begin(), raw.begin() + 10);
+        auto first = packet.Split(pending);
+        bool ok = first.size() == 1 && first[0] == raw && pending.size() == 10;
+        pending.insert(pending.end(), raw.begin() + 10, raw.end());
+        auto second = packet.Split(pending);
+        ok = ok && second.size() == 1 && second[0] == raw && pending.empty() && packet.Extract(second[0]).has_value();
+        Test("GalaxyBudsPacket.Split stream into packets", ok);
+        std::vector<unsigned char> truncated(raw.begin(), raw.begin() + 20);
+        Test("GalaxyBudsPacket.Extract rejects a cut-off packet", !packet.Extract(truncated).has_value());
+    }
     Test("GalaxyBudsAncWatcher.TestAnc1", TestAnc1());
     Test("GalaxyBudsAncWatcher.TestAnc2", TestAnc2());
     Test("GalaxyBudsAncWatcher.TestAnc3", TestAnc3());

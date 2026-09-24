@@ -59,6 +59,19 @@ namespace MagicPodsCore
         return packet;
     }
 
+    std::string AapAudioSwitchCapability::BannerName(const std::string &name)
+    {
+        static constexpr size_t MAX_BYTES = 32; // 0x40 + length, OPACK's short string
+        if (name.empty())
+            return "Linux";
+        if (name.size() <= MAX_BYTES)
+            return name;
+        size_t cut = MAX_BYTES;
+        while (cut > 0 && (static_cast<unsigned char>(name[cut]) & 0xC0) == 0x80) // continuation byte: inside a character
+            cut--;
+        return name.substr(0, cut);
+    }
+
     std::vector<unsigned char> AapAudioSwitchCapability::MediaInformation(const std::string &targetMac, const std::string &selfMac, const std::string &selfName)
     {
         std::vector<unsigned char> b{0x01, 0xE5};
@@ -129,7 +142,6 @@ namespace MagicPodsCore
     AapAudioSwitchCapability::AapAudioSwitchCapability(AapDevice &device) : AapCapability("autoSwitch", false, device)
     {
         mode = static_cast<int>(device.LoadSettingInt("autoSwitch").value_or(0));
-        irk = device.LoadSettingString("irk").value_or("");
         try
         {
             localMac = DBusService::GetAdapterAddress();
@@ -139,7 +151,7 @@ namespace MagicPodsCore
             Logger::Error("AutoSwitch: no adapter address, cannot talk to other devices: %s", e.what());
         }
 
-        // ponytail: worker threads capture `this`; devices live until they are unpaired, a shared_ptr handle would close that gap
+        // Worker threads hold device.KeepAlive(): unpairing mid-takeover can't free the device under them
         playbackEventId = MprisClient::Instance().GetOnPlaybackStartedEvent().Subscribe([this](size_t, const std::string &)
         {
             TakeOver(false);
@@ -148,16 +160,8 @@ namespace MagicPodsCore
         // In-ear state while not connected comes from the (RPA-verified) proximity advertisement, byte 5 bits 1 and 3
         leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad)
         {
-            if (irk.empty())
-                irk = this->device.LoadSettingString("irk").value_or("");
-            for (const auto &[company, bytes] : ad.GetManufacturerData())
-            {
-                if (company != this->device.GetVendorId() || bytes.size() < 27 || bytes[0] != 0x07 ||
-                    ((bytes[4] << 8) | bytes[3]) != this->device.GetProductId() || irk.empty() || !Aes::VerifyRPA(ad.GetAddress(), irk))
-                    continue;
-                if (bytes[5] & 0x0A)
-                    bleInEarAt = NowMs();
-            }
+            if (auto message = this->device.OwnProximityMessage(ad); message && ((*message)[5] & 0x0A))
+                bleInEarAt = NowMs();
         });
 
         cardEventId = device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &info)
@@ -171,7 +175,7 @@ namespace MagicPodsCore
             // headphones connected on their own or profile changed: keep effects and default sink in step.
             // Off the PulseAudio thread, RouteAudio waits for PulseAudio replies.
             if (this->device.ownsAudio && !busy)
-                std::thread([this]() { this->device.RouteAudio(); }).detach();
+                std::thread([this, keep = this->device.KeepAlive()]() { this->device.RouteAudio(); }).detach();
         });
     }
 
@@ -281,7 +285,7 @@ namespace MagicPodsCore
         Logger::Info("AutoSwitch: another device took the audio");
         _onChanged.FireEvent(*this);
 
-        std::thread([this]()
+        std::thread([this, keep = device.KeepAlive()]()
         {
             // Like a Mac: whatever played here pauses, and the computer falls back to its own speakers
             // (A2DP off keeps the Bluetooth link and AAP up, so taking the audio back is instant).
@@ -301,7 +305,7 @@ namespace MagicPodsCore
         if (busy.exchange(true))
             return;
 
-        std::thread([this, manual]()
+        std::thread([this, manual, keep = device.KeepAlive()]()
         {
             auto pac = device.GetAudioClient();
             auto card = pac->GetNameFromMac(device.GetAddress());
@@ -361,9 +365,19 @@ namespace MagicPodsCore
                         others.push_back(mac);
                 otherDevice.clear();
             }
+            std::string name;
+            try
+            {
+                name = DBusService::GetAdapterAlias(); // what the iPhone already calls this computer
+            }
+            catch (const std::exception &e)
+            {
+                Logger::Debug("AutoSwitch: no adapter name: %s", e.what());
+            }
+            name = BannerName(name);
             for (auto &other : others)
             {
-                device.SendData(MediaInformation(other, localMac, "Linux"));
+                device.SendData(MediaInformation(other, localMac, name));
                 device.SendData(ShowNearbyUI(other));
                 device.SendData(HijackRequest(other));
             }

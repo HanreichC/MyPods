@@ -8,6 +8,14 @@
 #include "device/capabilities/aap/AapDeviceInfoCapability.h"
 #include "StringUtils.h"
 #include "Logger.h"
+#include "DevicesInfoFetcher.h"
+#include "dbus/BatteryProvider.h"
+#include "device/capabilities/aap/AapControlCapability.h"
+#include "device/capabilities/aap/AapAttCapabilities.h"
+#include "device/capabilities/aap/AapConversationAwarenessStateCapability.h"
+#include "sdk/aap/Att.h"
+
+#include <cmath>
 
 #include <filesystem>
 #include <fstream>
@@ -56,13 +64,82 @@ TestsCore::TestsCore()
         Test("Settings survive a damaged file", survived && std::filesystem::exists(path + ".broken"));
 
         SettingsService reloaded{path};
-        auto irk = reloaded.GetSetting("AA_BB", "irk").value<std::string>();
+        auto irk = reloaded.GetValue<std::string>("AA_BB", "irk");
         Test("Settings persist, no temp file left", irk == "00112233" && !std::filesystem::exists(path + ".tmp"));
 #ifndef _WIN32
         auto perms = std::filesystem::status(path).permissions();
         Test("Settings file private (0600)", perms == (std::filesystem::perms::owner_read | std::filesystem::perms::owner_write));
 #endif
+
+        // a file that can't be written (here: its directory is a file) is logged, not thrown: writes
+        // come from the AAP reader and D-Bus threads, where an exception ends the daemon
+        bool unwritableSurvived = true;
+        try
+        {
+            SettingsService unwritable{path + "/config.toml"};
+            unwritable.SaveSetting("AA_BB", "enc", std::string{"44"});
+            unwritableSurvived = unwritable.GetValue<std::string>("AA_BB", "enc") == "44";
+        }
+        catch (const std::exception &)
+        {
+            unwritableSurvived = false;
+        }
+        Test("Settings write failure keeps the daemon running", unwritableSurvived);
+        Test("Settings typed read of a missing or other-typed value", !reloaded.GetValue<int64_t>("AA_BB", "irk") &&
+                                                                          !reloaded.GetValue<bool>("nope", "irk"));
         std::filesystem::remove_all(dir);
+    }
+
+    // BLE scan: only for AirPods; on Linux paused while they are connected (AAP has everything, the inquiry can
+    // make A2DP stutter), kept for automatic switching even with the popup off; on Windows the ads are all there is
+    Test("BLE scan off without AirPods", !DevicesInfoFetcher::ShouldScan(true, true, false, false, true));
+    Test("BLE scan for the popup", DevicesInfoFetcher::ShouldScan(true, true, true, false, false));
+    Test("BLE scan paused while connected (Linux)", !DevicesInfoFetcher::ShouldScan(true, true, true, true, true));
+    Test("BLE scan for switching with the popup off", DevicesInfoFetcher::ShouldScan(false, true, true, false, true));
+    Test("BLE scan off when neither needs it", !DevicesInfoFetcher::ShouldScan(false, true, true, false, false));
+    Test("BLE scan while connected (Windows)", DevicesInfoFetcher::ShouldScan(false, false, true, true, false));
+
+    // Control commands (LibrePods docs/control_commands.md)
+    Test("Control packet: allow Off", AapControlCapability::Packet(0x34, 0x01) == StringUtils::HexStringToBytes("0400040009003401000000"));
+    Test("Control packet: hearing aid on", AapControlCapability::Packet(0x2C, 0x01, 0x01) == StringUtils::HexStringToBytes("0400040009002C01010000"));
+    Test("Listening modes need two", !AapControlCapability::IsValidListeningModes(AapControlCapability::MODE_ANC) &&
+                                         AapControlCapability::IsValidListeningModes(AapControlCapability::MODE_ANC | AapControlCapability::MODE_TRANSPARENCY) &&
+                                         !AapControlCapability::IsValidListeningModes(0) && !AapControlCapability::IsValidListeningModes(0x10 | 0x03));
+
+    // Conversation Awareness levels: 1/2 lower the volume, 6/8/9 bring it back
+    Test("CA level to speaking", AapConversationAwarenessStateCapability::SpeakingFromLevel(1) == true &&
+                                     AapConversationAwarenessStateCapability::SpeakingFromLevel(2) == true &&
+                                     AapConversationAwarenessStateCapability::SpeakingFromLevel(9) == false &&
+                                     !AapConversationAwarenessStateCapability::SpeakingFromLevel(4).has_value());
+
+    // Battery for BlueZ: the emptier bud, the case and stale readings don't count
+    Test("Battery level for the system", BatteryProvider::Level({{DeviceBatteryType::Left, DeviceBatteryStatus::Connected, 80, false},
+                                                                  {DeviceBatteryType::Right, DeviceBatteryStatus::Connected, 60, false},
+                                                                  {DeviceBatteryType::Case, DeviceBatteryStatus::Connected, 5, false}}) == 60 &&
+                                             BatteryProvider::Level({{DeviceBatteryType::Left, DeviceBatteryStatus::Cached, 40, false}}) == std::nullopt);
+
+    // ATT: request PDUs and the transparency characteristic (LibrePods Transparency.kt layout)
+    {
+        Test("ATT read/write PDUs", Att::Read(Att::LOUD_SOUND_REDUCTION) == std::vector<uint8_t>{0x0A, 0x1B, 0x00} &&
+                                        Att::Write(Att::LOUD_SOUND_REDUCTION, {0x01}) == std::vector<uint8_t>{0x12, 0x1B, 0x00, 0x01});
+        Att::TransparencySettings settings;
+        settings.enabled = true;
+        settings.left.eq[3] = 42.5f;
+        settings.left.amplification = 0.25f;
+        settings.right.amplification = 0.75f;
+        settings.ownVoice = 0.5f;
+        auto bytes = settings.Encode();
+        auto parsed = Att::TransparencySettings::Parse(bytes);
+        Test("Transparency encode/parse", bytes.size() == 104 && parsed && parsed->enabled && parsed->left.eq[3] == 42.5f &&
+                                              parsed->right.amplification == 0.75f && parsed->ownVoice == 0.5f &&
+                                              bytes[0] == 0x00 && bytes[3] == 0x3F); // 1.0f little endian: 00 00 80 3F
+        auto json = AapTransparencyCapability::ToJson(*parsed);
+        Test("Transparency amplification and balance", std::abs(json["amplification"].get<float>() - 0.5f) < 1e-6 &&
+                                                           std::abs(json["balance"].get<float>() - 0.5f) < 1e-6);
+        AapTransparencyCapability::Apply(*parsed, {{"balance", 0.0}, {"tone", 0.3}});
+        Test("Transparency apply keeps the rest", parsed->left.amplification == 0.5f && parsed->right.amplification == 0.5f &&
+                                                      std::abs(parsed->left.tone - 0.3f) < 1e-6 && parsed->left.eq[3] == 42.5f);
+        Test("Transparency too short", !Att::TransparencySettings::Parse(std::vector<uint8_t>(60)).has_value());
     }
 
     // AirPods Pro information packet as captured by LibrePods (docs/AAP Definitions.md)

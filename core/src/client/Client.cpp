@@ -32,8 +32,10 @@ namespace MagicPodsCore {
     bool Client::Start(const std::function<void(Client&)>& justAfterStartLogic) {
         std::lock_guard lockGuard{_startStopMutex};
 
-        if (_isStarted)
+        if (_isStarted && !_sessionEnded)
             return true;
+        if (_isStarted)
+            StopLocked(); // closed from the other side: clean the old session up before reconnecting
         if (_connectionType == ClientConnectionType::L2CAP && !SupportsL2CAP()) {
             Logger::Info("%s L2CAP needs a kernel driver on this platform, settings over AAP stay unavailable", _address.c_str());
             return false;
@@ -86,6 +88,13 @@ namespace MagicPodsCore {
                 }
             }
 
+            // Stop() clears _isStarted before shutting the socket down, so this is the other side closing
+            if (_isStarted) {
+                _sessionEnded = true;
+                Logger::Info("%s channel closed by the headphones", _address.c_str());
+                _onClosedEvent.FireEvent(true);
+            }
+
             Logger::Debug("%s Reading thread stopped", _address.c_str());
         });
 
@@ -96,7 +105,10 @@ namespace MagicPodsCore {
 
     void Client::Stop() {
         std::lock_guard lockGuard{_startStopMutex};
+        StopLocked();
+    }
 
+    void Client::StopLocked() {
         if (!_isStarted)
             return;
         _isStarted = false;
@@ -105,6 +117,7 @@ namespace MagicPodsCore {
         _outcomeMessagesQueue.Close();
         JoinThreads();
         SocketClose(); // only now: the number must not be reused while a thread still uses it
+        _sessionEnded = false;
 
         Logger::Info("Stop Bluetooth client, server addr %s", _address.c_str());
     }
@@ -182,7 +195,7 @@ namespace MagicPodsCore {
 
         /* set the outgoing connection parameters, server's address and port number */
         addr.l2_family = AF_BLUETOOTH;								/* Addressing family, always AF_BLUETOOTH */
-        addr.l2_psm = htobs(0x1001);					/* server's port number */
+        addr.l2_psm = htobs(_port);					/* PSM: 0x1001 AAP, 0x1F ATT */
         str2ba(_address.c_str(), &addr.l2_bdaddr);		/* server's Bluetooth Address */
 
         /* connect to server */

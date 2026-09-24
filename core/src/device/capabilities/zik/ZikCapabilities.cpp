@@ -1,4 +1,5 @@
 #include "ZikCapabilities.h"
+#include "dbus/BatteryProvider.h"
 #include "audio/AudioEffects.h"
 #include "device/enums/DeviceAncModes.h"
 
@@ -25,6 +26,7 @@ namespace MagicPodsCore
         battery.GetBatteryChangedEvent().Subscribe([this](size_t, const std::vector<DeviceBatteryData> &) {
             isAvailable = true;
             _onChanged.FireEvent(*this);
+            BatteryProvider::Instance().Set(this->device.GetAddress(), BatteryProvider::Level(battery.GetBatteryStatus()));
         });
     }
 
@@ -56,6 +58,7 @@ namespace MagicPodsCore
     void ZikBatteryCapability::Reset()
     {
         battery.ClearBattery();
+        BatteryProvider::Instance().Set(device.GetAddress(), std::nullopt);
         lastState.clear();
         Capability::Reset();
     }

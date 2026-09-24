@@ -6,6 +6,9 @@
 #include "DevicesInfoFetcher.h"
 
 namespace MagicPodsCore {
+    // A channel the headphones keep closing (another tool holds it, firmware quirk) isn't retried forever
+    static constexpr int MAX_RESTARTS_PER_CONNECTION = 5;
+
     void Device::SubscribeCapabilitiesChanges()
     {
         for (auto& c: capabilities){
@@ -37,7 +40,7 @@ namespace MagicPodsCore {
         return name;
     }
 
-    Device::Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService) : _deviceInfo{deviceInfo}, _audioClient{audioClient}, _settingsService{settingsService} 
+    Device::Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService) : _deviceInfo{deviceInfo}, _audioClient{audioClient}, _settingsService{settingsService}
     {
     }
 
@@ -49,6 +52,18 @@ namespace MagicPodsCore {
         if (_client){
             clientReceivedDataEventId = _client->GetOnReceivedDataEvent().Subscribe([this](size_t id, const std::vector<unsigned char> &data)
             { OnResponseDataReceived(data); });
+            clientClosedEventId = _client->GetOnClosedEvent().Subscribe([this](size_t id, bool)
+            {
+                std::lock_guard lock{_workerLock};
+                if (++_restarts > MAX_RESTARTS_PER_CONNECTION) {
+                    Logger::Error("%s control channel keeps closing, giving up until the next connection", GetName().c_str());
+                    return;
+                }
+                _startRequested = true;
+                _startDelayed = true;
+                _workerWake.notify_one();
+            });
+            _clientWorker = std::thread([this]() { ClientWorker(); });
         }
 
         _deviceHandsFreeBatteryStatusChangedEvent = _deviceInfo->GetHandsFreeBatteryStatus().GetEvent().Subscribe([this](size_t listener_id, uint8_t newBatteryValue) {
@@ -64,10 +79,11 @@ namespace MagicPodsCore {
             }
             if (_client){
                 if (_connected){
-                    StartClient();
+                    RequestClientStart(false);
                 }
                 else{
                     _client->Stop();
+                    OnClientStopped();
                     Logger::Info("%s _client stopped from PropertiesChanged", GetName().c_str());
                 }
             }
@@ -76,7 +92,36 @@ namespace MagicPodsCore {
         _connected = _deviceInfo->GetConnectionStatus().GetValue();
         Logger::Debug("%s: Init:Connected %s",GetName().c_str(), _connected ? "true" : "false");
         if (_connected && _client)
-            StartClient();
+            RequestClientStart(false);
+    }
+
+    void Device::RequestClientStart(bool delayed)
+    {
+        std::lock_guard lock{_workerLock};
+        if (!delayed)
+            _restarts = 0;
+        _startRequested = true;
+        _startDelayed = delayed;
+        _workerWake.notify_one();
+    }
+
+    void Device::ClientWorker()
+    {
+        std::unique_lock lock{_workerLock};
+        while (true) {
+            _workerWake.wait(lock, [this]() { return _startRequested || _workerExit; });
+            if (_workerExit)
+                return;
+            bool delayed = std::exchange(_startDelayed, false);
+            _startRequested = false;
+            // give the headphones a moment after they closed the channel
+            if (delayed && _workerWake.wait_for(lock, std::chrono::seconds(1), [this]() { return _workerExit; }))
+                return;
+            lock.unlock();
+            if (GetConnected())
+                StartClient();
+            lock.lock();
+        }
     }
 
     void Device::StartClient()
@@ -88,28 +133,43 @@ namespace MagicPodsCore {
             }
         });
         // audio keeps working without the control channel; the next connection tries again
-        if (started)
+        if (started) {
             Logger::Info("%s _client started", GetName().c_str());
+            OnClientStarted();
+        }
         else
             Logger::Error("%s control channel unavailable, device settings stay off until it reconnects", GetName().c_str());
     }
 
-    Device::~Device()
+    void Device::Shutdown()
     {
         _deviceInfo->GetConnectionStatus().GetEvent().Unsubscribe(_deviceConnectedStatusChangedEvent);
         _deviceInfo->GetHandsFreeBatteryStatus().GetEvent().Unsubscribe(_deviceHandsFreeBatteryStatusChangedEvent);
 
+        if (_clientWorker.joinable()) {
+            {
+                std::lock_guard lock{_workerLock};
+                _workerExit = true;
+                _workerWake.notify_one();
+            }
+            _clientWorker.join();
+        }
+
         // the reading thread feeds the capabilities, so it has to be gone before they are
         if (_client) {
             _client->Stop();
+            OnClientStopped();
             _client->GetOnReceivedDataEvent().Unsubscribe(clientReceivedDataEventId);
+            _client->GetOnClosedEvent().Unsubscribe(clientClosedEventId);
         }
+    }
 
+    Device::~Device()
+    {
+        Shutdown(); // idempotent; derived classes with a reading thread already called it
         UnsubscribeCapabilitiesChanges();
         capabilities.clear();
         Logger::Debug("Device::~Device");
-
-        //TODO: Unsubscribe all listeners from all events in device. See the event.h
     }
 
     void Device::Connect() {
@@ -137,17 +197,13 @@ namespace MagicPodsCore {
     }
 
     void Device::SaveSettingString(const std::string &settingName, const std::string &value)
-    {        
+    {
         _settingsService->SaveSetting(GetContainerName(), settingName, value);
     }
 
     std::optional<std::string> Device::LoadSettingString(const std::string &settingName)
     {
-        toml::node_view<toml::node> value = _settingsService->GetSetting(GetContainerName(), settingName);
-        if (auto v = value.as_string())
-            return v->get();
-
-        return std::nullopt;
+        return _settingsService->GetValue<std::string>(GetContainerName(), settingName);
     }
 
     void Device::SaveSettingInt(const std::string &settingName, const int64_t value)
@@ -157,11 +213,7 @@ namespace MagicPodsCore {
 
     std::optional<int64_t> Device::LoadSettingInt(const std::string &settingName)
     {
-        toml::node_view<toml::node> value = _settingsService->GetSetting(GetContainerName(), settingName);
-        if (auto v = value.as_integer())
-            return v->get();
-
-        return std::nullopt;        
+        return _settingsService->GetValue<int64_t>(GetContainerName(), settingName);
     }
 
     nlohmann::json Device::GetAsJson()
@@ -174,8 +226,8 @@ namespace MagicPodsCore {
         deviceJson["connected"] = GetConnected();
         deviceJson["model"] = GetProductId();
         deviceJson["vendor"] = GetVendorId();
-        
-        std::optional<int64_t> settingColor = LoadSettingInt("color");        
+
+        std::optional<int64_t> settingColor = LoadSettingInt("color");
         deviceJson["color"] = settingColor.has_value()? settingColor.value() : 0;
 
         for (auto& capability : capabilities)

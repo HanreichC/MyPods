@@ -200,6 +200,10 @@ namespace MagicPodsCore
         pid_t pid = fork();
         if (pid == 0)
         {
+            // the daemon blocks SIGTERM for its signal thread (main.cpp); exec keeps the mask, and Kill() relies on it
+            sigset_t none;
+            sigemptyset(&none);
+            sigprocmask(SIG_SETMASK, &none, nullptr);
             if (stdinFd)
             {
                 // a command pipe means pw-cli, which echoes every graph change; keep that out of the daemon log
@@ -245,7 +249,7 @@ namespace MagicPodsCore
     AudioEffects::AudioEffects()
     {
         signal(SIGPIPE, SIG_IGN); // a dead pw-cli must not take the daemon down on the next write
-        // The UI stops the daemon with SIGTERM, which leaves the chain and pw-cli (it ignores EOF) running.
+        // SIGTERM stops the chain (main.cpp), but a crash or SIGKILL leaves it and pw-cli (it ignores EOF) running.
         // PR_SET_PDEATHSIG can't help: it follows the spawning worker thread, not the process.
         std::ifstream pids(RuntimePath("mypods-fx.pid"));
         pid_t pid;

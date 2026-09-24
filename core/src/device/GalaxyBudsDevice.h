@@ -19,9 +19,11 @@ namespace MagicPodsCore
         unsigned short _customProductId = 0;
         Event<GalaxyBudsResponseData> _ResponseDataRecived{};
         GalaxyBudsPacket _packet;
+        std::vector<unsigned char> _pending{}; // RFCOMM is a stream: bytes of a packet not complete yet
         void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
     public:
         explicit GalaxyBudsDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, unsigned short model);
+        ~GalaxyBudsDevice() override { Shutdown(); }
 
         unsigned short GetProductId() const override
         {

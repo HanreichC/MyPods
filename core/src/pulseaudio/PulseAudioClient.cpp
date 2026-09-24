@@ -5,6 +5,8 @@
 #include "PulseAudioClient.h"
 #include "Logger.h"
 
+#include <algorithm>
+
 namespace MagicPodsCore
 {
     namespace
@@ -171,6 +173,40 @@ namespace MagicPodsCore
         bool ok = false;
         Lock lock{ml};
         return Wait(pa_context_set_default_sink(ctx, name.c_str(),
+            [](pa_context*, int success, void* userdata) { *static_cast<bool*>(userdata) = success; }, &ok)) && ok;
+    }
+
+    std::optional<double> PulseAudioClient::GetSinkVolume(const std::string &name)
+    {
+        if (!Usable()) return std::nullopt;
+
+        std::optional<double> volume;
+        Lock lock{ml};
+        Wait(pa_context_get_sink_info_by_name(ctx, name.c_str(),
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                if (!eol && info)
+                    *static_cast<std::optional<double>*>(userdata) = static_cast<double>(pa_cvolume_avg(&info->volume)) / PA_VOLUME_NORM;
+            }, &volume));
+        return volume;
+    }
+
+    bool PulseAudioClient::SetSinkVolume(const std::string &name, double volume)
+    {
+        if (!Usable()) return false;
+
+        uint8_t channels = 0;
+        Lock lock{ml};
+        Wait(pa_context_get_sink_info_by_name(ctx, name.c_str(),
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                if (!eol && info)
+                    *static_cast<uint8_t*>(userdata) = info->volume.channels;
+            }, &channels));
+        if (channels == 0)
+            return false;
+        pa_cvolume cv;
+        pa_cvolume_set(&cv, channels, static_cast<pa_volume_t>(std::clamp(volume, 0.0, 1.5) * PA_VOLUME_NORM));
+        bool ok = false;
+        return Wait(pa_context_set_sink_volume_by_name(ctx, name.c_str(), &cv,
             [](pa_context*, int success, void* userdata) { *static_cast<bool*>(userdata) = success; }, &ok)) && ok;
     }
 

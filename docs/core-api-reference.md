@@ -790,6 +790,91 @@ Notifies when a conversation starts or ends.
 | `true`   | Start conversation |
 | `false`  | Stop conversation  |
 
+While the wearer speaks, the daemon also lowers the AirPods' volume on this computer to 30 % and restores it afterwards (MyPods).
+
+##### Press and hold modes (MyPods)
+
+The noise control modes a press-and-hold of the stem cycles through, as a bitmask. At least two bits; `0x01` needs `allowOff`.
+
+```json
+{
+  "listeningModes": {
+    "readonly": false,
+    "selected": 6
+  }
+}
+```
+
+| bit    | Mode               |
+| ------ | ------------------ |
+| `0x01` | Off                |
+| `0x02` | Noise cancellation |
+| `0x04` | Transparency       |
+| `0x08` | Adaptive           |
+
+##### Allow Off (MyPods)
+
+Whether "Off" can be one of the press-and-hold modes. `selected`: bool.
+
+```json
+{ "allowOff": { "readonly": false, "selected": true } }
+```
+
+##### Microphone (MyPods)
+
+```json
+{ "micMode": { "readonly": false, "selected": 0 } }
+```
+
+| selected |              |
+| -------- | ------------ |
+| `0`      | Automatic    |
+| `1`      | Always right |
+| `2`      | Always left  |
+
+##### Hearing aid (MyPods)
+
+Present only when a hearing test was set up on an iPhone. `selected`: bool.
+
+```json
+{ "hearingAid": { "readonly": false, "selected": false } }
+```
+
+##### Loud Sound Reduction (MyPods, AirPods Pro 2/3)
+
+Read and written over the ATT channel. `selected`: bool.
+
+```json
+{ "loudSoundReduction": { "readonly": false, "selected": true } }
+```
+
+##### Customized transparency (MyPods, AirPods Pro 2/3)
+
+Read and written over the ATT channel. `SetCapabilities` accepts any subset of the fields; the others keep their value. Present once the AirPods' current values have been read.
+
+```json
+{
+  "transparencyTuning": {
+    "readonly": false,
+    "enabled": true,
+    "amplification": 0.2,
+    "balance": 0.0,
+    "tone": 0.0,
+    "ambientNoiseReduction": 0.5,
+    "conversationBoost": false
+  }
+}
+```
+
+| Field                   | Range         |
+| ----------------------- | ------------- |
+| `enabled`               | bool          |
+| `amplification`         | -1 … 1        |
+| `balance`               | -1 (left) … 1 (right) |
+| `tone`                  | -1 … 1        |
+| `ambientNoiseReduction` | 0 … 1         |
+| `conversationBoost`     | bool          |
+
 ##### Noise cancellation with one AirPod
 
 Allow AirPods to be put in noise cancellation mode when only one AirPod is in your ear.
@@ -839,8 +924,10 @@ A general settings storage. Settings are stored in containers in TOML format. Co
 Location:
 
 ```
-~/.config/magicpods/config.toml
+~/.config/mypods/config.toml
 ```
+
+The AirPods keys (`irk`, `enc` in a device's container) are never returned: `GetSettingsAll` and `GetSettings` leave them out, `GetSetting` answers `null` for them, and changes to them are not broadcast.
 
 ### GetSetting
 

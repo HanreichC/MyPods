@@ -9,15 +9,18 @@
 
 namespace MagicPodsCore {
 
+// Owns a copy of the new value: it is fired after the settings lock is released, when the table may change again
 struct UpdatedSettingNotification {
 private:
-    std::string_view _containerName;
-    std::string_view _settingName;
-    toml::node_view<toml::node> _value;
+    std::string _containerName;
+    std::string _settingName;
+    toml::table _value;
 
 public:
-    UpdatedSettingNotification(std::string_view containerName, std::string_view settingName, toml::node_view<toml::node> value) 
-    : _containerName(containerName), _settingName(settingName), _value(value) {}
+    UpdatedSettingNotification(std::string containerName, std::string settingName, const toml::node& value)
+    : _containerName(std::move(containerName)), _settingName(std::move(settingName)) {
+        _value.insert_or_assign("v", value);
+    }
 
     std::string_view GetContainerName() const {
         return _containerName;
@@ -27,8 +30,8 @@ public:
         return _settingName;
     }
 
-    toml::node_view<toml::node> GetValue() const {
-        return _value;
+    toml::node_view<const toml::node> GetValue() const {
+        return _value["v"];
     }
 };
 

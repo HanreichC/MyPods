@@ -67,20 +67,19 @@ jobs:
       - name: MSI
         run: |
           dotnet tool install --global wix --version 5.0.2
-          wix build packaging\windows\MyPods.wxs -arch x64 -d Version=0.1.${{ github.run_number }} -d "DeployDir=$PWD\deploy" -o MyPods-x64.msi
+          # MAJOR.MINOR from CMakeLists.txt, the run number keeps every build an upgrade of the previous one
+          $v = (Select-String -Path CMakeLists.txt -Pattern '^project\(mypods VERSION (\d+)\.(\d+)').Matches[0].Groups
+          wix build packaging\windows\MyPods.wxs -arch x64 -d "Version=$($v[1].Value).$($v[2].Value).${{ github.run_number }}" -d "DeployDir=$PWD\deploy" -o MyPods-x64.msi
 
       - uses: actions/upload-artifact@v4
         with:
           name: MyPods-x64.msi
           path: MyPods-x64.msi
 
-      # Same release as the AppImage workflow: both attach to the tag of the commit
+      # A v* tag makes a versioned release, main updates "nightly" (same as the AppImage workflow)
       - name: Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         shell: bash
-        run: |
-          tag="build-${GITHUB_SHA::7}"
-          gh release create "$tag" --target "$GITHUB_SHA" --title "MyPods build ${GITHUB_SHA::7}" --generate-notes || true
-          gh release upload "$tag" MyPods-x64.msi --clobber
+        run: sh .github/release.sh MyPods-x64.msi
         env:
           GH_TOKEN: ${{ github.token }}

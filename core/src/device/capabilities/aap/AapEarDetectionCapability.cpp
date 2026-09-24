@@ -77,7 +77,7 @@ namespace MagicPodsCore
             return;
 
         // MPRIS calls go to other processes; keep a slow player from stalling the AAP reader
-        std::thread([this, inEar, before]()
+        std::thread([this, inEar, before, keep = device.KeepAlive()]()
         {
             std::lock_guard lock{pausedLock};
             if (inEar < before && paused.empty())

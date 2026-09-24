@@ -17,10 +17,12 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <condition_variable>
+#include <thread>
 
 namespace MagicPodsCore {
 
-    class Device {
+    class Device : public std::enable_shared_from_this<Device> {
     private:
         std::shared_ptr<DBusDeviceInfo> _deviceInfo{};
         std::shared_ptr<PulseAudioClient> _audioClient{};
@@ -29,13 +31,26 @@ namespace MagicPodsCore {
         Event<bool> _onConnectedPropertyChangedEvent{};
         Event<Capability> _onCapabilityChangedEvent{};
         Event<uint8_t> _onHandsFreeBatteryPropertyChangedEvent{};
-        size_t clientReceivedDataEventId;
+        size_t clientReceivedDataEventId{};
+        size_t clientClosedEventId{};
         size_t _deviceConnectedStatusChangedEvent{};
         size_t _deviceHandsFreeBatteryStatusChangedEvent{};
         virtual void OnResponseDataReceived(const std::vector<unsigned char> &data) = 0;
         void SubscribeCapabilitiesChanges();
         void UnsubscribeCapabilitiesChanges();
         std::string GetContainerName();
+
+        // Opening the control channel blocks (connect attempts, spaced init packets), so it runs here
+        // instead of on the D-Bus thread that reports the connection.
+        std::thread _clientWorker{};
+        std::mutex _workerLock{};
+        std::condition_variable _workerWake{};
+        bool _startRequested = false;
+        bool _startDelayed = false;
+        bool _workerExit = false;
+        int _restarts = 0; // channel reopened after the headphones closed it, since the last connection
+        void RequestClientStart(bool delayed);
+        void ClientWorker();
 
     protected:
         mutable std::mutex _propertyMutex{};
@@ -45,11 +60,23 @@ namespace MagicPodsCore {
         std::vector<size_t> capabilityEventIds{};
         void Init();
         void StartClient();
+        // After the control channel opened (worker thread) and after it was stopped
+        virtual void OnClientStarted() {}
+        virtual void OnClientStopped() {}
+        // Stops the worker and the channel. Derived classes call it first in their destructor: the reading
+        // thread calls OnResponseDataReceived, which uses members that are gone once ~Device runs.
+        void Shutdown();
 
     public:
         Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
-        virtual ~Device(); //wrong
-        // TODO: убрать возможность копирования
+        virtual ~Device();
+        Device(const Device&) = delete;
+        Device& operator=(const Device&) = delete;
+
+        // Keeps the device alive for a detached worker thread; empty for a device not owned by a shared_ptr (emulator)
+        std::shared_ptr<Device> KeepAlive() {
+            return weak_from_this().lock();
+        }
 
         const std::string& GetName() const {
             std::lock_guard lock{_propertyMutex};

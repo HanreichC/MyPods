@@ -32,7 +32,42 @@ Components.ScrollPage {
     readonly property var autoSwitchData: capabilities?.autoSwitch ?? null
     readonly property var earDetectionData: capabilities?.earDetection ?? null
     readonly property var deviceInfoData: capabilities?.deviceInfo ?? null
+    readonly property var listeningModesData: capabilities?.listeningModes ?? null
+    readonly property var allowOffData: capabilities?.allowOff ?? null
+    readonly property var micModeData: capabilities?.micMode ?? null
+    readonly property var hearingAidData: capabilities?.hearingAid ?? null
+    readonly property var loudSoundReductionData: capabilities?.loudSoundReduction ?? null
+    readonly property var transparencyTuningData: capabilities?.transparencyTuning ?? null
     readonly property int mWidth: MP.Units.gridUnit * 10
+
+    // Bits of listeningModes (core: AapControlCapability): the modes a press-and-hold cycles through
+    readonly property var listeningModeBits: [
+        { bit: 0x01, label: qsTrId("battery.listening_modes.off"), shown: rootPage.allowOffData?.selected ?? false },
+        { bit: 0x02, label: qsTrId("battery.listening_modes.anc"), shown: true },
+        { bit: 0x04, label: qsTrId("battery.listening_modes.transparency"), shown: true },
+        { bit: 0x08, label: qsTrId("battery.listening_modes.adaptive"), shown: rootPage.adaptiveAudioNoiseData !== null || ((rootPage.listeningModesData?.selected ?? 0) & 0x08) !== 0 }
+    ]
+
+    // Slider for one field of transparencyTuning, sent when released
+    component TuningSlider: MP.FormRow {
+        id: tuningRow
+        property string field
+        property real from: -1
+        Layout.fillWidth: true
+
+        QQC2.Slider {
+            implicitWidth: rootPage.mWidth
+            from: tuningRow.from
+            to: 1
+            value: rootPage.transparencyTuningData?.[tuningRow.field] ?? 0
+            enabled: rootPage.transparencyTuningData?.enabled ?? false
+            Accessible.name: tuningRow.label
+            onPressedChanged: {
+                if (!pressed)
+                    cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), value, tuningRow.field);
+            }
+        }
+    }
 
     // Parrot Zik: plain switches and lists. The core sends selected as bool (switch) or index (list);
     // a row with dependsOn is only editable while that switch is on.
@@ -52,7 +87,7 @@ Components.ScrollPage {
           options: [qsTrId("battery.auto_power_off.never"), "5 min", "10 min", "15 min", "30 min", "60 min"] }
     ]
 
-    readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, spatialAudioData, equalizerData, autoSwitchData, earDetectionData].some(function (v) {
+    readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, spatialAudioData, equalizerData, autoSwitchData, earDetectionData, listeningModesData, allowOffData, micModeData, hearingAidData, loudSoundReductionData].some(function (v) {
         return v !== null;
     }) || zikSwitches.concat(zikLists).some(z => capabilities?.[z.key] !== undefined)
 
@@ -482,6 +517,89 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
+            visible: rootPage.allowOffData !== null
+            label: qsTrId("battery.allow_off")
+
+            Components.Toggle {
+                checked: rootPage.allowOffData?.selected ?? false
+                enabled: !(rootPage.allowOffData?.readonly ?? true)
+                onToggled: cppBackend.setCapability("allowOff", rootPage.currentAddress(), checked)
+            }
+        }
+
+        // What a press-and-hold of the stem cycles through; at least two modes, like on an iPhone
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.listeningModesData !== null
+            label: qsTrId("battery.listening_modes")
+
+            RowLayout {
+                spacing: MP.Units.smallSpacing
+
+                Repeater {
+                    model: rootPage.listeningModeBits
+                    delegate: QQC2.CheckBox {
+                        required property var modelData
+                        readonly property int mask: rootPage.listeningModesData?.selected ?? 0
+                        visible: modelData.shown
+                        text: modelData.label
+                        checked: (mask & modelData.bit) !== 0
+                        enabled: !(rootPage.listeningModesData?.readonly ?? true)
+                        onToggled: {
+                            const next = checked ? (mask | modelData.bit) : (mask & ~modelData.bit);
+                            let count = 0;
+                            for (let b = next; b; b >>= 1) count += b & 1;
+                            if (count < 2) { // the core refuses fewer than two anyway
+                                checked = Qt.binding(() => (mask & modelData.bit) !== 0);
+                                return;
+                            }
+                            cppBackend.setCapability("listeningModes", rootPage.currentAddress(), next);
+                        }
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.micModeData !== null
+            label: qsTrId("battery.mic_mode")
+
+            Components.Picker {
+                model: [qsTrId("battery.mic_mode.automatic"), qsTrId("battery.mic_mode.right"), qsTrId("battery.mic_mode.left")]
+                currentIndex: rootPage.micModeData?.selected ?? 0
+                enabled: !(rootPage.micModeData?.readonly ?? true)
+                onActivated: cppBackend.setCapability("micMode", rootPage.currentAddress(), currentIndex)
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.loudSoundReductionData !== null
+            label: qsTrId("battery.loud_sound_reduction")
+
+            Components.Toggle {
+                checked: rootPage.loudSoundReductionData?.selected ?? false
+                enabled: !(rootPage.loudSoundReductionData?.readonly ?? true)
+                onToggled: cppBackend.setCapability("loudSoundReduction", rootPage.currentAddress(), checked)
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.hearingAidData !== null
+            label: qsTrId("battery.hearing_aid")
+            tooltip: qsTrId("battery.hearing_aid.tooltip")
+
+            Components.Toggle {
+                checked: rootPage.hearingAidData?.selected ?? false
+                enabled: !(rootPage.hearingAidData?.readonly ?? true)
+                onToggled: cppBackend.setCapability("hearingAid", rootPage.currentAddress(), checked)
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
             visible: rootPage.toneVolumeData !== null
             label: qsTrId("battery.tone_volume")
 
@@ -579,6 +697,43 @@ Components.ScrollPage {
                 model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
                 currentIndex: (rootPage.endCallData?.selected === 2) ? 1 : 0
                 enabled: false
+            }
+        }
+    }
+
+    // Customized transparency mode (AirPods Pro 2/3), stored on the AirPods
+    MP.Heading {
+        visible: hasInfo && rootPage.transparencyTuningData !== null
+        level: 5
+        Layout.topMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("battery.transparency_tuning.header")
+    }
+
+    Components.Card {
+        visible: hasInfo && rootPage.transparencyTuningData !== null
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.transparency_tuning.enabled")
+
+            Components.Toggle {
+                checked: rootPage.transparencyTuningData?.enabled ?? false
+                onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "enabled")
+            }
+        }
+        TuningSlider { field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification") }
+        TuningSlider { field: "balance"; label: qsTrId("battery.transparency_tuning.balance") }
+        TuningSlider { field: "tone"; label: qsTrId("battery.transparency_tuning.tone") }
+        TuningSlider { field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction") }
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.transparency_tuning.conversation_boost")
+
+            Components.Toggle {
+                checked: rootPage.transparencyTuningData?.conversationBoost ?? false
+                enabled: rootPage.transparencyTuningData?.enabled ?? false
+                onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "conversationBoost")
             }
         }
     }

@@ -39,9 +39,11 @@ namespace MagicPodsCore {
         size_t _onSettingsChangeId = 0;
         bool _bleScanActive = false;
         std::mutex _bleStateMutex{};
-        bool HasAapDevice() const;
         void UpdateBleState();
 
+        // Changed on the D-Bus thread, read by the WebSocket loop: every access holds _devicesLock,
+        // events fire after it is released
+        mutable std::mutex _devicesLock{};
         std::map<std::string, std::shared_ptr<Device>> _devicesMap{}; // address -> device
         std::shared_ptr<Device> _activeDevice{};
 
@@ -53,13 +55,15 @@ namespace MagicPodsCore {
     public:
         DevicesInfoFetcher(const std::shared_ptr<SettingsService> &settingsService);
         ~DevicesInfoFetcher();
-        // TODO: запретить копирование и перенос
+        DevicesInfoFetcher(const DevicesInfoFetcher&) = delete;
+        DevicesInfoFetcher& operator=(const DevicesInfoFetcher&) = delete;
+
+        // Whether the BLE advertisement scan runs (see the .cpp for why)
+        static bool ShouldScan(bool animation, bool supportsL2CAP, bool anyAap, bool anyAapConnected, bool anyAutoSwitch);
 
         std::set<std::shared_ptr<Device>, DeviceComparator> GetDevices() const;
-        std::shared_ptr<Device> GetDevice(std::string& deviceAddress) const;
-        std::shared_ptr<Device> GetActiveDevice() const {
-            return _activeDevice;
-        }
+        std::shared_ptr<Device> GetDevice(const std::string& deviceAddress) const;
+        std::shared_ptr<Device> GetActiveDevice() const;
 
         void Connect(const std::string& deviceAddress);
         void Disconnect(const std::string& deviceAddress);

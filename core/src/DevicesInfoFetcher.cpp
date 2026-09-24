@@ -25,26 +25,34 @@
 
 namespace MagicPodsCore {
 
-    bool DevicesInfoFetcher::HasAapDevice() const {
-        return std::any_of(_devicesMap.begin(), _devicesMap.end(), [](const auto& pair) {
-            return dynamic_cast<AapDevice*>(pair.second.get()) != nullptr;
-        });
+    bool DevicesInfoFetcher::ShouldScan(bool animation, bool supportsL2CAP, bool anyAap, bool anyAapConnected, bool anyAutoSwitch)
+    {
+        if (!anyAap)
+            return false; // AapDevice is the only consumer of BLE advertisements
+        // Without AAP (Windows) the advertisements are all there is: battery and ear detection also while connected.
+        if (!supportsL2CAP)
+            return animation || anyAapConnected;
+        // Connected, AAP carries battery and ear detection, and the scan's classic inquiry can make A2DP stutter.
+        // Not connected, the advertisements drive the popup and tell automatic switching whether they are worn.
+        // ponytail: with several AirPods paired, one connected pair pauses the scan for the others too
+        return !anyAapConnected && (animation || anyAutoSwitch);
     }
 
     void DevicesInfoFetcher::UpdateBleState()
     {
         std::lock_guard<std::mutex> lock(_bleStateMutex);
 
-        toml::v3::node_view<toml::v3::node> settingValue = _settingsService->GetSetting("magicpods", "animation");
-
-        if (!settingValue.is_boolean()) {
-            Logger::Error("Failed to read animation setting");
-            return;
+        bool animation = _settingsService->GetValue<bool>("magicpods", "animation").value_or(true);
+        bool anyAap = false, anyConnected = false, anyAutoSwitch = false;
+        for (const auto& device : GetDevices()) {
+            auto aap = std::dynamic_pointer_cast<AapDevice>(device);
+            if (!aap)
+                continue;
+            anyAap = true;
+            anyConnected = anyConnected || aap->GetConnected();
+            anyAutoSwitch = anyAutoSwitch || aap->LoadSettingInt("autoSwitch").value_or(0) == 0;
         }
-
-        // AapDevice is the only consumer of BLE advertisements, so scanning without a
-        // pair of AirPods around costs radio time and gains nothing.
-        bool shouldScan = settingValue.as_boolean()->get() && HasAapDevice();
+        bool shouldScan = ShouldScan(animation, Client::SupportsL2CAP(), anyAap, anyConnected, anyAutoSwitch);
 
         if (shouldScan == _bleScanActive)
             return;
@@ -54,11 +62,11 @@ namespace MagicPodsCore {
         if (shouldScan) {
             _bleService->StartListening();
             _bleService->StartScan(true);
-            Logger::Debug("Ble service started");
+            Logger::Info("BLE scan started");
         }
         else {
             _bleService->StopScan();
-            Logger::Debug("Ble service stopped");
+            Logger::Info("BLE scan stopped");
         }
     }
 
@@ -70,7 +78,9 @@ namespace MagicPodsCore {
         _bleService = std::make_shared<DBusBasedBleAdvertisingService>(_dbusService);
 #endif
         _onSettingsChangeId = _settingsService->GetOnSettingUpdateEvent().Subscribe([this](size_t id, const UpdatedSettingNotification& notification){
-        if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "animation")
+            // the scan serves the popup and automatic switching
+            if ((notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "animation") ||
+                notification.GetSettingName() == "autoSwitch")
                 UpdateBleState();
         });
 
@@ -83,24 +93,36 @@ namespace MagicPodsCore {
         }
 
         _dbusService.GetOnDeviceAddedEvent().Subscribe([this](size_t listenerId, const std::shared_ptr<DBusDeviceInfo>& addedDeviceInfo) {
-            Logger::Debug("OnDeviceAdded: %s", addedDeviceInfo->GetAddress().c_str());
             Logger::Info("Device with address (add): %s", addedDeviceInfo->GetAddress().c_str());
-            if (!_devicesMap.contains(addedDeviceInfo->GetAddress())) {
-                if (auto device = TryCreateDevice(addedDeviceInfo)) {
-                    _devicesMap.emplace(addedDeviceInfo->GetAddress(), device);
-                    _onDeviceAddEvent.FireEvent(device);
-                    UpdateBleState();
-                    TrySelectNewActiveDevice(); // it may already be connected, so no Connected change will come
-                }
-                // TODO: уведомление о добавлении устройства
+            std::shared_ptr<Device> device;
+            {
+                std::lock_guard lock{_devicesLock};
+                if (_devicesMap.contains(addedDeviceInfo->GetAddress()))
+                    return;
             }
+            device = TryCreateDevice(addedDeviceInfo); // outside the lock: it connects and may take a while
+            if (!device)
+                return;
+            {
+                std::lock_guard lock{_devicesLock};
+                _devicesMap.emplace(addedDeviceInfo->GetAddress(), device);
+            }
+            _onDeviceAddEvent.FireEvent(device);
+            UpdateBleState();
+            TrySelectNewActiveDevice(); // it may already be connected, so no Connected change will come
         });
 
         _dbusService.GetOnDeviceRemovedEvent().Subscribe([this](size_t listenerId, const std::shared_ptr<DBusDeviceInfo>& removedDeviceInfo) {
-            Logger::Debug("OnDeviceRemoved: %s", removedDeviceInfo->GetAddress().c_str());
-            if (_devicesMap.contains(removedDeviceInfo->GetAddress())) {
-                auto device = _devicesMap.at(removedDeviceInfo->GetAddress());
-                _devicesMap.erase(removedDeviceInfo->GetAddress());
+            std::shared_ptr<Device> device;
+            {
+                std::lock_guard lock{_devicesLock};
+                auto it = _devicesMap.find(removedDeviceInfo->GetAddress());
+                if (it != _devicesMap.end()) {
+                    device = it->second;
+                    _devicesMap.erase(it);
+                }
+            }
+            if (device) {
                 _onDeviceRemoveEvent.FireEvent(device); // after erase, listeners publish the list without it
                 UpdateBleState();
             }
@@ -121,6 +143,7 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
 }
 
     std::set<std::shared_ptr<Device>, DeviceComparator> DevicesInfoFetcher::GetDevices() const {
+        std::lock_guard lock{_devicesLock};
         std::set<std::shared_ptr<Device>, DeviceComparator> devices{};
         for (const auto& [key, value] : _devicesMap) {
             devices.emplace(value);
@@ -128,55 +151,41 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         return devices;
     }
 
-    std::shared_ptr<Device> DevicesInfoFetcher::GetDevice(std::string& deviceAddress) const {
-        for (const auto& [key, value] : _devicesMap) {
-            if (value->GetAddress() == deviceAddress) {
-                return value;
-            }
-        }
-        return nullptr;
+    std::shared_ptr<Device> DevicesInfoFetcher::GetDevice(const std::string& deviceAddress) const {
+        std::lock_guard lock{_devicesLock};
+        auto it = _devicesMap.find(deviceAddress);
+        return it != _devicesMap.end() ? it->second : nullptr;
+    }
+
+    std::shared_ptr<Device> DevicesInfoFetcher::GetActiveDevice() const {
+        std::lock_guard lock{_devicesLock};
+        return _activeDevice;
     }
 
     void DevicesInfoFetcher::Connect(const std::string& deviceAddress) {
-        for (const auto& [key, value] : _devicesMap) {
-            if (value->GetAddress() == deviceAddress) {
-                value->Connect();
-                break;
-            }
-        }
+        if (auto device = GetDevice(deviceAddress))
+            device->Connect();
     }
 
     void DevicesInfoFetcher::Disconnect(const std::string& deviceAddress) {
-        for (const auto& [key, value] : _devicesMap) {
-            if (value->GetAddress() == deviceAddress) {
-                value->Disconnect();
-                break;
-            }
-        }
+        if (auto device = GetDevice(deviceAddress))
+            device->Disconnect();
     }
 
     void DevicesInfoFetcher::SetCapabilities(const nlohmann::json &json)
     {
         Logger::Info("DevicesInfoFetcher::SetCapabilities");
 
-        if (!json.contains("arguments") || !json["arguments"].contains("address") || !json["arguments"].contains("capabilities"))
+        if (!json.contains("arguments") || !json["arguments"].contains("address") || !json["arguments"]["address"].is_string() ||
+            !json["arguments"].contains("capabilities"))
         {
             Logger::Info("Error: missing required fields in SetCapabilities");
             return;
         }
 
         const auto& arguments = json.at("arguments");
-        const auto& deviceAddress = arguments.at("address").get_ref<const std::string&>();
-        const auto& capabilities = arguments.at("capabilities");
-
-        for (const auto& [key, device] : _devicesMap)
-        {
-            if (device->GetAddress() == deviceAddress)
-            {
-                device->SetCapabilities(capabilities);
-                break;
-            }
-        }
+        if (auto device = GetDevice(arguments.at("address").get<std::string>()))
+            device->SetCapabilities(arguments.at("capabilities"));
     }
 
     void DevicesInfoFetcher::EnableBluetoothAdapter() {
@@ -205,74 +214,78 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
             Logger::Debug("        %s", uuid.c_str());
         }
 
+        std::shared_ptr<Device> newDevice;
         if (AapHelper::IsAapDevice(deviceInfo->GetVendorId(), deviceInfo->GetProductId())){
-            auto newDevice = AapDevice::Create(deviceInfo, _audioClient, _settingsService, _bleService);
+            newDevice = AapDevice::Create(deviceInfo, _audioClient, _settingsService, _bleService);
+            // the BLE scan pauses while AirPods are connected (UpdateBleState)
             newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
-                TrySelectNewActiveDevice();
+                UpdateBleState();
             });
-            return newDevice;
         }
 
         else if (std::pair<GalaxyBudsModelIds, std::string> keyPair{};
                  GalaxyBudsHelper::IsGalaxyBudsDevice(deviceInfo->GetUuids()) &&
                  ((keyPair = GalaxyBudsHelper::SearchModelColor(deviceInfo->GetUuids(), deviceInfo->GetName())).first != GalaxyBudsModelIds::Unknown))
         {
-            auto newDevice = GalaxyBudsDevice::Create(deviceInfo,_audioClient, _settingsService, static_cast<unsigned short>(keyPair.first));
-            newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
-                TrySelectNewActiveDevice();
-            });
-            return newDevice;
+            newDevice = GalaxyBudsDevice::Create(deviceInfo,_audioClient, _settingsService, static_cast<unsigned short>(keyPair.first));
         }
         else if (ZikDevice::IsZikDevice(deviceInfo->GetUuids())) {
-            auto newDevice = ZikDevice::Create(deviceInfo, _audioClient, _settingsService);
-            newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
-                TrySelectNewActiveDevice();
-            });
-            return newDevice;
+            newDevice = ZikDevice::Create(deviceInfo, _audioClient, _settingsService);
         }
         //search headphones with handsfree service
         else if (auto uuids = deviceInfo->GetUuids();
                 std::find(uuids.begin(), uuids.end(), "0000111e-0000-1000-8000-00805f9b34fb") != uuids.end()) {
+            newDevice = BhfDevice::Create(deviceInfo,_audioClient, _settingsService);
+        }
 
-                auto newDevice = BhfDevice::Create(deviceInfo,_audioClient, _settingsService);
-                newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
+        if (newDevice)
+            newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
                 TrySelectNewActiveDevice();
             });
-            return newDevice;
-        }
-        return nullptr;
+        return newDevice;
     }
 
     void DevicesInfoFetcher::ClearAndFillDevicesMap() {
-        _devicesMap.clear();
-        _activeDevice = nullptr;
+        {
+            std::lock_guard lock{_devicesLock};
+            _devicesMap.clear();
+            _activeDevice = nullptr;
+        }
 
         for (const auto& deviceInfo : _dbusService.GetPairedDevices()) {
             if (auto device = TryCreateDevice(deviceInfo)) {
-                _devicesMap.emplace(deviceInfo->GetAddress(), device);
+                {
+                    std::lock_guard lock{_devicesLock};
+                    _devicesMap.emplace(deviceInfo->GetAddress(), device);
+                }
                 _onDeviceAddEvent.FireEvent(device);
             }
         }
 
         TrySelectNewActiveDevice();
 
-        Logger::Info("Devices created: %zu", _devicesMap.size());
+        Logger::Info("Devices created: %zu", GetDevices().size());
     }
 
     void DevicesInfoFetcher::TrySelectNewActiveDevice() {
-        auto previousActiveDevice = _activeDevice;
+        std::shared_ptr<Device> previousActiveDevice, newActiveDevice;
+        {
+            std::lock_guard lock{_devicesLock};
+            previousActiveDevice = _activeDevice;
 
-        if (_activeDevice != nullptr && (!_devicesMap.contains(_activeDevice->GetAddress()) || !_activeDevice->GetConnected()))
-            _activeDevice = nullptr;
+            if (_activeDevice != nullptr && (!_devicesMap.contains(_activeDevice->GetAddress()) || !_activeDevice->GetConnected()))
+                _activeDevice = nullptr;
 
-        if (_activeDevice == nullptr && _devicesMap.size() > 0) {
-            for (auto& [address, device] : _devicesMap) {
-                if (device->GetConnected())
-                    _activeDevice = device;
+            if (_activeDevice == nullptr) {
+                for (auto& [address, device] : _devicesMap) {
+                    if (device->GetConnected())
+                        _activeDevice = device;
+                }
             }
+            newActiveDevice = _activeDevice;
         }
 
-        if (previousActiveDevice != _activeDevice)
-            _onActiveDeviceChangedEvent.FireEvent(_activeDevice);
+        if (previousActiveDevice != newActiveDevice)
+            _onActiveDeviceChangedEvent.FireEvent(newActiveDevice);
     }
 }

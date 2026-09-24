@@ -43,6 +43,10 @@ namespace MagicPodsCore {
         return FormatAddress(adapter.BluetoothAddress());
     }
 
+    std::string DBusService::GetAdapterAlias() {
+        return {}; // only smart routing uses it, which needs AAP
+    }
+
     DBusService::DBusService() : _native{std::make_unique<Native>()} {
         try {
             if (auto adapter = BluetoothAdapter::GetDefaultAsync().get()) {

@@ -3,6 +3,7 @@
 // License: GPL-3.0
 
 #include "AapBatteryCapability.h"
+#include "dbus/BatteryProvider.h"
 #include "AppAnimationCapability.h"
 
 namespace MagicPodsCore
@@ -21,6 +22,7 @@ namespace MagicPodsCore
     void AapBatteryCapability::Reset()
     {
         battery.ClearBattery();
+        BatteryProvider::Instance().Set(device.GetAddress(), std::nullopt);
         AapCapability::Reset();
     }
 
@@ -32,6 +34,7 @@ namespace MagicPodsCore
                 isAvailable = true;
 
             _onChanged.FireEvent(*this);
+            BatteryProvider::Instance().Set(this->device.GetAddress(), BatteryProvider::Level(battery.GetBatteryStatus()));
         });
 
         watcherBatteryChangedEventId = watcher.GetEvent().Subscribe([this](size_t id, const std::vector<DeviceBatteryData> &b){

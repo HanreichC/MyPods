@@ -24,6 +24,10 @@ namespace MagicPodsCore
         unsigned char startOfMessage = 0;
         unsigned char endOfMessage = 0;
         explicit GalaxyBudsPacket(GalaxyBudsModelIds model);
+        // Takes the complete packets off the front of `pending` (bytes as they came off the stream),
+        // leaves an incomplete tail and drops bytes that can't start a packet
+        std::vector<std::vector<unsigned char>> Split(std::vector<unsigned char> &pending) const;
+        // One complete packet, as Split returns it
         std::optional<GalaxyBudsResponseData> Extract(const std::vector<unsigned char> &buffer);
         std::vector<unsigned char> Encode(GalaxyBudsMsgIds id, const std::vector<unsigned char> &payload);
     };

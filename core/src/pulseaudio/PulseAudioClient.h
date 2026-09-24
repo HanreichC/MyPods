@@ -44,6 +44,9 @@ namespace MagicPodsCore{
             // First sink whose name contains `part`, e.g. the MAC with underscores for a bluez sink
             std::optional<std::string> FindSink(const std::string& part);
             bool SetDefaultSink(const std::string& name);
+            // Sink volume averaged over its channels, 1.0 = 100 %
+            std::optional<double> GetSinkVolume(const std::string& name);
+            bool SetSinkVolume(const std::string& name, double volume);
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }

@@ -3,6 +3,7 @@
 // License: GPL-3.0
 
 #include "GalaxyBudsBatteryCapability.h"
+#include "dbus/BatteryProvider.h"
 
 namespace MagicPodsCore
 {
@@ -19,6 +20,7 @@ namespace MagicPodsCore
     void GalaxyBudsBatteryCapability::Reset()
     {
         battery.ClearBattery();
+        BatteryProvider::Instance().Set(device.GetAddress(), std::nullopt);
         GalaxyBudsCapability::Reset();
     }
 
@@ -31,6 +33,7 @@ namespace MagicPodsCore
                 isAvailable = true;
 
             _onChanged.FireEvent(*this);
+            BatteryProvider::Instance().Set(this->device.GetAddress(), BatteryProvider::Level(battery.GetBatteryStatus()));
             Logger::Debug("AapAncCapability::GetBatteryChangedEvent");
         });
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project(mypods VERSION 0.1.0 LANGUAGES C CXX)
+project(mypods VERSION 0.2.0 LANGUAGES C CXX)
 
 # core/ = Daemon (AAP ueber L2CAP + BLE-Advertisements, WebSocket-API auf :2020)
 # ui/   = Qt6/QML-Oberflaeche, startet den Daemon und spricht ihn ueber WebSocket an

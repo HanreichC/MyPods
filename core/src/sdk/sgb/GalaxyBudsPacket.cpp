@@ -13,9 +13,47 @@ namespace MagicPodsCore
         isLegacy = model == GalaxyBudsModelIds::GalaxyBuds;
     }
 
+    // Framing: SOM, two header bytes (legacy Buds: type, size), `size` bytes of id + payload + CRC, EOM
+    static constexpr unsigned char SOM = 0xFD, EOM = 0xDD, LEGACY_SOM = 0xFE, LEGACY_EOM = 0xEE;
+
+    static uint16_t PacketSize(const std::vector<unsigned char> &buffer, bool isLegacy)
+    {
+        return isLegacy ? buffer[2] : (((static_cast<uint16_t>(buffer[2]) << 8) | buffer[1]) & 0x3FF);
+    }
+
+    std::vector<std::vector<unsigned char>> GalaxyBudsPacket::Split(std::vector<unsigned char> &pending) const
+    {
+        const unsigned char som = isLegacy ? LEGACY_SOM : SOM;
+        const unsigned char eom = isLegacy ? LEGACY_EOM : EOM;
+        std::vector<std::vector<unsigned char>> packets;
+        size_t start = 0;
+        while (pending.size() - start >= 3)
+        {
+            if (pending[start] != som)
+            {
+                start++; // resync on the next start byte
+                continue;
+            }
+            std::vector<unsigned char> head(pending.begin() + start, pending.begin() + start + 3);
+            size_t total = 3 + PacketSize(head, isLegacy) + 1;
+            if (pending.size() - start < total)
+                break; // rest arrives with the next read
+            if (pending[start + total - 1] != eom)
+            {
+                start++; // a start byte inside the payload, not a packet
+                continue;
+            }
+            packets.emplace_back(pending.begin() + start, pending.begin() + start + total);
+            start += total;
+        }
+        pending.erase(pending.begin(), pending.begin() + start);
+        return packets;
+    }
+
     std::optional<GalaxyBudsResponseData> GalaxyBudsPacket::Extract(const std::vector<unsigned char> &buffer)
     {
-        if (buffer.size() < 6)
+        // a size field pointing past the end would read beyond the buffer below
+        if (buffer.size() < 6 || buffer.size() < 3 + static_cast<size_t>(PacketSize(buffer, isLegacy)) + 1 || PacketSize(buffer, isLegacy) < 3)
         {
             return std::nullopt;
         }

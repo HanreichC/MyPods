@@ -36,6 +36,7 @@ namespace MagicPodsCore {
 
         std::intptr_t _socket{-1}; // fd on Linux, SOCKET on Windows
         std::atomic<bool> _isStarted{false};
+        std::atomic<bool> _sessionEnded{false}; // the other side closed the channel; Start() opens a new one
 
         std::mutex _startStopMutex{};
         // joined in Stop(): a thread outliving a session would read the next session's socket or a destroyed Client
@@ -45,6 +46,7 @@ namespace MagicPodsCore {
         BlockingQueue<std::vector<unsigned char>> _outcomeMessagesQueue{};
 
         Event<std::vector<unsigned char>> _onReceivedDataEvent{};
+        Event<bool> _onClosedEvent{};
 
     public:
         // AAP needs an L2CAP channel. Linux opens one from user space; Windows only allows it from a
@@ -64,6 +66,12 @@ namespace MagicPodsCore {
             return _onReceivedDataEvent;
         }
 
+        // The headphones closed the channel while the Bluetooth link may still be up. Fired on the
+        // reading thread, so listeners must not call Start() or Stop() from it.
+        Event<bool>& GetOnClosedEvent() {
+            return _onClosedEvent;
+        }
+
         void SendData(const std::vector<unsigned char>& data);
 
     private:
@@ -77,6 +85,7 @@ namespace MagicPodsCore {
         void SocketShutdown();
         void SocketClose();
         void JoinThreads();
+        void StopLocked();
 #ifndef _WIN32
         static std::optional<uint8_t> RetrieveServicePortRFCOMM(uint8_t* uuid, const char* deviceAddress);
 #endif

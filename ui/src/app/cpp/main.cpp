@@ -29,6 +29,12 @@
 #include <LayerShellQt/window.h>
 #endif
 
+#include <QJsonDocument>
+#include <QTimer>
+#include <QWebSocket>
+#include <cstdio>
+
+#include "Actions.h"
 #include "BackendManager.h"
 #include "DesktopManager.h"
 #include "MediaController.h"
@@ -58,7 +64,50 @@ static void ensureEnvDefaults() {
 
 }
 
+// magicpods --action <name>, for keyboard shortcuts (Actions.h): asks the daemon for the active
+// headphones, sends the change and exits. Needs no running window or tray.
+static int runAction(int argc, char *argv[], const QString &action) {
+    QCoreApplication app(argc, argv);
+    if (!Actions::names.contains(action)) {
+        std::fprintf(stderr, "Unknown action \"%s\". Available: %s\n", qUtf8Printable(action), qUtf8Printable(Actions::names.join(QStringLiteral(", "))));
+        return 2;
+    }
+
+    QWebSocket socket;
+    QObject::connect(&socket, &QWebSocket::connected, &app, [&]() {
+        socket.sendTextMessage(QStringLiteral(R"({"method":"GetActiveDeviceInfo"})"));
+    });
+    QObject::connect(&socket, &QWebSocket::textMessageReceived, &app, [&](const QString &message) {
+        const QJsonObject json = QJsonDocument::fromJson(message.toUtf8()).object();
+        if (!json.contains(QStringLiteral("info")))
+            return; // the handshake and broadcasts
+        const QJsonObject request = Actions::request(action, json.value(QStringLiteral("info")).toObject());
+        if (request.isEmpty()) {
+            std::fprintf(stderr, "No connected headphones that can do \"%s\"\n", qUtf8Printable(action));
+            app.exit(1);
+            return;
+        }
+        socket.sendTextMessage(QString::fromUtf8(QJsonDocument(request).toJson(QJsonDocument::Compact)));
+        socket.flush();
+        QTimer::singleShot(200, &app, [&app]() { app.exit(0); }); // let the frame leave before the socket closes
+    });
+    QObject::connect(&socket, &QWebSocket::errorOccurred, &app, [&app]() {
+        std::fprintf(stderr, "The MyPods daemon is not running\n");
+        app.exit(1);
+    });
+    QTimer::singleShot(5000, &app, [&app]() {
+        std::fprintf(stderr, "No answer from the MyPods daemon\n");
+        app.exit(1);
+    });
+    socket.open(QUrl(QStringLiteral("ws://127.0.0.1:2020")));
+    return app.exec();
+}
+
 int main(int argc, char *argv[]) {
+    for (int i = 1; i + 1 < argc; ++i)
+        if (qstrcmp(argv[i], "--action") == 0)
+            return runAction(argc, argv, QString::fromLocal8Bit(argv[i + 1]));
+
     ensureEnvDefaults();
 
     QApplication app(argc, argv);

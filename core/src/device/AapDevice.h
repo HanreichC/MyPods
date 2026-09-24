@@ -11,6 +11,8 @@
 #include "settings/SettingsService.h"
 #include "audio/AudioEffects.h"
 #include <atomic>
+#include <chrono>
+#include <deque>
 
 namespace MagicPodsCore
 {
@@ -23,6 +25,24 @@ namespace MagicPodsCore
         Event<const BleAdertisingData> _onLeDataReceived{};        
         Event<const nlohmann::json> _onAnimationTriggered{};
         void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
+
+        // ATT channel for the settings AirPods Pro 2/3 keep as GATT characteristics (sdk/aap/Att.h).
+        // ATT allows one request at a time, so requests queue until the previous one is answered.
+        std::unique_ptr<Client> _attClient{};
+        size_t _attDataEventId = 0;
+        std::mutex _attLock{};
+        std::deque<std::pair<std::vector<unsigned char>, unsigned char>> _attQueue{}; // PDU, handle read by it (0 for writes)
+        bool _attBusy = false;
+        unsigned char _attReading = 0;
+        std::chrono::steady_clock::time_point _attSentAt{};
+        Event<std::pair<unsigned char, std::vector<unsigned char>>> _onAttValue{};
+        void AttQueue(std::vector<unsigned char> pdu, unsigned char readHandle);
+        void AttSendNextLocked();
+        void OnAttData(const std::vector<unsigned char> &data);
+
+    protected:
+        void OnClientStarted() override;
+        void OnClientStopped() override;
 
     public:
         explicit AapDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<BleAdvertisingService> bleService);
@@ -44,6 +64,16 @@ namespace MagicPodsCore
 
         void SendData(const AapRequest &setter);
         void SendData(const std::vector<unsigned char> &data);
+
+        // Models with ATT settings (Loud Sound Reduction, customized transparency)
+        static bool HasAttSettings(unsigned short productId);
+        void AttRead(unsigned char handle);
+        void AttWrite(unsigned char handle, const std::vector<unsigned char> &value);
+        // Characteristic values as read or notified: handle, value
+        Event<std::pair<unsigned char, std::vector<unsigned char>>> &GetAttValueEvent()
+        {
+            return _onAttValue;
+        }
 
         // Shared by the ear-detection, audio-switch and spatial-audio capabilities
         std::atomic<bool> ownsAudio{true}; // this computer is the AirPods' audio source (until the AirPods say otherwise)
