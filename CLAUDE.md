@@ -31,7 +31,7 @@ Not lazy about: understanding the problem (read it fully and trace the real flow
 
 ## Environment: Podman + Dev Container
 
-On this system, Podman is installed. Do not install frameworks, SDKs, or language runtimes globally.
+On this system, Podman or docker is installed. Do not install frameworks, SDKs, or language runtimes globally.
 
 - If a task requires a framework, language, or tool that is not already installed, create and run it inside a Dev Container (`.devcontainer/devcontainer.json`).
 - Reuse existing container definitions if present; only add what's needed.
