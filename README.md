@@ -264,9 +264,6 @@ when a second pair of the same model is right next to you. If you also use MyPod
 in `%APPDATA%\mypods\config.toml` (the table name is the AirPods' address). MyPods then verifies them
 properly and shows the exact battery.
 
-The L2CAP transport is one function pair in `core/src/client/Client_win.cpp`; with a profile driver
-installed, implementing it there enables every AAP feature without touching the protocol code.
-
 ---
 
 ## One-time system setup

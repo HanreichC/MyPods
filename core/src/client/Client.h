@@ -44,7 +44,7 @@ namespace MagicPodsCore {
 
     public:
         // AAP needs an L2CAP channel. Linux opens one from user space; Windows only allows it from a
-        // kernel-mode profile driver: true there once the MyPods AAP driver (driver/windows) is installed.
+        // kernel-mode profile driver, which MyPods doesn't ship, so AAP features stay off there.
         static bool SupportsL2CAP();
 
         void Start(const std::function<void(Client&)>& justAfterStartLogic = {});

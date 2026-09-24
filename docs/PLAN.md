@@ -210,7 +210,8 @@ Ohrerkennung) — Code dafür liegt fertig in AirPodsDesktop.
 *Nachtrag 2026-09-24:* Die treiberlose Stufe ist umgesetzt (Branch `windows`, siehe README →
 Windows). Die Plattformschicht (BlueZ/PulseAudio/MPRIS bzw. WinRT/Core Audio/SMTC) hat je
 eine Implementierung, alles darüber ist gemeinsam. L2CAP meldet unter Windows
-`Client::SupportsL2CAP() == false`; ein späterer Treiber wird nur in `Client_win.cpp` angebunden.
+`Client::SupportsL2CAP() == false`; AAP-Funktionen bleiben dort aus. Ein eigener Treiber wurde
+verworfen: ohne Microsoft-Signatur lädt er nur im Testmodus.
 
 **P5 — Forschung (optional)**
 18. Herzfrequenz Pro 3: eigene Captures (Apple-DID-Spoof + Notifications auf `FF FF FF FF FF`),

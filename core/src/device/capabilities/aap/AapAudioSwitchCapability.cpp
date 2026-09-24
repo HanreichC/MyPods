@@ -363,11 +363,7 @@ namespace MagicPodsCore
             }
             for (auto &other : others)
             {
-#ifdef _WIN32
-                device.SendData(MediaInformation(other, localMac, "Windows"));
-#else
                 device.SendData(MediaInformation(other, localMac, "Linux"));
-#endif
                 device.SendData(ShowNearbyUI(other));
                 device.SendData(HijackRequest(other));
             }

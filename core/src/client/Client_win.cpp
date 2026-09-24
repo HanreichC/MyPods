@@ -3,20 +3,13 @@
 
 // Windows side of Client: RFCOMM through Winsock (AF_BTH). Windows resolves the RFCOMM channel from the
 // service UUID itself (SDP), so there is no counterpart to RetrieveServicePortRFCOMM.
-// L2CAP (AAP) goes through the MyPods AAP driver (driver/windows) when it is installed: one handle per
-// channel, one packet per ReadFile/WriteFile. _socket then holds that HANDLE instead of a SOCKET.
 
 #include "Client.h"
 #include "Logger.h"
 
 #include <cstdio>
-#include <vector>
 #include <winsock2.h>
 #include <ws2bth.h>
-#include <initguid.h>
-#include <cfgmgr32.h>
-#include <winioctl.h>
-#include "mypodsaap.h"
 
 namespace MagicPodsCore {
 
@@ -54,57 +47,13 @@ namespace MagicPodsCore {
         }
     }
 
-    // Path of the driver's device interface, empty when the driver is not installed
-    static std::wstring AapInterface() {
-        ULONG size = 0;
-        auto guid = const_cast<GUID*>(&GUID_DEVINTERFACE_MYPODS_AAP);
-        if (CM_Get_Device_Interface_List_SizeW(&size, guid, nullptr, CM_GET_DEVICE_INTERFACE_LIST_PRESENT) != CR_SUCCESS || size <= 1)
-            return {};
-        std::vector<wchar_t> list(size);
-        if (CM_Get_Device_Interface_ListW(guid, nullptr, list.data(), size, CM_GET_DEVICE_INTERFACE_LIST_PRESENT) != CR_SUCCESS)
-            return {};
-        return list.data();
-    }
-
     bool Client::SupportsL2CAP() {
-        return !AapInterface().empty();
-    }
-
-    // Overlapped I/O on the driver handle: the reading and the writing thread use it at the same time,
-    // which a synchronous handle would serialize (a pending read would block every write).
-    static long DriverIo(HANDLE h, bool write, void* buffer, DWORD length, const ULONGLONG* openAddress = nullptr) {
-        OVERLAPPED ov{};
-        ov.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-        if (!ov.hEvent)
-            return -1;
-        DWORD bytes = 0;
-        BOOL started = openAddress
-            ? DeviceIoControl(h, IOCTL_MYPODS_AAP_OPEN, const_cast<ULONGLONG*>(openAddress), sizeof(*openAddress), nullptr, 0, nullptr, &ov)
-            : write ? WriteFile(h, buffer, length, nullptr, &ov) : ReadFile(h, buffer, length, nullptr, &ov);
-        bool ok = (started || GetLastError() == ERROR_IO_PENDING) && GetOverlappedResult(h, &ov, &bytes, TRUE);
-        CloseHandle(ov.hEvent);
-        return ok ? static_cast<long>(bytes) : -1;
+        return false;
     }
 
     bool Client::ConnectToSocketL2CAP() {
-        std::wstring path = AapInterface();
-        if (path.empty()) {
-            Logger::Error("%s L2CAP needs the MyPods AAP driver, which is not installed", _address.c_str());
-            return false;
-        }
-        HANDLE h = CreateFileW(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
-        if (h == INVALID_HANDLE_VALUE) {
-            Logger::Error("%s AAP driver open failed: %lu", _address.c_str(), GetLastError());
-            return false;
-        }
-        const ULONGLONG address = ParseAddress(_address);
-        if (DriverIo(h, false, nullptr, 0, &address) < 0) {
-            Logger::Error("%s L2CAP open failed: %lu", _address.c_str(), GetLastError());
-            CloseHandle(h);
-            return false;
-        }
-        _socket = reinterpret_cast<std::intptr_t>(h);
-        return true;
+        Logger::Error("%s L2CAP is not available without a kernel driver on Windows", _address.c_str());
+        return false;
     }
 
     bool Client::ConnectToSocketRFCOMM() {
@@ -136,27 +85,16 @@ namespace MagicPodsCore {
     }
 
     long Client::SocketSend(const unsigned char* data, size_t length) {
-        if (_connectionType == ClientConnectionType::L2CAP)
-            return DriverIo(reinterpret_cast<HANDLE>(_socket), true, const_cast<unsigned char*>(data), static_cast<DWORD>(length));
         return send(static_cast<SOCKET>(_socket), reinterpret_cast<const char*>(data), static_cast<int>(length), 0);
     }
 
     long Client::SocketReceive(unsigned char* buffer, size_t length) {
-        if (_connectionType == ClientConnectionType::L2CAP)
-            return DriverIo(reinterpret_cast<HANDLE>(_socket), false, buffer, static_cast<DWORD>(length));
         return recv(static_cast<SOCKET>(_socket), reinterpret_cast<char*>(buffer), static_cast<int>(length), 0);
     }
 
     void Client::SocketClose() {
-        // also wakes the reading thread: its recv()/ReadFile returns an error
-        if (_connectionType == ClientConnectionType::L2CAP) {
-            HANDLE h = reinterpret_cast<HANDLE>(_socket);
-            CancelIoEx(h, nullptr);
-            CloseHandle(h); // the driver closes the L2CAP channel
-        }
-        else {
-            closesocket(static_cast<SOCKET>(_socket));
-        }
+        // also wakes the reading thread: its recv() returns an error
+        closesocket(static_cast<SOCKET>(_socket));
         _socket = -1;
     }
 }
