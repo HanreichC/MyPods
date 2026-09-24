@@ -466,6 +466,8 @@ while connected, `health` and `baselineRuntime` after about six charges.
 | `runtime`         | hours a full charge lasts, over the last three charges                           |
 | `baselineRuntime` | the same over the first three charges recorded                                   |
 | `health`          | int (0-100), `runtime` against `baselineRuntime`                                 |
+| `runtimeProgress` | int (0-99), how far the data for `runtime` is, only while `runtime` is missing   |
+| `healthProgress`  | int (0-99), the same for `health`                                                |
 | `history`         | the last 7 days as `[unix seconds, level]`, level `null` where it disconnected   |
 
 | status |              |

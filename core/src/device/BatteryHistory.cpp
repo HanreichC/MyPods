@@ -72,15 +72,18 @@ namespace MagicPodsCore
         auto json = nlohmann::json::object();
         json["cycles"] = static_cast<int>(drained / 100);
 
+        double measured = 0;
+        for (const auto &d : drains)
+            measured += d.first;
+
         auto round1 = [](double hours) { return std::round(hours * 10) / 10; };
         auto recent = Runtime(drains.rbegin(), drains.rend());
         if (recent)
             json["runtime"] = round1(*recent);
+        else
+            json["runtimeProgress"] = static_cast<int>(measured * 100 / MIN_MEASURED);
 
         // Health only once the first and the latest window don't overlap
-        double measured = 0;
-        for (const auto &d : drains)
-            measured += d.first;
         if (recent && measured >= 2 * WINDOW)
             if (auto baseline = Runtime(drains.begin(), drains.end()))
             {
@@ -88,6 +91,8 @@ namespace MagicPodsCore
                 // above 100 is noise (louder listening back then), not a battery that got better
                 json["health"] = std::min(100, static_cast<int>(std::lround(*recent / *baseline * 100)));
             }
+        if (!json.contains("health"))
+            json["healthProgress"] = static_cast<int>(measured * 100 / (2 * WINDOW));
 
         auto history = nlohmann::json::array();
         for (const auto &[time, level] : points)

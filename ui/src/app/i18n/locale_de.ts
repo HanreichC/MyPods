@@ -673,7 +673,7 @@
     <message id="battery.history.collecting">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
         <source></source>
-        <translation>Wird ermittelt …</translation>
+        <translation>Wird ermittelt … %1 %</translation>
     </message>
     <message id="tray.connect_device">
         <location filename="../cpp/TrayIconManager.cpp" line="0"/>

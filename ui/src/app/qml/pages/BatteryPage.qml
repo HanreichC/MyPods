@@ -891,14 +891,15 @@ Components.ScrollPage {
             model: {
                 const h = rootPage.batteryHistoryData;
                 const hours = value => qsTrId("battery.history.hours").arg(Number(value).toLocaleString(Qt.locale(), "f", 1));
+                const collecting = progress => qsTrId("battery.history.collecting").arg(progress ?? 0);
                 return [
                     { label: qsTrId("battery.history.cycles"), tooltip: qsTrId("battery.history.cycles_tooltip"),
                       value: String(h?.cycles ?? 0) },
                     { label: qsTrId("battery.history.runtime"), tooltip: qsTrId("battery.history.runtime_tooltip"),
-                      value: h?.runtime !== undefined ? hours(h.runtime) : qsTrId("battery.history.collecting") },
+                      value: h?.runtime !== undefined ? hours(h.runtime) : collecting(h?.runtimeProgress) },
                     { label: qsTrId("battery.history.health"), tooltip: qsTrId("battery.history.health_tooltip"),
                       value: h?.health !== undefined ? qsTrId("battery.history.health_value").arg(h.health).arg(hours(h.baselineRuntime))
-                                                     : qsTrId("battery.history.collecting") }
+                                                     : collecting(h?.healthProgress) }
                 ];
             }
             delegate: MP.FormRow {

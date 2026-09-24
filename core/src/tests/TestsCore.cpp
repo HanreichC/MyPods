@@ -125,6 +125,13 @@ TestsCore::TestsCore()
     {
         BatteryHistory::Stats s;
         int64_t t = 0;
+        s.Add(0, 81);
+        s.Add(60, 80);
+        s.Add(150, 79);
+        auto json = s.ToJson(150);
+        Test("Battery history: progress while collecting", json["runtimeProgress"] == 4 && json["healthProgress"] == 0 &&
+                                                            !json.contains("runtime"));
+        s = {};
         auto discharge = [&](int secondsPerPercent) {
             s.Add(t, 100);
             for (int level = 99; level >= 0; level--)
@@ -132,8 +139,9 @@ TestsCore::TestsCore()
             s.Add(t += 3600, 100); // charged while connected
         };
         discharge(360);
-        auto json = s.ToJson(t);
-        Test("Battery history: one cycle, 10 h runtime", json["cycles"] == 1 && json["runtime"] == 10.0 && !json.contains("health"));
+        json = s.ToJson(t);
+        Test("Battery history: one cycle, 10 h runtime", json["cycles"] == 1 && json["runtime"] == 10.0 && !json.contains("health") &&
+                                                         !json.contains("runtimeProgress") && json["healthProgress"] == 16);
 
         s.Add(t += 7200, 99); // lying idle: counts as drained, not as runtime
         s.Add(t += 60, std::nullopt);
@@ -146,7 +154,8 @@ TestsCore::TestsCore()
         for (int i = 0; i < 3; i++)
             discharge(288);
         json = s.ToJson(t);
-        Test("Battery history: health against the first charges", json["baselineRuntime"] == 10.0 && json["runtime"] == 8.0 && json["health"] == 80);
+        Test("Battery history: health against the first charges", json["baselineRuntime"] == 10.0 && json["runtime"] == 8.0 && json["health"] == 80 &&
+                                                                     !json.contains("healthProgress"));
 
         auto &history = json["history"];
         Test("Battery history: the last week, gaps as null", !history.empty() && history.back()[1] == 100 &&
