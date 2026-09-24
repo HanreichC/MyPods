@@ -70,7 +70,7 @@ namespace MagicPodsCore
                 if (volumeBeforeDuck)
                     return; // already lowered
                 volumeBeforeDuck = *current;
-                target = *current * DUCKED_VOLUME;
+                target = *current * device.LoadSettingInt("caVolume").value_or(DEFAULT_DUCK_PERCENT) / 100.0;
             }
             else
             {

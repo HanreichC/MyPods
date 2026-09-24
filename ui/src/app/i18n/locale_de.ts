@@ -670,7 +670,7 @@
     </message>
     <message id="battery.hearing_aid.tooltip">
         <source></source>
-        <translation>Nutzt den auf einem iPhone eingerichteten Hörtest. Die angepasste Transparenz ist aus, solange das Hörgerät an ist.</translation>
+        <translation>Nutzt den auf einem iPhone eingerichteten Hörtest.</translation>
     </message>
     <message id="battery.transparency_tuning.header">
         <source></source>
@@ -699,6 +699,26 @@
     <message id="battery.transparency_tuning.conversation_boost">
         <source></source>
         <translation>Gesprächsverstärkung</translation>
+    </message>
+    <message id="battery.active_device">
+        <source></source>
+        <translation>Kopfhörer</translation>
+    </message>
+    <message id="battery.conversation_awareness_volume">
+        <source></source>
+        <translation>Lautstärke beim Sprechen</translation>
+    </message>
+    <message id="battery.crown_reversed">
+        <source></source>
+        <translation>Digital Crown: vorne nach hinten</translation>
+    </message>
+    <message id="battery.sleep_detection">
+        <source></source>
+        <translation>Pausieren beim Einschlafen</translation>
+    </message>
+    <message id="battery.auto_connect">
+        <source></source>
+        <translation>Automatisch verbinden</translation>
     </message>
 </context>
 </TS>

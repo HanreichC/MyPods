@@ -108,9 +108,9 @@ void CmnBluetoothCodecCapability::SetFromJson(const nlohmann::json &json)
             {
                 Logger::Debug("CmnBluetoothCodecCapability::SetFromJson set option to %s", selected.c_str());
                 // Switching waits for PipeWire, so keep it off the API thread; the newest pick wins.
-                // ponytail: detached like AapAudioSwitch, a device removed mid-switch would outlive `this`.
+                // KeepAlive: a device removed mid-switch stays until the thread is done.
                 int id = ++request;
-                std::thread([this, selected, id]()
+                std::thread([this, selected, id, keep = device.KeepAlive()]()
                 {
                     std::lock_guard lock{switching};
                     if (id != request)

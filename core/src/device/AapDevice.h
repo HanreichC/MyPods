@@ -10,6 +10,7 @@
 #include "ble_ads/BleAdvertisingService.h"
 #include "settings/SettingsService.h"
 #include "audio/AudioEffects.h"
+#include "sdk/aap/Att.h"
 #include <atomic>
 #include <chrono>
 #include <deque>
@@ -31,13 +32,9 @@ namespace MagicPodsCore
         std::unique_ptr<Client> _attClient{};
         size_t _attDataEventId = 0;
         std::mutex _attLock{};
-        std::deque<std::pair<std::vector<unsigned char>, unsigned char>> _attQueue{}; // PDU, handle read by it (0 for writes)
-        bool _attBusy = false;
-        unsigned char _attReading = 0;
-        std::chrono::steady_clock::time_point _attSentAt{};
+        Att::RequestQueue _attQueue{};
         Event<std::pair<unsigned char, std::vector<unsigned char>>> _onAttValue{};
         void AttQueue(std::vector<unsigned char> pdu, unsigned char readHandle);
-        void AttSendNextLocked();
         void OnAttData(const std::vector<unsigned char> &data);
 
     protected:

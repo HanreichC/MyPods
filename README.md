@@ -60,7 +60,9 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Automatic ear detection | Taking a pod out pauses playback, putting it back resumes it (MPRIS). The switch is stored on the AirPods themselves. |
 | "Connect to This Mac: Automatically" | When a player starts here (browser, Spotify, anything with MPRIS), MyPods takes the AirPods over from your iPhone: connects if needed, performs Apple's smart-routing handoff, enables A2DP and makes them the default output. When the iPhone starts playing, the computer pauses and falls back to its speakers. It never takes over during a call on the other device. The iPhone's banner names this computer by its Bluetooth name. |
 | "Moved to iPhone — Move back" banner | The device page shows "Playing on iPhone — Move here". |
-| Conversation Awareness lowers the volume while you speak | Same: while the AirPods report that you're speaking, the computer lowers their volume to 30 % of its level and brings it back afterwards. |
+| Conversation Awareness lowers the volume while you speak | Same: while the AirPods report that you're speaking, the computer lowers their volume (to 30 % of its level by default, adjustable) and brings it back afterwards. |
+| Digital Crown direction (AirPods Max), sleep detection, "Connect to This Mac" automatically | Same switches, for the AirPods that report them. |
+| Several headphones connected: pick which one to control | A picker at the top of the device page; the tray and popup follow it. The headphones connected last become the active ones. |
 | Press and hold: which modes to cycle through, "Off" allowed or not | Same settings, written to the AirPods. |
 | Microphone: Automatic / Always Left / Always Right | Same, for the AirPods that report it. |
 | Loud Sound Reduction, customized transparency (amplification, balance, tone, ambient noise reduction, conversation boost) | Same, for AirPods Pro 2 and 3 over their ATT channel. *Unverified on hardware.* |
@@ -95,7 +97,8 @@ service UUID.
 ### Samsung Galaxy Buds
 
 Battery and noise control, inherited from MagicPodsCore (Galaxy Buds, Buds+, Live, Pro, Buds2,
-Buds2 Pro, FE, Core, Buds3, Buds3 Pro, Buds3 FE, Buds4, Buds4 Pro).
+Buds2 Pro, FE, Core, Buds3, Buds3 Pro, Buds3 FE, Buds4, Buds4 Pro), plus ear detection: taking a bud
+out pauses, putting it back resumes (switchable, stored locally; not on the Buds Core).
 
 ### Any other headset
 
@@ -186,6 +189,9 @@ A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](d
 - An MPRIS-capable media player for auto-pause, automatic switching and the tray popup's now playing (browsers, Spotify, mpv with `mpv-mpris`, …)
 - `pactl` (part of `libpulse`) for the tray popup's volume slider
 - Optional: `layer-shell-qt` (ships with KDE Plasma) to place the tray popup under the panel on Wayland
+- A system tray. KDE Plasma, Cinnamon, XFCE and most panels have one; GNOME needs the
+  *AppIndicator and KStatusNotifierItem Support* extension. Without a tray, MyPods opens as a window
+  and the daemon keeps working in the background.
 - For the battery level in the system's Bluetooth settings: a BlueZ with the battery provider API
   (current versions; older ones need `bluetoothd --experimental`). Everything else works without it.
 
@@ -219,12 +225,16 @@ To build it yourself: `podman run --rm -v "$PWD:/workspace:Z" -w /workspace dock
 ### Arch package
 
 [packaging/arch/PKGBUILD](packaging/arch/PKGBUILD) builds a `mypods-git` package from the latest
-commit (AUR style). It installs to `/usr/lib/mypods`, with `magicpods` and `magicpodscore` in
-`/usr/bin`, a start menu entry and the daemon's systemd user unit.
+commit on GitHub (AUR style), not from your local checkout. It installs to `/usr/lib/mypods`, with
+`magicpods` and `magicpodscore` in `/usr/bin`, a start menu entry and the daemon's systemd user unit.
 
 ```bash
 cd packaging/arch && makepkg -si
 systemctl --user enable --now mypods-core.service   # once per user
+
+# uninstall
+systemctl --user disable --now mypods-core.service
+sudo pacman -R mypods-git
 ```
 
 ### From source (Arch-based)
@@ -252,7 +262,7 @@ switching and the effects keep working after you quit the tray app, and systemd 
 if it crashes. Its log is in `journalctl --user -u mypods-core`. Without systemd (and in the AppImage)
 the tray app starts the daemon itself, as before. Without a Bluetooth adapter the daemon exits, and
 systemd (or the tray app) starts it again until one shows up; it uses BlueZ's first adapter, which need
-not be `hci0`.
+not be `hci0`. The same happens when the adapter goes away or bluetoothd restarts or crashes.
 
 Run the script again to update. It stops the running instance, reinstalls and starts it again.
 
@@ -450,7 +460,7 @@ libpulse, OpenSSL, libsystemd) and run the same two CMake commands directly. All
 ## Testing
 
 MyPods follows a simple rule: every piece of non-trivial logic has one runnable check, no test
-framework required. All but one run without hardware.
+framework required. All but two run without hardware.
 
 ```bash
 # Everything below that needs no hardware, in one go (CI runs it before building the AppImage)
@@ -479,7 +489,7 @@ the low battery warning, the keyboard shortcut actions and the picker
 [ui/tests/ActionsCheck.cpp](ui/tests/ActionsCheck.cpp),
 [ui/tests/tst_picker.qml](ui/tests/tst_picker.qml)); each file also names its own compile command.
 
-One check does need hardware, because the behavior it guards only exists on a real adapter:
+Two checks do need hardware, because the behavior they guard only exists on a real adapter:
 
 ```bash
 # With MyPods running: fails if a discovery session is held although no Apple device is
@@ -521,7 +531,7 @@ echo '{"method":"GetAll"}' | websocat -n1 ws://127.0.0.1:2020/
 ```
 
 Available methods: `GetAll`, `GetDevices`, `ConnectDevice`, `DisconnectDevice`,
-`GetActiveDeviceInfo`, `SetCapabilities`, `GetDefaultBluetoothAdapter`,
+`GetActiveDeviceInfo`, `SetActiveDevice`, `SetCapabilities`, `GetDefaultBluetoothAdapter`,
 `EnableDefaultBluetoothAdapter`, `DisableDefaultBluetoothAdapter`, `GetSettingsAll`,
 `GetSettings`, `GetSetting`, `SetSetting`. The daemon also broadcasts changes (capabilities,
 connection state, active device, adapter state, settings, popup trigger) to every connected client.
@@ -551,8 +561,6 @@ The full reference with request and response examples is in
 - **Popup while connected (Linux).** The BLE scan pauses while AirPods are connected, so opening the
   case of AirPods that are still connected to this computer shows no popup. Opening it while they are
   disconnected, or connecting them, does.
-- **Volume while speaking.** Conversation Awareness lowers the volume to a fixed 30 %; iOS lets you
-  pick the level.
 - **Binary compatibility.** Binaries built by `install.sh` target Arch-based systems.
 - **Tray popup placement.** Wayland doesn't let apps position their windows, so the popup is a
   layer-shell surface anchored to the top-right corner: right for a panel at the top, wrong for

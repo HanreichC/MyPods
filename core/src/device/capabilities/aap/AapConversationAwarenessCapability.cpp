@@ -3,6 +3,7 @@
 // License: GPL-3.0
 
 #include "AapConversationAwarenessCapability.h"
+#include "AapConversationAwarenessStateCapability.h"
 #include "sdk/aap/enums/AapConversationAwarenessMode.h"
 #include "sdk/aap/setters/AapSetConversationAwarenessStatus.h"
 
@@ -11,7 +12,9 @@ namespace MagicPodsCore
     nlohmann::json AapConversationAwarenessCapability::CreateJsonBody()
     {    
         auto bodyJson = nlohmann::json::object();
-        bodyJson["selected"] = option;        
+        bodyJson["selected"] = option;
+        // how loud media stays while you speak (MyPods, AapConversationAwarenessStateCapability)
+        bodyJson["duckVolume"] = device.LoadSettingInt("caVolume").value_or(AapConversationAwarenessStateCapability::DEFAULT_DUCK_PERCENT);
         return bodyJson;
     }
 
@@ -52,6 +55,19 @@ namespace MagicPodsCore
             return;
 
         const auto& capability = json.at(name);
+
+        if (capability.contains("duckVolume"))
+        {
+            if (capability["duckVolume"].is_number_integer() && capability["duckVolume"].get<int>() >= 0 && capability["duckVolume"].get<int>() <= 100)
+            {
+                device.SaveSettingInt("caVolume", capability["duckVolume"].get<int>());
+                _onChanged.FireEvent(*this);
+            }
+            else
+                Logger::Error("AapConversationAwarenessCapability::SetFromJson: duckVolume must be 0-100");
+            if (!capability.contains("selected"))
+                return;
+        }
 
         if (capability.contains("selected") && capability["selected"].is_boolean())
         {

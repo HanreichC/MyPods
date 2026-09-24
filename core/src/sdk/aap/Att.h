@@ -5,7 +5,9 @@
 
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cstdint>
+#include <deque>
 #include <optional>
 #include <vector>
 
@@ -31,6 +33,55 @@ namespace MagicPodsCore::Att
         pdu.insert(pdu.end(), value.begin(), value.end());
         return pdu;
     }
+
+    // ATT allows one request at a time: the others wait until it is answered. A request the AirPods
+    // never answer is given up after two seconds, so it can't hold the queue forever. Not thread-safe.
+    class RequestQueue
+    {
+    public:
+        using Clock = std::chrono::steady_clock;
+
+        // Queues `pdu` (`readHandle`: the handle it reads, 0 for writes); the PDU to send now, if any
+        std::optional<std::vector<uint8_t>> Push(std::vector<uint8_t> pdu, uint8_t readHandle, Clock::time_point now)
+        {
+            if (busy && now - sentAt > std::chrono::seconds(2))
+                busy = false;
+            queue.emplace_back(std::move(pdu), readHandle);
+            return Next(now);
+        }
+
+        // A response came in: the handle the answered request read (0 for a write), and what to send next
+        std::pair<uint8_t, std::optional<std::vector<uint8_t>>> Answered(Clock::time_point now)
+        {
+            uint8_t handle = busy ? reading : 0;
+            busy = false;
+            return {handle, Next(now)};
+        }
+
+        void Clear()
+        {
+            queue.clear();
+            busy = false;
+        }
+
+    private:
+        std::deque<std::pair<std::vector<uint8_t>, uint8_t>> queue;
+        bool busy = false;
+        uint8_t reading = 0;
+        Clock::time_point sentAt{};
+
+        std::optional<std::vector<uint8_t>> Next(Clock::time_point now)
+        {
+            if (busy || queue.empty())
+                return std::nullopt;
+            auto [pdu, handle] = std::move(queue.front());
+            queue.pop_front();
+            busy = true;
+            reading = handle;
+            sentAt = now;
+            return pdu;
+        }
+    };
 
     // Transparency characteristic: little-endian floats. enabled, then per bud (left, right):
     // 8 EQ bands, amplification, tone, conversation boost (0/1), ambient noise reduction; newer

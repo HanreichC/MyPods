@@ -670,7 +670,7 @@
     </message>
     <message id="battery.hearing_aid.tooltip">
         <source></source>
-        <translation>Uses the hearing test set up on an iPhone. Customized transparency is off while the hearing aid is on.</translation>
+        <translation>Uses the hearing test set up on an iPhone.</translation>
     </message>
     <message id="battery.transparency_tuning.header">
         <source></source>
@@ -699,6 +699,26 @@
     <message id="battery.transparency_tuning.conversation_boost">
         <source></source>
         <translation>Conversation Boost</translation>
+    </message>
+    <message id="battery.active_device">
+        <source></source>
+        <translation>Headphones</translation>
+    </message>
+    <message id="battery.conversation_awareness_volume">
+        <source></source>
+        <translation>Volume while speaking</translation>
+    </message>
+    <message id="battery.crown_reversed">
+        <source></source>
+        <translation>Digital Crown: Front to Back</translation>
+    </message>
+    <message id="battery.sleep_detection">
+        <source></source>
+        <translation>Pause when falling asleep</translation>
+    </message>
+    <message id="battery.auto_connect">
+        <source></source>
+        <translation>Connect automatically</translation>
     </message>
 </context>
 </TS>

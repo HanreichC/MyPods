@@ -14,6 +14,7 @@
 #include "device/capabilities/aap/AapAttCapabilities.h"
 #include "device/capabilities/aap/AapConversationAwarenessStateCapability.h"
 #include "sdk/aap/Att.h"
+#include "media/EarDetectionPause.h"
 
 #include <cmath>
 
@@ -140,7 +141,27 @@ TestsCore::TestsCore()
         Test("Transparency apply keeps the rest", parsed->left.amplification == 0.5f && parsed->right.amplification == 0.5f &&
                                                       std::abs(parsed->left.tone - 0.3f) < 1e-6 && parsed->left.eq[3] == 42.5f);
         Test("Transparency too short", !Att::TransparencySettings::Parse(std::vector<uint8_t>(60)).has_value());
+
+        // one ATT request at a time; answers name the handle read; an unanswered request is dropped after 2 s
+        Att::RequestQueue queue;
+        auto t0 = Att::RequestQueue::Clock::now();
+        auto first = queue.Push(Att::Read(Att::LOUD_SOUND_REDUCTION), Att::LOUD_SOUND_REDUCTION, t0);
+        auto second = queue.Push(Att::Read(Att::TRANSPARENCY), Att::TRANSPARENCY, t0);
+        auto [answered, next] = queue.Answered(t0);
+        Test("ATT queue: one request in flight", first == Att::Read(Att::LOUD_SOUND_REDUCTION) && !second &&
+                                                     answered == Att::LOUD_SOUND_REDUCTION && next == Att::Read(Att::TRANSPARENCY));
+        auto stuck = queue.Push(Att::Write(Att::LOUD_SOUND_REDUCTION, {0x01}), 0, t0 + std::chrono::seconds(3));
+        Test("ATT queue: unanswered request given up", stuck == Att::Write(Att::LOUD_SOUND_REDUCTION, {0x01}) &&
+                                                           queue.Answered(t0).first == 0);
     }
+
+    // Ear detection: pause when a bud comes out, resume once as many are back as before
+    Test("Ear pause: first reading does nothing", EarDetectionPause::Decide(-1, 1, false, 0) == 0);
+    Test("Ear pause: bud out pauses", EarDetectionPause::Decide(2, 1, false, 0) == -1);
+    Test("Ear pause: second bud out keeps it paused", EarDetectionPause::Decide(1, 0, true, 2) == 0);
+    Test("Ear pause: one back of two waits", EarDetectionPause::Decide(0, 1, true, 2) == 0);
+    Test("Ear pause: both back resumes", EarDetectionPause::Decide(1, 2, true, 2) == 1);
+    Test("Ear pause: out without playback, nothing to resume", EarDetectionPause::Decide(1, 2, false, 2) == 0);
 
     // AirPods Pro information packet as captured by LibrePods (docs/AAP Definitions.md)
     {

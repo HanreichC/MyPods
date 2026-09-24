@@ -29,6 +29,7 @@ public:
     Q_INVOKABLE void getAll();
     Q_INVOKABLE void getInfo();
     Q_INVOKABLE void getDevices();
+    Q_INVOKABLE void setActiveDevice(const QString &address);
     Q_INVOKABLE void getDefaultBluetoothAdapter();
     Q_INVOKABLE void getSetting(const QString &containerName, const QString &settingName);
     Q_INVOKABLE void setSetting(const QString &containerName, const QString &settingName, const QVariant &newValue);

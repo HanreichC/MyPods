@@ -64,6 +64,8 @@ namespace MagicPodsCore {
         std::set<std::shared_ptr<Device>, DeviceComparator> GetDevices() const;
         std::shared_ptr<Device> GetDevice(const std::string& deviceAddress) const;
         std::shared_ptr<Device> GetActiveDevice() const;
+        // Makes a connected device the one the UI shows and the broadcasts are about; false if it isn't connected
+        bool SetActiveDevice(const std::string& address);
 
         void Connect(const std::string& deviceAddress);
         void Disconnect(const std::string& deviceAddress);
@@ -97,7 +99,8 @@ namespace MagicPodsCore {
         std::shared_ptr<Device> TryCreateDevice(const std::shared_ptr<DBusDeviceInfo>& deviceInfo);
 
         void ClearAndFillDevicesMap();
-        void TrySelectNewActiveDevice();
+        // `preferred` (an address) becomes active if connected; otherwise the active one stays while connected
+        void TrySelectNewActiveDevice(const std::string& preferred = {});
 
         public:
             static std::array<unsigned short, 2>ParseVidPid(const std::string& modalias);

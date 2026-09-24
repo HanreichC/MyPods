@@ -6,6 +6,8 @@
 
 #include "ObservableVariable.h"
 
+#include <atomic>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <optional>
@@ -35,9 +37,12 @@ namespace MagicPodsCore {
         std::unique_ptr<sdbus::IProxy> _deviceProxy{};
 #endif
 
-        std::string _address{};
-        unsigned short _productId{};
-        unsigned short _vendorId{};
+        std::string _address{}; // set once in the constructor
+        // Rewritten on the D-Bus thread when BlueZ learns them (after pairing, after a rename) while the
+        // WebSocket loop and the AAP reader read them: getters hand out copies
+        mutable std::mutex _fieldsLock{};
+        std::atomic<unsigned short> _productId{};
+        std::atomic<unsigned short> _vendorId{};
         std::vector<std::string> _uuids{};
         std::optional<unsigned int> _clazz{};
         std::string _name{};
@@ -74,7 +79,8 @@ namespace MagicPodsCore {
             return _vendorId;
         }
 
-        const std::vector<std::string> GetUuids() const {
+        std::vector<std::string> GetUuids() const {
+            std::lock_guard lock{_fieldsLock};
             return _uuids;
         }
 
@@ -82,7 +88,8 @@ namespace MagicPodsCore {
             return _clazz;
         }
 
-        const std::string& GetName() const {
+        std::string GetName() const {
+            std::lock_guard lock{_fieldsLock};
             return _name;
         }
 

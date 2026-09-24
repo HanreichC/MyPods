@@ -24,7 +24,7 @@ namespace MagicPodsCore
     static void RouteIfOurs(AapDevice &device)
     {
         if (device.ownsAudio && device.GetConnected())
-            std::thread([&device]() { device.RouteAudio(); }).detach();
+            std::thread([&device, keep = device.KeepAlive()]() { device.RouteAudio(); }).detach();
     }
 
     bool AapSpatialAudioCapability::HasHeadTracking(unsigned short model)

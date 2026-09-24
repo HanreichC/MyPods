@@ -1,0 +1,4 @@
+# Shell scripts and the PKGBUILD run on Linux, also from a Windows checkout mounted into a container
+*.sh text eol=lf
+PKGBUILD text eol=lf
+packaging/linux/* text eol=lf

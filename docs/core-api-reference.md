@@ -326,6 +326,18 @@ On any property change:
 ```
 
 
+### SetActiveDevice (MyPods)
+
+With several headphones connected, makes one of them the active device: the one `GetActiveDeviceInfo` and the capability broadcasts are about. Ignored for a device that isn't connected. Without it, the headphones connected last are active.
+
+Request:
+
+```json
+{ "method": "SetActiveDevice", "arguments": { "address": "AA:BB:CC:DD:EE:FF" } }
+```
+
+Response: the same as `GetActiveDeviceInfo`. Every client also gets `OnActiveDeviceChanged`.
+
 ### GetAll
 
 Combines GetDevices, GetDefaultBluetoothAdapter, and GetActiveDeviceInfo into a single request.
@@ -549,6 +561,7 @@ audio here ("Move back").
 ##### Automatic ear detection (MyPods)
 
 Taking a pod out pauses, putting it back resumes. `primary`/`secondary`: `0` in ear, `1` out, `2` in case, `-1` unknown.
+Galaxy Buds have the same capability with `selected` only.
 
 ```json
 {
@@ -757,7 +770,8 @@ Lowers media volume and reduces background noise when you start speaking to othe
 {
   "conversationAwareness": {
     "readonly": false,
-    "selected": true
+    "selected": true,
+    "duckVolume": 30
   }
 }
 ```
@@ -766,6 +780,8 @@ Lowers media volume and reduces background noise when you start speaking to othe
 | -------- | ------- |
 | `true`   | Enable  |
 | `false`  | Disable |
+
+`duckVolume` (MyPods): how loud media stays on this computer while you speak, in percent of its volume (0–100, default 30). Stored per device; can be sent on its own.
 
 ##### Conversation awareness speaking (read-only)
 
@@ -818,6 +834,20 @@ Whether "Off" can be one of the press-and-hold modes. `selected`: bool.
 
 ```json
 { "allowOff": { "readonly": false, "selected": true } }
+```
+
+##### Digital Crown, sleep detection, automatic connection (MyPods)
+
+Switches the AirPods report; each appears only on models that have it. `selected`: bool.
+
+| Name             | `true` means                                   |
+| ---------------- | ---------------------------------------------- |
+| `crownReversed`  | AirPods Max: Digital Crown turned the other way |
+| `sleepDetection` | pause playback when you fall asleep            |
+| `autoConnect`    | connect to this computer automatically         |
+
+```json
+{ "sleepDetection": { "readonly": false, "selected": true } }
 ```
 
 ##### Microphone (MyPods)

@@ -238,9 +238,10 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
             newDevice = BhfDevice::Create(deviceInfo,_audioClient, _settingsService);
         }
 
+        // the device that just connected becomes the active one, like on a Mac
         if (newDevice)
-            newDevice->GetConnectedPropertyChangedEvent().Subscribe([this](size_t listenerId, bool newValue) {
-                TrySelectNewActiveDevice();
+            newDevice->GetConnectedPropertyChangedEvent().Subscribe([this, address = deviceInfo->GetAddress()](size_t listenerId, bool connected) {
+                TrySelectNewActiveDevice(connected ? address : std::string{});
             });
         return newDevice;
     }
@@ -267,11 +268,22 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         Logger::Info("Devices created: %zu", GetDevices().size());
     }
 
-    void DevicesInfoFetcher::TrySelectNewActiveDevice() {
+    bool DevicesInfoFetcher::SetActiveDevice(const std::string& address) {
+        auto device = GetDevice(address);
+        if (!device || !device->GetConnected())
+            return false;
+        TrySelectNewActiveDevice(address);
+        return true;
+    }
+
+    void DevicesInfoFetcher::TrySelectNewActiveDevice(const std::string& preferred) {
         std::shared_ptr<Device> previousActiveDevice, newActiveDevice;
         {
             std::lock_guard lock{_devicesLock};
             previousActiveDevice = _activeDevice;
+
+            if (auto it = _devicesMap.find(preferred); it != _devicesMap.end() && it->second->GetConnected())
+                _activeDevice = it->second;
 
             if (_activeDevice != nullptr && (!_devicesMap.contains(_activeDevice->GetAddress()) || !_activeDevice->GetConnected()))
                 _activeDevice = nullptr;

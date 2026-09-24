@@ -3,7 +3,7 @@
 
 #pragma once
 #include "AapCapability.h"
-#include <mutex>
+#include "media/EarDetectionPause.h"
 
 namespace MagicPodsCore
 {
@@ -16,9 +16,8 @@ namespace MagicPodsCore
         bool option = true;
         int primary = -1;
         int secondary = -1;
-        int inEarBeforePause = 0;
-        std::vector<std::string> paused;
-        std::mutex pausedLock;
+
+        EarDetectionPause pause;
         size_t leEventId = 0;
         void Update(int newPrimary, int newSecondary);
 

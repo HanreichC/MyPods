@@ -38,7 +38,14 @@ Components.ScrollPage {
     readonly property var hearingAidData: capabilities?.hearingAid ?? null
     readonly property var loudSoundReductionData: capabilities?.loudSoundReduction ?? null
     readonly property var transparencyTuningData: capabilities?.transparencyTuning ?? null
+    readonly property var crownReversedData: capabilities?.crownReversed ?? null
+    readonly property var sleepDetectionData: capabilities?.sleepDetection ?? null
+    readonly property var autoConnectData: capabilities?.autoConnect ?? null
     readonly property int mWidth: MP.Units.gridUnit * 10
+
+    // With several headphones connected, the page shows the daemon's active one; the picker switches it
+    property var headphonesData: []
+    readonly property var connectedHeadphones: (headphonesData ?? []).filter(h => h.connected)
 
     // Bits of listeningModes (core: AapControlCapability): the modes a press-and-hold cycles through
     readonly property var listeningModeBits: [
@@ -87,7 +94,7 @@ Components.ScrollPage {
           options: [qsTrId("battery.auto_power_off.never"), "5 min", "10 min", "15 min", "30 min", "60 min"] }
     ]
 
-    readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, spatialAudioData, equalizerData, autoSwitchData, earDetectionData, listeningModesData, allowOffData, micModeData, hearingAidData, loudSoundReductionData].some(function (v) {
+    readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, spatialAudioData, equalizerData, autoSwitchData, earDetectionData, listeningModesData, allowOffData, micModeData, hearingAidData, loudSoundReductionData, crownReversedData, sleepDetectionData, autoConnectData].some(function (v) {
         return v !== null;
     }) || zikSwitches.concat(zikLists).some(z => capabilities?.[z.key] !== undefined)
 
@@ -118,6 +125,7 @@ Components.ScrollPage {
     function requestInfo() {
         if (cppBackend && cppBackend.connected) {
             cppBackend.getInfo();
+            cppBackend.getDevices();
         }
     }
 
@@ -130,6 +138,8 @@ Components.ScrollPage {
             } else if (json.info) {
                 rootPage.infoData = json.info;
             }
+            if (json?.headphones)
+                rootPage.headphonesData = json.headphones;
         }
         function onConnectedChanged() {
             requestInfo();
@@ -144,6 +154,21 @@ Components.ScrollPage {
         iconSource: MP.Theme.asset("icons/illustration-connect.svg")
         titleText: qsTrId("battery.connect_headphones.header")
         bodyText: qsTrId("battery.connect_headphones.description")
+    }
+
+    Components.Card {
+        visible: hasInfo && rootPage.connectedHeadphones.length > 1
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.active_device")
+
+            Components.Picker {
+                model: rootPage.connectedHeadphones.map(h => h.name)
+                currentIndex: rootPage.connectedHeadphones.findIndex(h => h.address === rootPage.currentAddress())
+                onActivated: cppBackend.setActiveDevice(rootPage.connectedHeadphones[currentIndex].address)
+            }
+        }
     }
 
     // Hero: device render + battery rings
@@ -415,6 +440,39 @@ Components.ScrollPage {
             }
         }
 
+        // How loud media stays on this computer while you speak
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.conversationAwarenessData?.duckVolume !== undefined
+            label: qsTrId("battery.conversation_awareness_volume")
+
+            RowLayout {
+                spacing: MP.Units.smallSpacing
+
+                QQC2.Slider {
+                    id: duckVolumeSlider
+                    implicitWidth: rootPage.mWidth - 48
+                    from: 0
+                    to: 100
+                    stepSize: 5
+                    value: rootPage.conversationAwarenessData?.duckVolume ?? 30
+                    enabled: rootPage.conversationAwarenessData?.selected ?? false
+                    Accessible.name: qsTrId("battery.conversation_awareness_volume")
+                    onPressedChanged: {
+                        if (!pressed)
+                            cppBackend.setCapability("conversationAwareness", rootPage.currentAddress(), Math.round(value), "duckVolume");
+                    }
+                }
+
+                MP.Label {
+                    Layout.preferredWidth: 44
+                    horizontalAlignment: Text.AlignRight
+                    color: MP.Theme.secondaryText
+                    text: qsTrId("format.percent").arg(Math.round(duckVolumeSlider.value))
+                }
+            }
+        }
+
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.personalizedVolumeData !== null
@@ -546,7 +604,9 @@ Components.ScrollPage {
                         checked: (mask & modelData.bit) !== 0
                         enabled: !(rootPage.listeningModesData?.readonly ?? true)
                         onToggled: {
-                            const next = checked ? (mask | modelData.bit) : (mask & ~modelData.bit);
+                            // a hidden "Off" (not allowed) must not ride along with the other modes
+                            const allowed = (rootPage.allowOffData?.selected ?? false) ? mask : (mask & ~0x01);
+                            const next = checked ? (allowed | modelData.bit) : (allowed & ~modelData.bit);
                             let count = 0;
                             for (let b = next; b; b >>= 1) count += b & 1;
                             if (count < 2) { // the core refuses fewer than two anyway
@@ -556,6 +616,27 @@ Components.ScrollPage {
                             cppBackend.setCapability("listeningModes", rootPage.currentAddress(), next);
                         }
                     }
+                }
+            }
+        }
+
+        Repeater {
+            // plain switches the AirPods report (core: AapControlCapability Toggle)
+            model: [
+                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed") },
+                { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection") },
+                { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect") }
+            ]
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                visible: modelData.data !== null
+                label: modelData.label
+
+                Components.Toggle {
+                    checked: modelData.data?.selected ?? false
+                    enabled: !(modelData.data?.readonly ?? true)
+                    onToggled: cppBackend.setCapability(modelData.key, rootPage.currentAddress(), checked)
                 }
             }
         }

@@ -7,6 +7,7 @@
 #include "sdk/sgb/GalaxyBudsHelper.h"
 #include "sdk/sgb/enums/GalaxyBudsModelIds.h"
 #include "capabilities/sgb/GalaxyBudsAncCapability.h"
+#include "capabilities/sgb/GalaxyBudsEarDetectionCapability.h"
 #include "capabilities/sgb/GalaxyBudsBatteryCapability.h"
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
 
@@ -37,6 +38,7 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<CmnBluetoothCodecCapability>(*device));
         device->capabilities.push_back(std::make_unique<GalaxyBudsBatteryCapability>(*device));
         device->capabilities.push_back(std::make_unique<GalaxyBudsAncCapability>(*device));
+        device->capabilities.push_back(std::make_unique<GalaxyBudsEarDetectionCapability>(*device));
         
         device->_client = Client::CreateRFCOMM(deviceInfo->GetAddress(), GalaxyBudsHelper::GetServiceGuid(static_cast<GalaxyBudsModelIds>(model)));
         device->Init();

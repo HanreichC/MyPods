@@ -188,6 +188,14 @@ void Backend::getInfo()
     sendJson({{QStringLiteral("method"), QStringLiteral("GetActiveDeviceInfo")}});
 }
 
+void Backend::setActiveDevice(const QString &address)
+{
+    sendJson({
+        {QStringLiteral("method"), QStringLiteral("SetActiveDevice")},
+        {QStringLiteral("arguments"), QVariantMap{{QStringLiteral("address"), address}}},
+    });
+}
+
 void Backend::getDevices()
 {
     sendJson({{QStringLiteral("method"), QStringLiteral("GetDevices")}});

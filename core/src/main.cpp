@@ -175,6 +175,15 @@ void HandleDisconnectDeviceRequest(auto *ws, const nlohmann::json& json, uWS::Op
     });
 }
 
+// Which of several connected headphones the UI shows; everyone gets OnActiveDeviceChanged, the caller the info
+void HandleSetActiveDeviceRequest(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
+    Logger::Info("HandleSetActiveDeviceRequest");
+
+    devicesInfoFetcher.SetActiveDevice(json.at("arguments").at("address").template get<std::string>());
+    auto response = MakeGetActiveDeviceInfoResponse(devicesInfoFetcher).dump();
+    ws->send(response, opCode, response.length() < 16 * 1024);
+}
+
 void HandleSetCapabilitiesRequest(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
     Logger::Info("HandleSetAncRequest");
     devicesInfoFetcher.SetCapabilities(json);
@@ -311,6 +320,8 @@ void HandleRequest(auto *ws, std::string_view message, uWS::OpCode opCode, uWS::
                 HandleDisableDefaultBluetoothAdapter(ws, json, opCode, app, devicesInfoFetcher);
             else if (methodName == "GetActiveDeviceInfo")
                 HandleGetActiveDeviceInfoRequest(ws, json, opCode, devicesInfoFetcher);
+            else if (methodName == "SetActiveDevice")
+                HandleSetActiveDeviceRequest(ws, json, opCode, devicesInfoFetcher);
             else if (methodName == "GetAll")
                 HandleGetAllRequest(ws, json, opCode, devicesInfoFetcher);
             else if (methodName == "GetSettingsAll")

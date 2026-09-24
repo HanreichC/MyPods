@@ -37,9 +37,9 @@ namespace MagicPodsCore
         ~AapConversationAwarenessStateCapability() override;
         void SetFromJson(const nlohmann::json &json) override {};
 
-        // Share of the volume left while speaking
-        // ponytail: fixed, iOS lets the user pick it; a setting would go next to Conversation Awareness
-        static constexpr double DUCKED_VOLUME = 0.3;
+        // Share of the volume left while speaking, in percent, unless the device's "caVolume" setting says otherwise
+        // (set through the conversationAwareness capability's duckVolume)
+        static constexpr int DEFAULT_DUCK_PERCENT = 30;
         // Level byte of 04 00 04 00 4B 00 02 00 01 <level>: true = started speaking (1, 2),
         // false = back to normal (6, 8, 9), nullopt = in between. Mapping from LibrePods (AirPodsService.kt).
         static std::optional<bool> SpeakingFromLevel(int level);

@@ -205,9 +205,9 @@ int TrayIconManager::trayBattery() const
     const bool hasLeft = batteryAvailable(left);
     const bool hasRight = batteryAvailable(right);
 
+    // the emptier bud, as for the low battery warning and the level handed to the system
     if (hasLeft && hasRight) {
-        return qRound((left.value(QStringLiteral("battery")).toInt()
-                       + right.value(QStringLiteral("battery")).toInt()) / 2.0);
+        return qMin(left.value(QStringLiteral("battery")).toInt(), right.value(QStringLiteral("battery")).toInt());
     }
     if (hasLeft) {
         return left.value(QStringLiteral("battery")).toInt();

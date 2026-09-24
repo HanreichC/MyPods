@@ -89,11 +89,14 @@ namespace MagicPodsCore {
                     _productId = vidPid[1];
                 }
                 // A freshly paired device only learns its UUIDs and name after pairing, via SDP.
-                if (values.contains("UUIDs")) {
-                    _uuids = values.at("UUIDs").get<std::vector<std::string>>();
-                }
-                if (values.contains("Name")) {
-                    _name = values.at("Name").get<std::string>();
+                {
+                    std::lock_guard lock{_fieldsLock};
+                    if (values.contains("UUIDs")) {
+                        _uuids = values.at("UUIDs").get<std::vector<std::string>>();
+                    }
+                    if (values.contains("Name")) {
+                        _name = values.at("Name").get<std::string>();
+                    }
                 }
                 if (values.contains("Connected")) {
                     _connectionStatus.SetValue(values["Connected"].get<bool>());

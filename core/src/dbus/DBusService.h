@@ -26,6 +26,7 @@ namespace MagicPodsCore {
 #else
         std::unique_ptr<sdbus::IProxy> _rootProxy{};
         std::unique_ptr<sdbus::IProxy> _defaultBluetoothAdapterProxy{};
+        std::unique_ptr<sdbus::IProxy> _busProxy{}; // watches bluetoothd leaving the bus
 
         std::map<sdbus::ObjectPath, std::shared_ptr<DBusDeviceInfo>> _knownDevices{};
 #endif

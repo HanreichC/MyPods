@@ -78,13 +78,13 @@ namespace MagicPodsCore {
             return weak_from_this().lock();
         }
 
-        const std::string& GetName() const {
-            std::lock_guard lock{_propertyMutex};
+        // A copy: BlueZ renames the device on the D-Bus thread
+        std::string GetName() const {
             return _deviceInfo->GetName();
         }
 
+        // Never changes after construction
         const std::string& GetAddress() const {
-            std::lock_guard lock{_propertyMutex};
             return _deviceInfo->GetAddress();
         }
 

@@ -49,6 +49,16 @@ namespace MagicPodsCore {
         });
         _rootProxy->finishRegistration();
 
+        // bluetoothd crashing (or restarted) sends no InterfacesRemoved, it just drops off the bus
+        _busProxy = sdbus::createProxy("org.freedesktop.DBus", "/org/freedesktop/DBus");
+        _busProxy->uponSignal("NameOwnerChanged").onInterface("org.freedesktop.DBus").call([](std::string name, std::string oldOwner, std::string newOwner) {
+            if (name == "org.bluez" && newOwner.empty()) {
+                Logger::Error("bluetoothd went away, restarting");
+                std::_Exit(1);
+            }
+        });
+        _busProxy->finishRegistration();
+
         _defaultBluetoothAdapterProxy->uponSignal("PropertiesChanged").onInterface("org.freedesktop.DBus.Properties").call([this](std::string interfaceName, std::map<std::string, sdbus::Variant> values, std::vector<std::string> stringArray) {
             if (values.contains("Powered")) {
                 _isBluetoothAdapterPowered.SetValue(values["Powered"].get<bool>());

@@ -74,19 +74,19 @@ namespace MagicPodsCore
                                 }
                                 
                                 toFire = parsedData.value();
-                                Logger::Critical("%s\n%s", adData.GetAddress().c_str(), cachedData.value().ToString().c_str());
+                                Logger::Debug("%s\n%s", adData.GetAddress().c_str(), cachedData.value().ToString().c_str());
                             }
                             else if (parsedData->animation == false && mac != ""){
                                 mac = "";
                                 cachedData = parsedData.value();
                                 toFire = parsedData.value();
-                                Logger::Critical("%s\n%s", adData.GetAddress().c_str(), parsedData.value().ToString().c_str());
-                                Logger::Critical("Waiting animation true");
+                                Logger::Debug("%s\n%s", adData.GetAddress().c_str(), parsedData.value().ToString().c_str());
+                                Logger::Debug("Waiting animation true");
                             }
                             else if (parsedData->animation == true && mac == adData.GetAddress()){
                                 cachedData = parsedData.value();
                                 toFire = parsedData.value();
-                                Logger::Critical("Updating animation");
+                                Logger::Debug("Updating animation");
                             }
                         }
                     }
@@ -103,7 +103,7 @@ namespace MagicPodsCore
                 std::lock_guard<std::mutex> lock(locker);
                 if (cachedData.has_value() && cachedData.value().animation == true && mac != ""){
                     toFire = cachedData.value();
-                    Logger::Critical("Connection animation");
+                    Logger::Debug("Connection animation");
                 }
             }
             if (toFire.has_value())

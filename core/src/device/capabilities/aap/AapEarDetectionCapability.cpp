@@ -2,8 +2,7 @@
 // License: GPL-3.0
 
 #include "AapEarDetectionCapability.h"
-#include "media/MprisClient.h"
-#include <thread>
+#include "media/EarDetectionPause.h"
 
 namespace MagicPodsCore
 {
@@ -39,8 +38,7 @@ namespace MagicPodsCore
     {
         primary = secondary = -1;
         device.podsInEar = -1;
-        std::lock_guard lock{pausedLock};
-        paused.clear();
+        pause.Reset();
         AapCapability::Reset();
     }
 
@@ -73,24 +71,8 @@ namespace MagicPodsCore
         _onChanged.FireEvent(*this);
         Logger::Info("Ear detection: primary %d, secondary %d", primary, secondary);
 
-        if (!option || !device.ownsAudio || before < 0 || inEar == before)
-            return;
-
-        // MPRIS calls go to other processes; keep a slow player from stalling the AAP reader
-        std::thread([this, inEar, before, keep = device.KeepAlive()]()
-        {
-            std::lock_guard lock{pausedLock};
-            if (inEar < before && paused.empty())
-            {
-                paused = MprisClient::Instance().PausePlaying();
-                inEarBeforePause = before;
-            }
-            else if (inEar >= inEarBeforePause && !paused.empty())
-            {
-                MprisClient::Instance().Play(paused);
-                paused.clear();
-            }
-        }).detach();
+        if (option && device.ownsAudio)
+            pause.Changed(before, inEar, device.KeepAlive());
     }
 
     void AapEarDetectionCapability::SetFromJson(const nlohmann::json &json)

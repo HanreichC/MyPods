@@ -102,8 +102,7 @@ namespace MagicPodsCore
             return;
         _attClient->Stop();
         std::lock_guard lock{_attLock};
-        _attQueue.clear();
-        _attBusy = false;
+        _attQueue.Clear();
     }
 
     void AapDevice::AttRead(unsigned char handle)
@@ -121,23 +120,8 @@ namespace MagicPodsCore
         if (!_attClient || !_attClient->IsStarted())
             return;
         std::lock_guard lock{_attLock};
-        // a request the AirPods never answered must not hold the queue forever
-        if (_attBusy && std::chrono::steady_clock::now() - _attSentAt > std::chrono::seconds(2))
-            _attBusy = false;
-        _attQueue.emplace_back(std::move(pdu), readHandle);
-        AttSendNextLocked();
-    }
-
-    void AapDevice::AttSendNextLocked()
-    {
-        if (_attBusy || _attQueue.empty())
-            return;
-        auto [pdu, readHandle] = std::move(_attQueue.front());
-        _attQueue.pop_front();
-        _attBusy = true;
-        _attReading = readHandle;
-        _attSentAt = std::chrono::steady_clock::now();
-        _attClient->SendData(pdu);
+        if (auto send = _attQueue.Push(std::move(pdu), readHandle, std::chrono::steady_clock::now()))
+            _attClient->SendData(*send);
     }
 
     void AapDevice::OnAttData(const std::vector<unsigned char> &data)
@@ -152,12 +136,13 @@ namespace MagicPodsCore
         case Att::ERROR_RSP:
         {
             std::lock_guard lock{_attLock};
-            if (data[0] == Att::READ_RSP && _attReading != 0)
-                value.emplace(_attReading, std::vector<unsigned char>(data.begin() + 1, data.end()));
+            auto [readHandle, next] = _attQueue.Answered(std::chrono::steady_clock::now());
+            if (data[0] == Att::READ_RSP && readHandle != 0)
+                value.emplace(readHandle, std::vector<unsigned char>(data.begin() + 1, data.end()));
             if (data[0] == Att::ERROR_RSP && data.size() >= 5)
                 Logger::Info("%s: ATT request 0x%02x on handle 0x%02x refused (0x%02x)", GetName().c_str(), data[1], data[2], data[4]);
-            _attBusy = false;
-            AttSendNextLocked();
+            if (next)
+                _attClient->SendData(*next);
             break;
         }
         case Att::NOTIFY:
@@ -259,6 +244,9 @@ namespace MagicPodsCore
         device->capabilities.push_back(std::make_unique<AapControlCapability>("allowOff", 0x34, Kind::Toggle, *device));
         device->capabilities.push_back(std::make_unique<AapControlCapability>("micMode", 0x01, Kind::Choice, *device, std::vector<int>{0, 1, 2}));
         device->capabilities.push_back(std::make_unique<AapControlCapability>("hearingAid", 0x2C, Kind::HearingAid, *device));
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("crownReversed", 0x1C, Kind::Toggle, *device));  // AirPods Max: 0x01 reversed
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("sleepDetection", 0x35, Kind::Toggle, *device)); // pause when you fall asleep
+        device->capabilities.push_back(std::make_unique<AapControlCapability>("autoConnect", 0x20, Kind::Toggle, *device));
         if (HasAttSettings(deviceInfo->GetProductId()))
         {
             device->capabilities.push_back(std::make_unique<AapLoudSoundReductionCapability>(*device));
