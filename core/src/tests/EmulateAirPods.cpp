@@ -6,6 +6,7 @@
 // Needs a running PipeWire, no Bluetooth. magicpodscore --emulate-airpods
 
 #include "device/AapDevice.h"
+#include "device/BhfDevice.h"
 #include "device/capabilities/aap/AapAudioEffectsCapabilities.h"
 #include "audio/AudioEffects.h"
 #include "Logger.h"
@@ -119,7 +120,7 @@ int EmulateAirPods()
         EmulatedPods pods{info, std::make_shared<PulseAudioClient>(), std::make_shared<SettingsService>(settingsPath.string())};
         pods.SaveSettingInt("spatialAudio", 1); // "Fixed" from an earlier session, the daemon (re)starts with the headphones connected
         AapSpatialAudioCapability spatial{pods};
-        AapEqualizerCapability equalizer{pods};
+        CmnEqualizerCapability equalizer{pods};
         std::string sink;
         auto defaultSinkIs = [&](const std::string &name) { return WaitFor([&] { return (sink = Sh("pactl get-default-sink")) == name; }); };
 
@@ -207,6 +208,43 @@ int EmulateAirPods()
         AudioEffects::Instance().Stop();
         pods.RouteAudio();
         Check("Off: headphones are the default sink again", defaultSinkIs(BLUEZ_SINK), sink);
+        AudioEffects::Instance().Stop();
+    }
+
+    // Generic headphones (no vendor protocol, just A2DP) get the same effects on this computer
+    std::filesystem::remove(settingsPath);
+    {
+        std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces{{"org.bluez.Device1", {
+            {"Address", sdbus::Variant{MAC}},
+            {"Name", sdbus::Variant{std::string("HW-BT (emuliert)")}},
+            {"Connected", sdbus::Variant{true}},
+        }}};
+        auto info = std::make_shared<DBusDeviceInfo>(sdbus::ObjectPath{"/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"}, interfaces);
+        auto settings = std::make_shared<SettingsService>(settingsPath.string());
+        settings->SaveSetting("AA_BB_CC_DD_EE_FF", "equalizer", std::string("Bass Booster")); // from an earlier session
+        std::string sink;
+        auto defaultSinkIs = [&](const std::string &name) { return WaitFor([&] { return (sink = Sh("pactl get-default-sink")) == name; }); };
+
+        auto headphones = BhfDevice::Create(info, std::make_shared<PulseAudioClient>(), settings);
+        Check("Generic: saved EQ applied when the daemon starts", defaultSinkIs(AudioEffects::SINK_NAME) && Param("eqL0:Gain") == 5.5, sink);
+        auto json = headphones->GetAsJson()["capabilities"];
+        Check("Generic: spatial audio without head tracking, EQ", json.contains("spatialAudio") && json["spatialAudio"]["headTracking"] == false &&
+                                                                  json.contains("equalizer") && !json["equalizer"].contains("correction"), json.dump());
+        headphones->SetCapabilities({{"spatialAudio", {{"selected", 2}}}});
+        Check("Generic: head tracked refused", headphones->GetAsJson()["capabilities"]["spatialAudio"]["selected"] == 0);
+        headphones->SetCapabilities({{"spatialAudio", {{"selected", 1}}}});
+        auto az = Azimuths();
+        Check("Generic: fixed speakers at +-30 degrees", WaitFor([&] { az = Azimuths(); return std::abs(az.first - 30) < 0.5 && std::abs(az.second - 330) < 0.5; }),
+              std::to_string(az.first) + " " + std::to_string(az.second));
+
+        info->GetConnectionStatus().SetValue(false);
+        Check("Generic: disconnected, chain gone and settings hidden", WaitFor([] { return Sh("pactl list short sinks | grep 'mypods_fx\s'").empty(); }) &&
+                                                                       !headphones->GetAsJson()["capabilities"].contains("equalizer"), Sh("pactl list short sinks"));
+        info->GetConnectionStatus().SetValue(true);
+        headphones->SetCapabilities({{"spatialAudio", {{"selected", 0}}}});
+        headphones->SetCapabilities({{"equalizer", {{"selected", "Off"}}}});
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached routing threads finish before the device goes
+        Check("Generic: effects off, headphones are the default sink again", defaultSinkIs(BLUEZ_SINK), sink);
         AudioEffects::Instance().Stop();
     }
 

@@ -576,7 +576,7 @@ Galaxy Buds have the same capability with `selected` only.
 
 ##### Spatial audio (MyPods)
 
-Rendered on this computer (PipeWire filter-chain with the libmysofa HRTF); head orientation from the AirPods.
+Rendered on this computer (PipeWire filter-chain with the libmysofa HRTF), for AirPods and generic headphones on Linux; head orientation from the AirPods.
 
 ```json
 {
@@ -593,7 +593,7 @@ Rendered on this computer (PipeWire filter-chain with the libmysofa HRTF); head 
 | -------- | ------------ |
 | `0`      | Off          |
 | `1`      | Fixed        |
-| `2`      | Head tracked (only when `headTracking` is `true`; false on AirPods 1/2 and older Beats without motion sensors) |
+| `2`      | Head tracked (only when `headTracking` is `true`; false on AirPods 1/2, older Beats and generic headphones without motion sensors) |
 
 `surround` (bool, settable on its own) makes the chain a 7.1 sink while spatial audio is on.
 

@@ -4,6 +4,9 @@
 
 #include "Device.h"
 #include "DevicesInfoFetcher.h"
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 
 namespace MagicPodsCore {
     // A channel the headphones keep closing (another tool holds it, firmware quirk) isn't retried forever
@@ -223,6 +226,91 @@ namespace MagicPodsCore {
     std::optional<int64_t> Device::LoadSettingInt(const std::string &settingName)
     {
         return _settingsService->GetValue<int64_t>(GetContainerName(), settingName);
+    }
+
+    EffectsConfig Device::LoadEffectsConfig()
+    {
+        EffectsConfig config;
+        config.spatial = static_cast<SpatialMode>(std::clamp<int64_t>(LoadSettingInt("spatialAudio").value_or(0), 0, HasHeadTracking() ? 2 : 1));
+        config.surround = LoadSettingInt("surround").value_or(0) != 0;
+        if (auto gains = AudioEffects::Preset(LoadSettingString("equalizer").value_or("Off")))
+            config.eq = *gains;
+        config.correction = Correction();
+        config.corrected = LoadSettingInt("headphoneCorrection").value_or(0) != 0;
+        config.crossfeed = LoadSettingInt("crossfeed").value_or(0) != 0;
+        config.loudness = LoadSettingInt("loudness").value_or(0) != 0;
+        config.loudnessReference = std::clamp(static_cast<double>(LoadSettingInt("loudnessReference").value_or(90)), 60.0, 120.0);
+        if (LoadSettingInt("hearingProfile").value_or(0) != 0)
+            for (int ear : {0, 1})
+                if (auto thresholds = AudioEffects::ParseAudiogram(LoadSettingString(ear ? "audiogramRight" : "audiogramLeft").value_or("")))
+                    config.hearing[ear] = AudioEffects::HearingGains(*thresholds);
+        config.bypass = effectsBypass;
+        config.sofa = LoadSettingString("sofa").value_or("");
+        return config;
+    }
+
+    std::vector<Biquad> Device::Correction()
+    {
+        auto path = LoadSettingString("eqFile").value_or("");
+        std::error_code ec;
+        // a regular file only: a FIFO would block the WebSocket thread that builds the capability JSON
+        if (!path.empty() && std::filesystem::is_regular_file(path, ec))
+        {
+            std::ifstream file(path);
+            std::string text(64 * 1024, '\0'); // ParametricEQ.txt is a few hundred bytes; don't slurp whatever the path points at
+            file.read(text.data(), text.size());
+            text.resize(file.gcount());
+            if (auto filters = AudioEffects::ParseParametricEq(text))
+                return *filters;
+        }
+        static std::mutex reportLock; // asked on every capability update from several threads, said once
+        static std::string reported;
+        std::lock_guard guard{reportLock};
+        if (!path.empty() && reported != path)
+            Logger::Error("%s: %s is no readable ParametricEQ.txt, using the built-in correction", GetName().c_str(), path.c_str());
+        reported = path;
+        return ModelCorrection();
+    }
+
+    double Device::ListeningVolume()
+    {
+        auto pac = GetAudioClient();
+        std::string mac = GetAddress();
+        std::replace(mac.begin(), mac.end(), ':', '_');
+        auto sink = pac->FindSink("bluez_output." + mac);
+        double volume = sink ? pac->GetSinkVolume(*sink).value_or(1) : 1;
+        return volume * pac->GetSinkVolume(AudioEffects::SINK_NAME).value_or(1);
+    }
+
+    void Device::RouteAudio()
+    {
+        static std::mutex routing;
+        std::lock_guard lock{routing};
+
+        auto pac = GetAudioClient();
+        std::string mac = GetAddress();
+        std::replace(mac.begin(), mac.end(), ':', '_');
+        auto sink = pac->FindSink("bluez_output." + mac);
+        if (!sink)
+        {
+            AudioEffects::Instance().Stop();
+            return;
+        }
+        auto config = LoadEffectsConfig();
+        if (config.loudness)
+            config.volume = ListeningVolume();
+        auto target = AudioEffects::Instance().Apply(*sink, GetName(), config);
+        // the chain's sink appears a moment after its process starts
+        for (int i = 0; i < 30 && !pac->FindSink(target); i++)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        pac->SetDefaultSink(target);
+        Logger::Info("%s: audio routed to %s", GetName().c_str(), target.c_str());
+    }
+
+    void Device::RouteAudioAsync()
+    {
+        if (ownsAudio && GetConnected())
+            std::thread([this, keep = KeepAlive()]() { RouteAudio(); }).detach();
     }
 
     nlohmann::json Device::GetAsJson()

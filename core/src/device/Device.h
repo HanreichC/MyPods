@@ -12,7 +12,9 @@
 #include "dbus/DBusDeviceInfo.h"
 #include "pulseaudio/PulseAudioClient.h"
 #include "settings/SettingsService.h"
+#include "audio/AudioEffects.h"
 
+#include <atomic>
 #include <iostream>
 #include <vector>
 #include <nlohmann/json.hpp>
@@ -68,6 +70,8 @@ namespace MagicPodsCore {
         // Stops the worker and the channel. Derived classes call it first in their destructor: the reading
         // thread calls OnResponseDataReceived, which uses members that are gone once ~Device runs.
         void Shutdown();
+        // The model's measured headphone correction, empty if nobody measured it
+        virtual std::vector<Biquad> ModelCorrection() const { return {}; }
 
     public:
         Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
@@ -135,6 +139,22 @@ namespace MagicPodsCore {
         void DisconnectAsync(BtCallback&& callback);
 
         void SetCapabilities(const nlohmann::json &json);
+
+        // Effects on this computer (spatial audio, EQ) for any headphones; AirPods add head tracking and hand the audio over
+        std::atomic<bool> ownsAudio{true}; // this computer is the headphones' audio source (AirPods may say otherwise)
+        std::atomic<bool> effectsBypass{false}; // A/B comparison, not saved: it's for listening now
+        // Motion sensors for head-tracked spatial audio
+        virtual bool HasHeadTracking() const { return false; }
+        // Plays this computer's audio on the headphones: effect chain (spatial audio, EQ) in front of the
+        // bluez sink, made the default sink. Blocking PulseAudio round trips, so never call it on the PulseAudio thread.
+        void RouteAudio();
+        // RouteAudio on a worker thread, if this computer plays to the connected headphones
+        void RouteAudioAsync();
+        EffectsConfig LoadEffectsConfig();
+        // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else ModelCorrection()
+        std::vector<Biquad> Correction();
+        // Headphone volume times the chain sink's volume, 1 = 100 %; blocking, never on the PulseAudio thread
+        double ListeningVolume();
 
         void SaveSettingString(const std::string &settingName, const std::string &value);
         std::optional<std::string> LoadSettingString(const std::string &settingName);

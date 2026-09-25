@@ -1,0 +1,60 @@
+// MyPods
+// License: GPL-3.0
+
+#pragma once
+#include "../Capability.h"
+#include "device/Device.h"
+#include <atomic>
+
+namespace MagicPodsCore
+{
+    // Spatial audio: off, fixed (virtual speakers in front), head tracked (speakers stay put when you turn).
+    // Rendering happens on this computer (AudioEffects), so any headphones get it while connected;
+    // head tracking needs motion sensors (AapSpatialAudioCapability).
+    class CmnSpatialAudioCapability : public Capability
+    {
+    private:
+        size_t onConnectedId = 0;
+
+    protected:
+        Device &device;
+        int mode = 0;
+        bool surround; // 7.1 input ("surround")
+        const bool headTracking;
+        nlohmann::json CreateJsonBody() override;
+        // The mode or the audio ownership may have changed
+        virtual void UpdateTracking() {}
+
+    public:
+        explicit CmnSpatialAudioCapability(Device &device);
+        ~CmnSpatialAudioCapability() override;
+        void SetFromJson(const nlohmann::json &json) override;
+    };
+
+    // Equalizer with Apple Music's presets, applied on this computer in front of the headphones, plus the headphone
+    // correction ("correction", with a measurement or an `eqFile`), crossfeed ("crossfeed"), loudness compensation
+    // ("loudness"), the hearing profile from an audiogram per ear ("hearing", "audiogramLeft", "audiogramRight")
+    // and the level-matched A/B comparison ("bypass").
+    class CmnEqualizerCapability : public Capability
+    {
+    private:
+        Device &device;
+        std::string preset;
+        bool corrected;
+        bool crossfeed;
+        std::atomic<bool> loudness; // read on the PulseAudio thread
+        bool hearing;
+        std::string audiograms[2];
+        size_t sinkEventId = 0;
+        size_t onConnectedId = 0;
+        std::atomic<bool> volumePending{false};
+
+    protected:
+        nlohmann::json CreateJsonBody() override;
+
+    public:
+        explicit CmnEqualizerCapability(Device &device);
+        ~CmnEqualizerCapability() override;
+        void SetFromJson(const nlohmann::json &json) override;
+    };
+}

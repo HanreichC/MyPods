@@ -32,8 +32,7 @@
 #include "sdk/aap/Att.h"
 #include "sdk/aap/enums/AapModelIds.h"
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
+#include <map>
 #include <optional>
 #include <thread>
 
@@ -156,83 +155,42 @@ namespace MagicPodsCore
             _onAttValue.FireEvent(*value);
     }
 
-    EffectsConfig AapDevice::LoadEffectsConfig()
+    bool AapDevice::HasHeadTracking() const
     {
-        EffectsConfig config;
-        config.spatial = static_cast<SpatialMode>(std::clamp<int64_t>(LoadSettingInt("spatialAudio").value_or(0), 0, AapSpatialAudioCapability::HasHeadTracking(GetProductId()) ? 2 : 1));
-        config.surround = LoadSettingInt("surround").value_or(0) != 0;
-        if (auto gains = AudioEffects::Preset(LoadSettingString("equalizer").value_or("Off")))
-            config.eq = *gains;
-        config.correction = Correction();
-        config.corrected = LoadSettingInt("headphoneCorrection").value_or(0) != 0;
-        config.crossfeed = LoadSettingInt("crossfeed").value_or(0) != 0;
-        config.loudness = LoadSettingInt("loudness").value_or(0) != 0;
-        config.loudnessReference = std::clamp(static_cast<double>(LoadSettingInt("loudnessReference").value_or(90)), 60.0, 120.0);
-        if (LoadSettingInt("hearingProfile").value_or(0) != 0)
-            for (int ear : {0, 1})
-                if (auto thresholds = AudioEffects::ParseAudiogram(LoadSettingString(ear ? "audiogramRight" : "audiogramLeft").value_or("")))
-                    config.hearing[ear] = AudioEffects::HearingGains(*thresholds);
-        config.bypass = effectsBypass;
-        config.sofa = LoadSettingString("sofa").value_or("");
-        return config;
+        return AapSpatialAudioCapability::HasHeadTracking(GetProductId());
     }
 
-    std::vector<Biquad> AapDevice::Correction()
+    std::vector<Biquad> AapDevice::MeasuredCorrection(unsigned short model)
     {
-        auto path = LoadSettingString("eqFile").value_or("");
-        std::error_code ec;
-        // a regular file only: a FIFO would block the WebSocket thread that builds the capability JSON
-        if (!path.empty() && std::filesystem::is_regular_file(path, ec))
-        {
-            std::ifstream file(path);
-            std::string text(64 * 1024, '\0'); // ParametricEQ.txt is a few hundred bytes; don't slurp whatever the path points at
-            file.read(text.data(), text.size());
-            text.resize(file.gcount());
-            if (auto filters = AudioEffects::ParseParametricEq(text))
-                return *filters;
-        }
-        static std::mutex reportLock; // asked on every capability update from several threads, said once
-        static std::string reported;
-        std::lock_guard guard{reportLock};
-        if (!path.empty() && reported != path)
-            Logger::Error("%s: %s is no readable ParametricEQ.txt, using the built-in correction", GetName().c_str(), path.c_str());
-        reported = path;
-        return AapEqualizerCapability::Correction(GetProductId());
-    }
-
-    double AapDevice::ListeningVolume()
-    {
-        auto pac = GetAudioClient();
-        std::string mac = GetAddress();
-        std::replace(mac.begin(), mac.end(), ':', '_');
-        auto sink = pac->FindSink("bluez_output." + mac);
-        double volume = sink ? pac->GetSinkVolume(*sink).value_or(1) : 1;
-        return volume * pac->GetSinkVolume(AudioEffects::SINK_NAME).value_or(1);
-    }
-
-    void AapDevice::RouteAudio()
-    {
-        static std::mutex routing;
-        std::lock_guard lock{routing};
-
-        auto pac = GetAudioClient();
-        std::string mac = GetAddress();
-        std::replace(mac.begin(), mac.end(), ':', '_');
-        auto sink = pac->FindSink("bluez_output." + mac);
-        if (!sink)
-        {
-            AudioEffects::Instance().Stop();
-            return;
-        }
-        auto config = LoadEffectsConfig();
-        if (config.loudness)
-            config.volume = ListeningVolume();
-        auto target = AudioEffects::Instance().Apply(*sink, GetName(), config);
-        // the chain's sink appears a moment after its process starts
-        for (int i = 0; i < 30 && !pac->FindSink(target); i++)
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        pac->SetDefaultSink(target);
-        Logger::Info("%s: audio routed to %s", GetName().c_str(), target.c_str());
+        // AutoEQ (github.com/jaakkopasanen/AutoEq, MIT) ParametricEQ.txt, measurement source in the comment;
+        // the USB-C Max and Pro 2 share their predecessors' acoustics. Its preamp is left out, AudioEffects::HeadroomDb covers it.
+        constexpr auto P = Biquad::Peaking, L = Biquad::LowShelf, H = Biquad::HighShelf;
+        static const std::map<AapModelIds, std::vector<Biquad>> CORRECTIONS{
+            {AapModelIds::airpodsmax, {{L, 105, -3.0, 0.70}, {P, 7273, 3.6, 2.41}, {P, 218, -2.9, 1.41}, {P, 1031, -3.2, 0.99}, {P, 3185, 3.1, 0.56}, {H, 10000, -5.5, 0.70}, {P, 9508, 2.7, 2.20}, {P, 66, 0.6, 1.65}, {P, 4045, 2.1, 5.82}, {P, 4834, -1.8, 6.00}}}, // oratory1990
+            {AapModelIds::airpods1, {{L, 105, 3.2, 0.70}, {P, 9383, 4.7, 0.74}, {P, 526, -3.3, 1.28}, {P, 1979, -2.0, 0.92}, {P, 4485, 2.9, 2.30}, {H, 10000, -3.0, 0.70}, {P, 154, 0.9, 1.15}, {P, 47, -0.8, 1.53}, {P, 308, -0.6, 1.95}, {P, 102, 0.3, 2.03}}}, // oratory1990
+            {AapModelIds::airpods2, {{L, 105, 5.8, 0.70}, {P, 5446, -6.5, 0.18}, {P, 2138, 8.3, 0.30}, {P, 89, 1.5, 0.98}, {P, 2124, -6.3, 1.11}, {H, 10000, -2.5, 0.70}, {P, 4173, 1.4, 2.74}, {P, 5484, -1.6, 6.00}, {P, 2846, -0.9, 4.81}, {P, 240, 0.2, 1.68}}}, // Rtings
+            {AapModelIds::airpods3, {{L, 105, 6.9, 0.70}, {P, 1838, -3.9, 2.08}, {P, 3879, 2.5, 2.13}, {P, 64, -5.0, 0.96}, {P, 43, 2.7, 3.38}, {H, 10000, 5.5, 0.70}, {P, 9961, 2.4, 1.61}, {P, 6052, -2.7, 3.91}, {P, 724, 1.9, 2.80}, {P, 420, -0.6, 1.89}}}, // Rtings
+            {AapModelIds::airpods4, {{L, 105, 11.4, 0.70}, {P, 4622, 6.0, 1.39}, {P, 49, -11.7, 0.39}, {P, 1277, -2.6, 0.86}, {P, 3036, 4.1, 2.43}, {H, 10000, -1.9, 0.70}, {P, 354, -1.4, 1.50}, {P, 176, 1.5, 2.04}, {P, 618, 1.0, 2.35}, {P, 106, -0.9, 2.47}}}, // Rtings
+            {AapModelIds::airpods4anc, {{L, 105, 12.7, 0.70}, {P, 49, -13.2, 0.44}, {P, 3573, 6.0, 1.40}, {P, 1318, -2.8, 1.16}, {P, 5138, 3.2, 2.82}, {H, 10000, -2.0, 0.70}, {P, 166, 1.2, 3.49}, {P, 100, -0.7, 2.50}, {P, 438, -0.8, 2.38}, {P, 654, 0.6, 2.93}}}, // Rtings, ANC on
+            {AapModelIds::airpodspro, {{L, 105, 2.6, 0.70}, {P, 514, -4.4, 0.68}, {P, 8903, 6.0, 1.66}, {P, 183, 2.0, 0.77}, {P, 4613, 3.4, 2.46}, {H, 10000, -0.5, 0.70}, {P, 1517, -1.0, 2.33}, {P, 929, 1.2, 2.75}, {P, 44, -0.5, 2.16}, {P, 618, -0.5, 2.86}}}, // crinacle
+            {AapModelIds::airpodspro2, {{L, 105, 0.5, 0.70}, {P, 427, -2.6, 0.80}, {P, 3647, 2.3, 0.77}, {P, 9516, 2.8, 3.44}, {P, 76, 1.9, 1.34}, {H, 10000, -1.8, 0.70}, {P, 5938, 2.6, 1.27}, {P, 6486, -6.3, 5.92}, {P, 1172, 1.1, 5.05}, {P, 3326, -1.9, 4.40}}}, // crinacle, ANC on
+            {AapModelIds::powerbeatspro, {{L, 105, -0.8, 0.70}, {P, 6596, 6.1, 2.51}, {P, 2703, -4.4, 2.80}, {P, 1362, -2.1, 1.94}, {P, 3607, 3.7, 4.72}, {H, 10000, 3.7, 0.70}, {P, 143, -1.2, 1.56}, {P, 374, 0.7, 1.21}, {P, 4688, -2.2, 6.00}, {P, 60, 0.4, 1.34}}}, // oratory1990
+            {AapModelIds::beatssolopro, {{L, 105, -2.0, 0.70}, {P, 332, 1.9, 0.50}, {P, 3735, -4.7, 0.44}, {P, 2106, 5.4, 1.58}, {P, 5816, 5.0, 3.86}, {H, 10000, -1.5, 0.70}, {P, 58, -0.4, 1.36}, {P, 31, 0.4, 1.68}, {P, 163, 0.7, 3.66}, {P, 233, -0.4, 2.45}}}, // oratory1990
+            {AapModelIds::beatsstudio3, {{L, 105, 7.7, 0.70}, {P, 327, -5.9, 1.56}, {P, 5209, 6.7, 2.64}, {P, 68, -8.1, 0.78}, {P, 1978, 4.3, 2.19}, {H, 10000, -2.5, 0.70}, {P, 3257, -1.9, 4.42}, {P, 666, 1.5, 2.52}, {P, 6665, 1.5, 3.92}, {P, 428, -1.1, 4.35}}}, // oratory1990
+            {AapModelIds::beatsstudiobuds, {{L, 105, -2.2, 0.70}, {P, 1819, -4.7, 0.74}, {P, 145, 3.3, 0.23}, {P, 6271, 4.8, 1.67}, {P, 568, -2.4, 1.88}, {H, 10000, 0.3, 0.70}, {P, 3619, 2.3, 4.81}, {P, 2771, -1.7, 3.92}, {P, 68, 0.8, 1.75}, {P, 127, -0.8, 1.91}}}, // oratory1990
+            {AapModelIds::beatsstudiobudsplus, {{L, 105, 10.6, 0.70}, {P, 702, 5.2, 0.41}, {P, 1352, -7.5, 0.72}, {P, 195, 2.1, 0.80}, {P, 42, -11.0, 0.47}, {H, 10000, -3.1, 0.70}, {P, 6487, -4.4, 6.00}, {P, 9846, -2.1, 2.19}, {P, 3674, 1.9, 4.28}, {P, 918, 1.1, 4.94}}}, // Rtings
+            {AapModelIds::beatsstudiopro, {{L, 105, -3.1, 0.70}, {P, 8990, -5.1, 2.02}, {P, 304, 3.8, 0.85}, {P, 1720, -3.0, 1.19}, {P, 67, 6.0, 2.55}, {H, 10000, 0.5, 0.70}, {P, 5052, 3.7, 4.43}, {P, 3394, -2.5, 5.33}, {P, 6509, -2.0, 5.62}, {P, 734, 0.7, 3.38}}}, // Rtings
+            {AapModelIds::beatsfitpro, {{L, 105, 1.8, 0.70}, {P, 313, 2.3, 0.84}, {P, 5866, -4.4, 4.07}, {P, 2445, -2.7, 2.06}, {P, 40, -3.7, 0.92}, {H, 10000, 1.0, 0.70}, {P, 1263, -1.4, 2.35}, {P, 4035, 1.8, 4.11}, {P, 5017, -1.4, 6.00}, {P, 942, 0.7, 4.33}}}, // Rtings
+            {AapModelIds::beatsflex, {{L, 105, -5.0, 0.70}, {P, 3827, 5.8, 1.86}, {P, 168, -2.4, 1.04}, {P, 1260, -3.7, 2.62}, {P, 5114, 3.5, 3.66}, {H, 10000, -5.5, 0.70}, {P, 746, 1.2, 1.80}, {P, 988, -1.2, 4.10}, {P, 7408, 1.9, 5.43}, {P, 287, -0.5, 3.23}}}, // Rtings
+            {AapModelIds::powerbeats3, {{L, 105, -4.4, 0.70}, {P, 3769, 4.9, 1.87}, {P, 1386, -3.1, 1.09}, {P, 500, 2.9, 1.21}, {P, 153, -2.2, 1.28}, {H, 10000, 2.9, 0.70}, {P, 6217, 3.2, 5.88}, {P, 5198, -2.1, 6.00}, {P, 8129, -1.6, 4.52}, {P, 2533, -0.6, 4.38}}}, // Rtings
+            {AapModelIds::powerbeats4, {{L, 105, -1.4, 0.70}, {P, 5806, 4.7, 4.11}, {P, 799, 3.0, 1.23}, {P, 1254, -3.1, 1.29}, {P, 148, -1.5, 2.27}, {H, 10000, -1.3, 0.70}, {P, 3710, 4.2, 4.64}, {P, 2703, -2.7, 4.21}, {P, 8095, -1.6, 4.28}, {P, 60, 0.3, 1.81}}}, // Rtings
+            {AapModelIds::beatssolobuds, {{L, 105, -0.2, 0.70}, {P, 425, 4.1, 1.19}, {P, 1890, -4.9, 0.80}, {P, 155, 2.2, 1.43}, {P, 42, -1.6, 1.25}, {H, 10000, 6.3, 0.70}, {P, 8413, 2.0, 3.52}, {P, 4999, -1.6, 5.02}, {P, 2837, -0.6, 4.40}, {P, 839, -0.2, 1.59}}}, // Rtings
+            {AapModelIds::beatssolo4, {{L, 105, 1.4, 0.70}, {P, 920, 3.4, 0.19}, {P, 3842, -5.2, 1.98}, {P, 1054, -4.7, 0.97}, {P, 7703, -2.0, 0.67}, {H, 10000, 2.7, 0.70}, {P, 75, -1.4, 2.28}, {P, 9444, -1.1, 2.03}, {P, 137, 0.7, 2.00}, {P, 51, 1.3, 4.12}}}, // Rtings
+        };
+        auto id = static_cast<AapModelIds>(model);
+        id = id == AapModelIds::airpodsmax2024 ? AapModelIds::airpodsmax : id == AapModelIds::airpodsprousbc ? AapModelIds::airpodspro2 : id;
+        auto it = CORRECTIONS.find(id);
+        return it == CORRECTIONS.end() ? std::vector<Biquad>{} : it->second;
     }
 
     void AapDevice::FireAnimation(const nlohmann::json &json)
@@ -307,7 +265,7 @@ namespace MagicPodsCore
             device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));
 #ifndef _WIN32 // effects run in PipeWire (AudioEffects.h)
         device->capabilities.push_back(std::make_unique<AapSpatialAudioCapability>(*device));
-        device->capabilities.push_back(std::make_unique<AapEqualizerCapability>(*device));
+        device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));
 #endif
 
         device->_clientStartData.push_back(AapInit{}.Request());

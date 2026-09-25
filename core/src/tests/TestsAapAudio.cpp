@@ -93,10 +93,10 @@ TestsAapAudio::TestsAapAudio()
                                                              AudioEffects::BuildConfig("s", "d", crossfeed, 0).find("\"Gain 2\" = 0.00 \"Gain 3\" = 0.00") != std::string::npos);
 
     EffectsConfig corrected;
-    corrected.correction = AapEqualizerCapability::Correction(static_cast<unsigned short>(AapModelIds::airpodsmax));
+    corrected.correction = AapDevice::MeasuredCorrection(static_cast<unsigned short>(AapModelIds::airpodsmax));
     Test("Correction: AirPods Max measured, USB-C shares it, Pro 3 has none", corrected.correction.size() == 10 &&
-         AapEqualizerCapability::Correction(static_cast<unsigned short>(AapModelIds::airpodsmax2024)) == corrected.correction &&
-         AapEqualizerCapability::Correction(static_cast<unsigned short>(AapModelIds::airpodspro3)).empty());
+         AapDevice::MeasuredCorrection(static_cast<unsigned short>(AapModelIds::airpodsmax2024)) == corrected.correction &&
+         AapDevice::MeasuredCorrection(static_cast<unsigned short>(AapModelIds::airpodspro3)).empty());
     Test("Correction off: neutral, nodes at 0 dB", corrected.IsNeutral() && AudioEffects::ControlCommand(corrected, 0).find("\"coL0:Gain\" 0.00") != std::string::npos);
     corrected.corrected = true;
     Test("Correction on: filters after the EQ with their gains", !corrected.IsNeutral() &&

@@ -14,10 +14,12 @@ namespace MagicPodsCore
     {
 
     private:
+    size_t cardEventId = 0;
     void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
 
     public:
         explicit BhfDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
+        ~BhfDevice() override;
         static std::unique_ptr<BhfDevice> Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);        
     };
 }

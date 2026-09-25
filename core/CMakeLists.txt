@@ -97,6 +97,7 @@ add_executable(magicpodscore
 
     src/device/capabilities/bhf/BhfBatteryCapability.cpp
     src/device/capabilities/cmn/CmnBluetoothCodecCapability.cpp
+    src/device/capabilities/cmn/CmnAudioEffectsCapabilities.cpp
 
     src/device/capabilities/Capability.cpp
     src/device/AapDevice.cpp

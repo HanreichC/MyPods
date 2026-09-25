@@ -248,7 +248,7 @@ Umgesetzt im Daemon, ohne neue Abhängigkeit (MPRIS über sdbus-c++, PipeWire al
 * `AapAudioSwitchCapability` — Übernahme bei Wiedergabestart (MPRIS), Freigabe bei
   `SetOwnershipToFalse`/fremder Audioquelle (Pause, A2DP aus, Lautsprecher), manuell „Move here".
 * `AapEarDetectionCapability` — `0x06` → Pause/Weiter, Schalter = Control `0x0A`.
-* `AapSpatialAudioCapability` / `AapEqualizerCapability` + `audio/AudioEffects` — filter-chain
+* `CmnSpatialAudioCapability` / `CmnEqualizerCapability` (auch generische Kopfhörer, `BhfDevice`), `AapSpatialAudioCapability` fürs Head-Tracking + `audio/AudioEffects` — filter-chain
   (EQ-Biquads → SOFA-Spatializer), Head-Tracking dreht die virtuellen Lautsprecher über `pw-cli`.
 * Check: `magicpodscore --selftest` (Smart-Routing-Bytes gegen LibrePods, Parser, Chain-Aufbau).
 

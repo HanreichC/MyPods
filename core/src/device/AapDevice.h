@@ -40,6 +40,7 @@ namespace MagicPodsCore
     protected:
         void OnClientStarted() override;
         void OnClientStopped() override;
+        std::vector<Biquad> ModelCorrection() const override { return MeasuredCorrection(GetProductId()); }
 
     public:
         explicit AapDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<BleAdvertisingService> bleService);
@@ -72,19 +73,12 @@ namespace MagicPodsCore
             return _onAttValue;
         }
 
-        // Shared by the ear-detection, audio-switch and spatial-audio capabilities
-        std::atomic<bool> ownsAudio{true}; // this computer is the AirPods' audio source (until the AirPods say otherwise)
+        // Shared by the ear-detection and audio-switch capabilities
         std::atomic<int> podsInEar{-1};    // from AAP ear detection, -1 = unknown
 
-        // Plays this computer's audio on the headphones: effect chain (spatial audio, EQ) in front of the
-        // bluez sink, made the default sink. Blocking PulseAudio round trips, so never call it on the PulseAudio thread.
-        void RouteAudio();
-        EffectsConfig LoadEffectsConfig();
-        // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else the model's AutoEQ correction, empty if neither
-        std::vector<Biquad> Correction();
-        // Headphone volume times the chain sink's volume, 1 = 100 %; blocking, never on the PulseAudio thread
-        double ListeningVolume();
-        std::atomic<bool> effectsBypass{false}; // A/B comparison, not saved: it's for listening now
+        bool HasHeadTracking() const override;
+        // AutoEQ correction to the Harman target for the model, empty if nobody measured it
+        static std::vector<Biquad> MeasuredCorrection(unsigned short model);
         void FireAnimation(const nlohmann::json &json);
 
         // Whether `ad` comes from these AirPods: its rotating address resolves with the IRK. Without AAP
