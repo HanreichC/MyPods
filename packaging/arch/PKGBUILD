@@ -13,6 +13,7 @@ depends=(bluez bluez-libs libpulse openssl systemd-libs qt6-base qt6-declarative
 makedepends=(cmake git qt6-tools)
 optdepends=('pipewire-pulse: the sound server the daemon talks to'
             'libmysofa: spatial audio'
+            'swh-plugins: lookahead limiter, spatial audio 7 dB louder'
             'layer-shell-qt: tray popup placed under the panel on Wayland')
 provides=(mypods)
 conflicts=(mypods)

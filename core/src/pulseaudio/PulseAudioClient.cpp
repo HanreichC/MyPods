@@ -61,6 +61,8 @@ namespace MagicPodsCore
         Lock lock{ml};
         // Runs on the loop thread with the lock held: subscribers must not call back into this client
         pa_context_set_subscribe_callback(ctx, [](pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
+            if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK && (t & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_CHANGE)
+                static_cast<PulseAudioClient*>(userdata)->_onSinkChangedEvent.FireEvent(idx);
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) != PA_SUBSCRIPTION_EVENT_CARD)
                 return;
             if (auto op = pa_context_get_card_info_by_index(c, idx, [](pa_context*, const pa_card_info* info, int eol, void* userdata) {
@@ -69,7 +71,7 @@ namespace MagicPodsCore
                 }, userdata))
                 pa_operation_unref(op);
         }, this);
-        if (auto op = pa_context_subscribe(ctx, PA_SUBSCRIPTION_MASK_CARD, nullptr, nullptr))
+        if (auto op = pa_context_subscribe(ctx, static_cast<pa_subscription_mask_t>(PA_SUBSCRIPTION_MASK_CARD | PA_SUBSCRIPTION_MASK_SINK), nullptr, nullptr))
             pa_operation_unref(op);
         ready.store(true);
     }

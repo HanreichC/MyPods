@@ -583,7 +583,8 @@ Rendered on this computer (PipeWire filter-chain with the libmysofa HRTF); head 
   "spatialAudio": {
     "readonly": false,
     "selected": 0,
-    "headTracking": true
+    "headTracking": true,
+    "surround": false
   }
 }
 ```
@@ -594,19 +595,38 @@ Rendered on this computer (PipeWire filter-chain with the libmysofa HRTF); head 
 | `1`      | Fixed        |
 | `2`      | Head tracked (only when `headTracking` is `true`; false on AirPods 1/2 and older Beats without motion sensors) |
 
+`surround` (bool, settable on its own) makes the chain a 7.1 sink while spatial audio is on.
+
 ##### Equalizer (MyPods)
 
-Apple Music presets, applied on this computer. `selected` must be one of `options`.
+Apple Music presets and the other effects, applied on this computer. `selected` must be one of
+`options`. Each request sets one field.
 
 ```json
 {
   "equalizer": {
     "readonly": false,
     "selected": "Off",
-    "options": ["Off", "Acoustic", "Bass Booster", "..."]
+    "options": ["Off", "Acoustic", "Bass Booster", "..."],
+    "correction": false,
+    "crossfeed": false,
+    "loudness": false,
+    "hearing": false,
+    "audiogramLeft": "20 25 30 40 55 60",
+    "audiogramRight": "",
+    "bypass": false
   }
 }
 ```
+
+| Field | |
+| ----- | - |
+| `correction` | bool, headphone correction (the `eqFile` setting or the model's AutoEQ one); missing when there is neither |
+| `crossfeed` | bool, stereo without spatial audio only |
+| `loudness` | bool, ISO 226 loudness compensation that follows the volume |
+| `hearing` | bool, hearing profile from the audiograms |
+| `audiogramLeft`, `audiogramRight` | string, six thresholds in dB HL at 250, 500, 1000, 2000, 4000 and 8000 Hz (−10 to 120, separated by spaces, commas or semicolons); `""` clears the ear |
+| `bypass` | bool, A/B comparison: every effect off, pre-gain kept; not saved |
 
 ##### Volume swipe
 

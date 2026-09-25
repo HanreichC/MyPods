@@ -50,8 +50,13 @@ namespace MagicPodsCore{
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }
+            // A sink changed (volume, mute, port), with its index; fired on the PulseAudio thread like the card event
+            Event<uint32_t>& GetSinkChangedEvent() {
+                return _onSinkChangedEvent;
+            }
         private:
             Event<CardInfo> _onAudioCardPropertyChangedEvent{};
+            Event<uint32_t> _onSinkChangedEvent{};
 #ifndef _WIN32
             std::atomic<bool> ready{false};
             pa_threaded_mainloop* ml {nullptr};

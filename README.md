@@ -73,6 +73,12 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Equalizer (Music app) | The Apple Music presets (Acoustic, Bass Booster, Classical, Rock, Vocal Booster …), applied in front of the AirPods without clipping. |
 | Apple tunes the sound for each model | Headphone correction: measured [AutoEQ](https://github.com/jaakkopasanen/AutoEq) filters that bring the model to the Harman target, for AirPods 1–4, Pro, Pro 2, Max and most Beats (not Pro 3 or Max 2, nobody measured them yet). |
 | — | Crossfeed (bs2b style) for stereo music without spatial audio: each ear also hears a bit of the other channel's bass, as with speakers. Mono stays untouched. |
+| Spatial Audio for films (Dolby Atmos) | "Surround (7.1)": the chain takes 5.1/7.1 and places seven virtual speakers (ITU layout, sides at 90°, rears at 135°), all of them head tracked; the LFE goes to both ears. Stereo players are then upmixed by PipeWire. |
+| — | Lookahead limiter at the end of the chain (with `swh-plugins`): spatial audio then plays 7 dB louder, and head turns past 45° no longer clip (measured: −1.0 dBFS peak where the chain without it reached +0.9 dBFS). |
+| — | Loudness compensation (ISO 226): the quieter you listen, the more bass comes back, following the volume live. |
+| Headphone Accommodations (audiogram) | Hearing profile: an audiogram per ear (six thresholds from 250 Hz to 8 kHz) becomes a separate EQ for each ear (half-gain rule, at most 20 dB). |
+| — | Your own correction: an AutoEQ or Equalizer APO `ParametricEQ.txt` (setting `eqFile`) replaces the built-in one, for your own measurement, another target, or models nobody measured yet. |
+| — | "Compare without effects (A/B)": switches every effect off but keeps the pre-gain, so both sides play equally loud and louder never passes for better. |
 | Conversation Awareness | On/off and current state. |
 | AirPods module in the menu bar / Control Center | Clicking the tray icon opens a popup right under the panel: battery, noise control, Conversation Awareness, "Move here", what's playing with play/pause/skip, and the output volume. A double click opens the full window. |
 | Press speed, press-and-hold duration, volume swipe, tone volume, personalized volume, mute/end call, ANC with one AirPod | Same settings, written to the AirPods. |
@@ -172,10 +178,12 @@ MyPods uses both.
    connection and stores them when they change. No iCloud involved.
 4. **Audio switching.** The AirPods relay Apple's "smart routing" messages between their sources.
    MyPods participates in that exchange, and watches MPRIS players to decide when to take over.
-5. **Effects.** Equalizer, headphone correction, crossfeed and spatial audio run as a PipeWire
-   filter-chain sink (`mypods_fx`) in front of the headphones. A pre-gain takes off exactly as much
-   as the chain can boost (computed from the summed filter curves), so nothing clips. Head tracking
-   rotates the virtual speakers via `pw-cli`.
+5. **Effects.** Equalizer, headphone correction, crossfeed, loudness, hearing profile and spatial
+   audio run as a PipeWire filter-chain sink (`mypods_fx`) in front of the headphones: a pre-gain per
+   input channel, then spatial audio or crossfeed, then the filters per ear, then the limiter. The
+   pre-gain takes off exactly as much as the chain can boost (computed from the summed filter
+   curves), so nothing clips. Head tracking and the volume (for the loudness compensation) update the
+   running chain via `pw-cli`.
 
 A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](docs/PLAN.md)
 (German).
@@ -190,6 +198,8 @@ A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](d
 - **Qt 6.9 or newer**: `qt6-base`, `qt6-declarative`, `qt6-websockets`, `qt6-svg`
 - `libpulse`, `openssl`, `systemd-libs`
 - `libmysofa` (only for spatial audio; the default HRTF is read from `/usr/share/libmysofa/default.sofa`)
+- Optional: `swh-plugins` for the lookahead limiter (LADSPA `fast_lookahead_limiter_1913.so`, found in
+  `$LADSPA_PATH` or `/usr/lib/ladspa`). Without it spatial audio plays 7 dB quieter to stay clean.
 - An MPRIS-capable media player for auto-pause, automatic switching and the tray popup's now playing (browsers, Spotify, mpv with `mpv-mpris`, …)
 - `pactl` (part of `libpulse`) for the tray popup's volume slider
 - Optional: `layer-shell-qt` (ships with KDE Plasma) to place the tray popup under the panel on Wayland
@@ -211,7 +221,7 @@ On Arch-based systems, the runtime packages are:
 
 ```bash
 sudo pacman -S --needed bluez pipewire pipewire-pulse libpulse openssl \
-    qt6-base qt6-declarative qt6-websockets qt6-svg libmysofa layer-shell-qt
+    qt6-base qt6-declarative qt6-websockets qt6-svg libmysofa swh-plugins layer-shell-qt
 ```
 
 ---
@@ -400,11 +410,13 @@ Most options are set through the UI. Global options live in the `[magicpods]` ta
 
 Per-device settings (for example the stored `irk`/`enc` keys, switching mode, spatial audio and
 equalizer choice) are saved in a table named after the device. Deleting the keys forces MyPods to
-request them again on the next connection. One of them is only set by hand:
+request them again on the next connection. These are only set by hand:
 
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `sofa` | libmysofa's default KEMAR | Path to a SOFA file (for example a personal HRTF) for spatial audio. The bass bypass and the tonal correction are tuned for the default KEMAR and are left out for other files. |
+| `eqFile` | none | Path to a `ParametricEQ.txt` (AutoEQ, Equalizer APO) that replaces the built-in headphone correction; "Headphone correction" then switches it. Its preamp is ignored (the pre-gain is computed). Files with per-channel sections are refused. |
+| `loudnessReference` | `90` | Loudness compensation: phon at 100 % volume. Measured with a sound level meter it calibrates the compensation for your headphones; higher means more bass at the same volume. |
 
 ### Bluetooth sound quality
 
@@ -498,9 +510,12 @@ sh tools/run_checks.sh build
 # commands, ATT settings, audio effect chain, settings file, Galaxy Buds and Parrot Zik protocol
 ./build/modules/magicpodscore --selftest
 
-# Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, routing).
-# Needs PipeWire, no Bluetooth; briefly switches the default sink to a fake headphones sink.
+# Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, limiter,
+# loudness, hearing profile, A/B, 7.1, routing). Needs PipeWire, no Bluetooth; briefly switches the
+# default sink to a fake headphones sink.
 ./build/modules/magicpodscore --emulate-airpods
+# The same in the dev container, against its own PipeWire (leaves the host's audio alone)
+podman run --rm -v "$PWD:/workspace" -w /workspace <dev image> sh tools/emulate_in_container.sh build
 
 # BLE advertisement decoder in the sniffing tool, against known captures
 python3 tools/sniff.py --selftest
@@ -574,9 +589,16 @@ The full reference with request and response examples is in
 - **Generic HRTF.** Spatial audio uses the generic KEMAR HRTF shipped with libmysofa. Apple
   personalizes it from a scan of your ears. A personal SOFA file can be set per device (`sofa`, see
   [Configuration](#configuration)). Below 250 Hz the bass bypasses the HRTF, whose low end is
-  unusable. Spatial audio plays about 10 dB quieter so that nothing clips; turn the headphones up
-  to make up for it (the volume is applied in the headphones, so no quality is lost). Turning your head more than
-  45° away from the screen can still clip very loud material.
+  unusable. Spatial audio plays 3 dB quieter with the limiter, about 10 dB without it (then turning
+  your head more than 45° away from the screen can still clip very loud material); turn the
+  headphones up to make up for it. The 3 dB are a judgment call: very loud masters make the limiter
+  work. 7.1 gets 3 dB more, and its center, side and rear speakers use the tonal correction fitted
+  for the front pair.
+- **Loudness and hearing profile are uncalibrated.** Which listening level a volume setting means
+  depends on the headphones (`loudnessReference`, see [Configuration](#configuration)). The hearing
+  profile uses the half-gain rule, not a fitting formula such as NAL-NL2, and has no built-in hearing
+  test: an uncalibrated tone test can't give dB HL. Enter an audiogram from an audiologist or a
+  hearing test app.
 - **Head tracking calibration.** Interpreting the head-tracking stream is a heuristic taken from
   LibrePods and not yet calibrated on real hardware.
 - **No takeover for non-MPRIS audio.** Games and system sounds deliberately do not trigger

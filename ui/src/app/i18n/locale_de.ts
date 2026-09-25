@@ -426,6 +426,34 @@
         <source></source>
         <translation>Crossfeed:</translation>
     </message>
+    <message id="battery.surround">
+        <source></source>
+        <translation>Surround (7.1):</translation>
+    </message>
+    <message id="battery.loudness">
+        <source></source>
+        <translation>Gehörrichtige Lautstärke:</translation>
+    </message>
+    <message id="battery.hearing_profile">
+        <source></source>
+        <translation>Hörprofil:</translation>
+    </message>
+    <message id="battery.audiogram_left">
+        <source></source>
+        <translation>Audiogramm links (dB HL):</translation>
+    </message>
+    <message id="battery.audiogram_right">
+        <source></source>
+        <translation>Audiogramm rechts (dB HL):</translation>
+    </message>
+    <message id="battery.audiogram.placeholder">
+        <source></source>
+        <translation>250 Hz bis 8 kHz, z. B. 10 15 20 35 50 60</translation>
+    </message>
+    <message id="battery.bypass">
+        <source></source>
+        <translation>Ohne Effekte vergleichen (A/B):</translation>
+    </message>
     <message id="battery.auto_switch">
         <source></source>
         <translation>Mit diesem Computer verbinden:</translation>

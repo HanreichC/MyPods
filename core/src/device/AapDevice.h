@@ -80,6 +80,11 @@ namespace MagicPodsCore
         // bluez sink, made the default sink. Blocking PulseAudio round trips, so never call it on the PulseAudio thread.
         void RouteAudio();
         EffectsConfig LoadEffectsConfig();
+        // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else the model's AutoEQ correction, empty if neither
+        std::vector<Biquad> Correction();
+        // Headphone volume times the chain sink's volume, 1 = 100 %; blocking, never on the PulseAudio thread
+        double ListeningVolume();
+        std::atomic<bool> effectsBypass{false}; // A/B comparison, not saved: it's for listening now
         void FireAnimation(const nlohmann::json &json);
 
         // Whether `ad` comes from these AirPods: its rotating address resolves with the IRK. Without AAP

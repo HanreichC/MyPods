@@ -313,6 +313,24 @@ Components.ScrollPage {
             }
         }
 
+        // 7.1 input for films and games; only the virtual speakers can play it
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.spatialAudioData?.surround !== undefined
+            label: qsTrId("battery.surround")
+
+            Components.Toggle {
+                checked: rootPage.spatialAudioData?.surround ?? false
+                enabled: !(rootPage.spatialAudioData?.readonly ?? true) && (rootPage.spatialAudioData?.selected ?? 0) !== 0
+                onToggled: {
+                    if (rootPage.spatialAudioData) {
+                        rootPage.spatialAudioData.surround = checked;
+                        cppBackend.setCapability("spatialAudio", rootPage.currentAddress(), checked, "surround");
+                    }
+                }
+            }
+        }
+
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.equalizerData !== null
@@ -361,6 +379,61 @@ Components.ScrollPage {
                     if (rootPage.equalizerData) {
                         rootPage.equalizerData.crossfeed = checked;
                         cppBackend.setCapability("equalizer", rootPage.currentAddress(), checked, "crossfeed");
+                    }
+                }
+            }
+        }
+
+        // Toggles of the equalizer capability that are just on/off
+        Repeater {
+            model: [
+                { field: "loudness", label: qsTrId("battery.loudness") },
+                { field: "hearing", label: qsTrId("battery.hearing_profile") },
+                { field: "bypass", label: qsTrId("battery.bypass") }
+            ]
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                visible: rootPage.equalizerData?.[modelData.field] !== undefined
+                label: modelData.label
+
+                Components.Toggle {
+                    checked: rootPage.equalizerData?.[modelData.field] ?? false
+                    enabled: !(rootPage.equalizerData?.readonly ?? true)
+                    onToggled: {
+                        if (rootPage.equalizerData) {
+                            rootPage.equalizerData[modelData.field] = checked;
+                            cppBackend.setCapability("equalizer", rootPage.currentAddress(), checked, modelData.field);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Hearing thresholds per ear from an audiogram, six values from 250 Hz to 8 kHz
+        Repeater {
+            model: [
+                { field: "audiogramLeft", label: qsTrId("battery.audiogram_left") },
+                { field: "audiogramRight", label: qsTrId("battery.audiogram_right") }
+            ]
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                visible: (rootPage.equalizerData?.hearing ?? false) && rootPage.equalizerData?.[modelData.field] !== undefined
+                label: modelData.label
+
+                QQC2.TextField {
+                    implicitWidth: rootPage.mWidth
+                    text: rootPage.equalizerData?.[modelData.field] ?? ""
+                    placeholderText: qsTrId("battery.audiogram.placeholder")
+                    enabled: !(rootPage.equalizerData?.readonly ?? true)
+                    // digits, sign, separators; the core checks the six values again
+                    validator: RegularExpressionValidator { regularExpression: /[-0-9.,; ]*/ }
+                    Accessible.name: modelData.label
+                    onEditingFinished: {
+                        const value = text.trim();
+                        if (rootPage.equalizerData && value !== rootPage.equalizerData[modelData.field])
+                            cppBackend.setCapability("equalizer", rootPage.currentAddress(), value, modelData.field);
                     }
                 }
             }

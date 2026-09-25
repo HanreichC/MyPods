@@ -52,14 +52,14 @@ namespace MagicPodsCore
     }
 
     AapSpatialAudioCapability::AapSpatialAudioCapability(AapDevice &device) : AapCapability("spatialAudio", false, device),
-        headTracking(HasHeadTracking(device.GetProductId()))
+        surround(device.LoadSettingInt("surround").value_or(0) != 0), headTracking(HasHeadTracking(device.GetProductId()))
     {
         mode = static_cast<int>(std::clamp<int64_t>(device.LoadSettingInt("spatialAudio").value_or(0), 0, headTracking ? 2 : 1));
     }
 
     nlohmann::json AapSpatialAudioCapability::CreateJsonBody()
     {
-        return {{"selected", mode}, {"headTracking", headTracking}};
+        return {{"selected", mode}, {"headTracking", headTracking}, {"surround", surround}};
     }
 
     void AapSpatialAudioCapability::Reset()
@@ -126,6 +126,14 @@ namespace MagicPodsCore
         if (!json.contains(name))
             return;
         const auto &capability = json.at(name);
+        if (capability.contains("surround") && capability["surround"].is_boolean())
+        {
+            surround = capability["surround"].get<bool>();
+            device.SaveSettingInt("surround", surround);
+            _onChanged.FireEvent(*this);
+            RouteIfOurs(device);
+            return;
+        }
         if (!capability.contains("selected") || !capability["selected"].is_number_integer() ||
             capability["selected"].get<int>() < 0 || capability["selected"].get<int>() > (headTracking ? 2 : 1))
         {
@@ -172,18 +180,42 @@ namespace MagicPodsCore
         return it == CORRECTIONS.end() ? std::vector<Biquad>{} : it->second;
     }
 
-    AapEqualizerCapability::AapEqualizerCapability(AapDevice &device) : AapCapability("equalizer", false, device),
-        hasCorrection(!Correction(device.GetProductId()).empty())
+    AapEqualizerCapability::AapEqualizerCapability(AapDevice &device) : AapCapability("equalizer", false, device)
     {
         preset = device.LoadSettingString("equalizer").value_or("Off");
         corrected = device.LoadSettingInt("headphoneCorrection").value_or(0) != 0;
         crossfeed = device.LoadSettingInt("crossfeed").value_or(0) != 0;
+        loudness = device.LoadSettingInt("loudness").value_or(0) != 0;
+        hearing = device.LoadSettingInt("hearingProfile").value_or(0) != 0;
+        audiograms[0] = device.LoadSettingString("audiogramLeft").value_or("");
+        audiograms[1] = device.LoadSettingString("audiogramRight").value_or("");
+
+        // The loudness compensation follows the volume. PulseAudio thread: the volume is read on a worker, and a
+        // burst of changes (a dragged slider) makes one read.
+        sinkEventId = device.GetAudioClient()->GetSinkChangedEvent().Subscribe([this](size_t, const uint32_t &)
+        {
+            if (!loudness || !this->device.ownsAudio || volumePending.exchange(true))
+                return;
+            std::thread([this, keep = this->device.KeepAlive()]()
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                volumePending = false;
+                AudioEffects::Instance().SetVolume(this->device.ListeningVolume());
+            }).detach();
+        });
+    }
+
+    AapEqualizerCapability::~AapEqualizerCapability()
+    {
+        device.GetAudioClient()->GetSinkChangedEvent().Unsubscribe(sinkEventId);
     }
 
     nlohmann::json AapEqualizerCapability::CreateJsonBody()
     {
-        nlohmann::json body{{"selected", preset}, {"options", AudioEffects::PresetNames()}, {"crossfeed", crossfeed}};
-        if (hasCorrection)
+        nlohmann::json body{{"selected", preset}, {"options", AudioEffects::PresetNames()}, {"crossfeed", crossfeed},
+                            {"loudness", loudness.load()}, {"hearing", hearing}, {"audiogramLeft", audiograms[0]},
+                            {"audiogramRight", audiograms[1]}, {"bypass", device.effectsBypass.load()}};
+        if (!device.Correction().empty())
             body["correction"] = corrected;
         return body;
     }
@@ -212,7 +244,7 @@ namespace MagicPodsCore
             preset = capability["selected"].get<std::string>();
             device.SaveSettingString("equalizer", preset);
         }
-        else if (capability.contains("correction") && capability["correction"].is_boolean() && hasCorrection)
+        else if (capability.contains("correction") && capability["correction"].is_boolean() && !device.Correction().empty())
         {
             corrected = capability["correction"].get<bool>();
             device.SaveSettingInt("headphoneCorrection", corrected);
@@ -222,9 +254,33 @@ namespace MagicPodsCore
             crossfeed = capability["crossfeed"].get<bool>();
             device.SaveSettingInt("crossfeed", crossfeed);
         }
+        else if (capability.contains("loudness") && capability["loudness"].is_boolean())
+        {
+            loudness = capability["loudness"].get<bool>();
+            device.SaveSettingInt("loudness", loudness);
+        }
+        else if (capability.contains("hearing") && capability["hearing"].is_boolean())
+        {
+            hearing = capability["hearing"].get<bool>();
+            device.SaveSettingInt("hearingProfile", hearing);
+        }
+        else if (capability.contains("bypass") && capability["bypass"].is_boolean())
+            device.effectsBypass = capability["bypass"].get<bool>();
+        else if (auto key = capability.contains("audiogramLeft") ? "audiogramLeft" : capability.contains("audiogramRight") ? "audiogramRight" : nullptr)
+        {
+            // empty clears the ear
+            const auto &value = capability[key];
+            if (!value.is_string() || (!value.get<std::string>().empty() && !AudioEffects::ParseAudiogram(value.get<std::string>())))
+            {
+                Logger::Error("AapEqualizerCapability::SetFromJson: an audiogram is six thresholds in dB HL (250 Hz to 8 kHz)");
+                return;
+            }
+            audiograms[key == std::string("audiogramRight")] = value.get<std::string>();
+            device.SaveSettingString(key, value.get<std::string>());
+        }
         else
         {
-            Logger::Error("AapEqualizerCapability::SetFromJson: expected selected, correction or crossfeed");
+            Logger::Error("AapEqualizerCapability::SetFromJson: expected selected, correction, crossfeed, loudness, hearing, audiogramLeft/Right or bypass");
             return;
         }
         _onChanged.FireEvent(*this);

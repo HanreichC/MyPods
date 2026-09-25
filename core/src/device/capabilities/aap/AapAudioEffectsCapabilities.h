@@ -14,6 +14,7 @@ namespace MagicPodsCore
     {
     private:
         int mode = 0;
+        bool surround; // 7.1 input ("surround")
         const bool headTracking;
         bool tracking = false;
         int samples = 0;
@@ -38,15 +39,21 @@ namespace MagicPodsCore
         static double Yaw(const std::vector<unsigned char> &packet, double neutral2, double neutral3);
     };
 
-    // Equalizer with Apple Music's presets, applied on this computer in front of the headphones, plus the measured
-    // headphone correction ("correction", only for models with a measurement) and crossfeed ("crossfeed").
+    // Equalizer with Apple Music's presets, applied on this computer in front of the headphones, plus the headphone
+    // correction ("correction", with a measurement or an `eqFile`), crossfeed ("crossfeed"), loudness compensation
+    // ("loudness"), the hearing profile from an audiogram per ear ("hearing", "audiogramLeft", "audiogramRight")
+    // and the level-matched A/B comparison ("bypass").
     class AapEqualizerCapability : public AapCapability
     {
     private:
         std::string preset;
-        const bool hasCorrection;
         bool corrected;
         bool crossfeed;
+        std::atomic<bool> loudness; // read on the PulseAudio thread
+        bool hearing;
+        std::string audiograms[2];
+        size_t sinkEventId = 0;
+        std::atomic<bool> volumePending{false};
 
     protected:
         nlohmann::json CreateJsonBody() override;
@@ -54,6 +61,7 @@ namespace MagicPodsCore
 
     public:
         explicit AapEqualizerCapability(AapDevice &device);
+        ~AapEqualizerCapability() override;
         void SetFromJson(const nlohmann::json &json) override;
 
         // AutoEQ correction to the Harman target for the model, empty if nobody measured it
