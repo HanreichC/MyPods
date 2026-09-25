@@ -373,71 +373,6 @@ namespace MagicPodsCore
         return gains;
     }
 
-    double AudioEffects::ToneDbfs(double hearingLevel, double freq, double volume, double reference)
-    {
-        // ISO 389-1 reference thresholds (dB SPL at 0 dB HL) for supra-aural earphones at HearingTest::FREQS
-        // ponytail: in-ear and over-ear headphones sit a few dB off these, and `reference` is a guess per model; the
-        // audiogram comes out relative, which is what the hearing profile's half-gain rule needs, not a clinical one
-        static constexpr double RETSPL[]{25.5, 11.5, 7.0, 9.0, 9.5, 13.0};
-        auto it = std::find(HearingTest::FREQS.begin(), HearingTest::FREQS.end(), freq);
-        double retspl = it == HearingTest::FREQS.end() ? 7.0 : RETSPL[it - HearingTest::FREQS.begin()];
-        // PulseAudio's volume is cubic: 60 dB per decade, like the loudness compensation
-        return hearingLevel + retspl - reference - 60 * std::log10(std::max(volume, 1e-3));
-    }
-
-    void HearingTest::Answer(bool heard)
-    {
-        if (Done())
-            return;
-        presentations++;
-        if (heard)
-        {
-            if (ascending && ++heardUp[(level - MIN_DB) / 5] >= 2)
-                return Next(level);
-            if (level <= MIN_DB)
-                return Next(MIN_DB);
-            level = std::max(MIN_DB, level - 10);
-            ascending = false;
-        }
-        else
-        {
-            if (level >= MAX_DB)
-                return Next(MAX_DB); // not heard at the loudest tone
-            level = std::min(MAX_DB, level + 5);
-            ascending = true;
-        }
-        // ponytail: answers that never settle end after 20 tones at the lowest level heard on the way up, else the current one
-        if (presentations >= 20)
-        {
-            for (int i = 0; i < static_cast<int>(heardUp.size()); i++)
-                if (heardUp[i])
-                    return Next(MIN_DB + 5 * i);
-            Next(level);
-        }
-    }
-
-    void HearingTest::Next(int threshold)
-    {
-        thresholds[ear][freq] = threshold;
-        level = START_DB;
-        ascending = false;
-        presentations = 0;
-        heardUp = {};
-        if (++freq == FREQS.size())
-        {
-            freq = 0;
-            ear++;
-        }
-    }
-
-    std::string HearingTest::Audiogram(int ear) const
-    {
-        std::string text;
-        for (int t : thresholds[ear])
-            text += (text.empty() ? "" : " ") + std::to_string(t);
-        return text;
-    }
-
     double AudioEffects::Iso226(double freq, double phon)
     {
         // ISO 226:2003 table 1: frequency, alpha_f, L_U, T_f
@@ -718,7 +653,6 @@ namespace MagicPodsCore
     void AudioEffects::StopLocked() {}
     void AudioEffects::SetYaw(double) {}
     void AudioEffects::SetVolume(double) {}
-    void AudioEffects::PlayTone(const std::string &, int, double, double) {}
 #else
     static pid_t Spawn(const std::vector<const char *> &argv, int *stdinFd)
     {
@@ -910,36 +844,5 @@ namespace MagicPodsCore
             Logger::Debug("AudioEffects: pw-cli not accepting commands");
     }
 
-    void AudioEffects::PlayTone(const std::string &sink, int ear, double freq, double dbfs)
-    {
-        std::lock_guard lock{_lock};
-        Kill(_tone);
-        // three 300 ms beeps: a pulsed tone stands out from tinnitus and background better than a steady one
-        constexpr int RATE = 48000, BEEP = RATE * 3 / 10, GAP = RATE / 5, RAMP = RATE / 50;
-        double amplitude = std::pow(10.0, std::min(dbfs, TONE_MAX_DBFS) / 20); // the loudest the file can hold without clipping
-        std::vector<float> samples(2 * 3 * (BEEP + GAP));
-        for (int beep = 0; beep < 3; beep++)
-            for (int i = 0; i < BEEP; i++)
-            {
-                double ramp = std::min({1.0, static_cast<double>(i) / RAMP, static_cast<double>(BEEP - i) / RAMP});
-                double envelope = 0.5 - 0.5 * std::cos(std::numbers::pi * ramp); // raised cosine, no clicks
-                samples[2 * (beep * (BEEP + GAP) + i) + ear] = static_cast<float>(amplitude * envelope * std::sin(2 * std::numbers::pi * freq * i / RATE));
-            }
-        // WAV, 32-bit float stereo
-        auto path = RuntimePath("mypods-tone.wav");
-        std::ofstream wav(path, std::ios::binary);
-        auto u32 = [&](uint32_t v) { wav.write(reinterpret_cast<const char *>(&v), 4); };
-        auto u16 = [&](uint16_t v) { wav.write(reinterpret_cast<const char *>(&v), 2); };
-        uint32_t bytes = samples.size() * sizeof(float);
-        wav << "RIFF";
-        u32(36 + bytes);
-        wav << "WAVEfmt ";
-        u32(16), u16(3), u16(2), u32(RATE), u32(RATE * 2 * sizeof(float)), u16(2 * sizeof(float)), u16(32);
-        wav << "data";
-        u32(bytes);
-        wav.write(reinterpret_cast<const char *>(samples.data()), bytes);
-        wav.close();
-        _tone = Spawn({"pw-play", "--target", sink.c_str(), path.c_str(), nullptr}, nullptr);
-    }
 #endif
 }

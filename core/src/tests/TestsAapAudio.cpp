@@ -219,31 +219,6 @@ TestsAapAudio::TestsAapAudio()
     Test("Curve: Bass Booster lifts the bass, not the treble", boostDb[0] > 5 && std::abs(boostDb[1]) < 0.5);
     boosted.bypass = true;
     Test("Curve: A/B shows it flat", std::abs(AudioEffects::ResponseDb(boosted, 0, {32})[0]) < 0.01);
-
-    // Hearing test against a listener with known thresholds: it has to find them on the 5 dB grid
-    auto measure = [](const std::array<int, 6> &left, const std::array<int, 6> &right)
-    {
-        HearingTest test;
-        for (int answers = 0; !test.Done() && answers < 1000; answers++)
-        {
-            auto &ear = test.Ear() ? right : left;
-            size_t f = std::find(HearingTest::FREQS.begin(), HearingTest::FREQS.end(), test.Frequency()) - HearingTest::FREQS.begin();
-            test.Answer(test.Level() >= ear[f]);
-        }
-        return std::pair{test.Audiogram(0), test.Audiogram(1)};
-    };
-    Test("Hearing test: finds the thresholds", measure({25, 60, 0, -10, 45, 70}, {10, 10, 15, 20, 30, 40}) ==
-                                               std::pair<std::string, std::string>{"25 60 0 -10 45 70", "10 10 15 20 30 40"});
-    Test("Hearing test: deaf above the loudest tone ends there", measure({120, 120, 120, 120, 120, 120}, {0, 0, 0, 0, 0, 0}).first == "90 90 90 90 90 90");
-    HearingTest capped;
-    capped.Answer(false); // 30 missed, 35 next
-    capped.Answer(false); // 35 missed, 40 next
-    capped.Unplayable();  // 40 is past what the headphones play at full volume
-    Test("Hearing test: a tone past full volume ends that frequency there", capped.Frequency() == 500 && capped.Level() == HearingTest::START_DB &&
-                                                                            capped.Audiogram(0).starts_with("40 "));
-    Test("Hearing test: its audiogram feeds the hearing profile", AudioEffects::ParseAudiogram(measure({25, 60, 0, -10, 45, 70}, {}).first).has_value());
-    Test("Hearing test: 30 dB HL at 1 kHz, 100 % volume", std::abs(AudioEffects::ToneDbfs(30, 1000, 1, 90) + 53) < 1e-9 &&
-                                                         std::abs(AudioEffects::ToneDbfs(30, 1000, 0.5, 90) - AudioEffects::ToneDbfs(30, 1000, 1, 90) - 60 * std::log10(2)) < 1e-9);
 }
 
 void TestsAapAudio::Test(const char *name, bool ok)

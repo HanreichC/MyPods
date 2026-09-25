@@ -79,9 +79,6 @@ namespace MagicPodsCore
         void SetYaw(double degrees);
         // Listening volume changed: moves the loudness compensation along, a live update like SetYaw
         void SetVolume(double volume);
-        // Hearing test: a pulsed sine on one ear (0 = left) at `dbfs`, straight into `sink`, past the effects
-        void PlayTone(const std::string &sink, int ear, double freq, double dbfs);
-        static constexpr double TONE_MAX_DBFS = -1; // the loudest tone PlayTone plays, louder ones are cut to it
 
         static std::vector<std::string> PresetNames();
         static std::optional<std::array<double, 10>> Preset(const std::string &name);
@@ -96,9 +93,6 @@ namespace MagicPodsCore
         static std::optional<std::array<double, 6>> ParseAudiogram(const std::string &text);
         // Per-ear gains for an audiogram (half-gain rule)
         static std::array<double, 6> HearingGains(const std::array<double, 6> &thresholds);
-        // dBFS for a tone of `hearingLevel` dB HL at an audiogram frequency, `reference` dB SPL coming out at full scale
-        // and 100 % volume (`loudnessReference`), `volume` the headphones' sink volume
-        static double ToneDbfs(double hearingLevel, double freq, double volume, double reference);
         // Loudness compensation low shelf for the config's volume, 0 dB at and above the mixing level
         static Biquad LoudnessShelf(const EffectsConfig &config);
         // ISO 226:2003 sound pressure level (dB SPL) of the equal-loudness contour at a table frequency (20 Hz - 12.5 kHz)
@@ -121,44 +115,10 @@ namespace MagicPodsCore
         std::mutex _lock;
         pid_t _chain = -1;
         pid_t _ctl = -1;
-        pid_t _tone = -1;
         int _ctlFd = -1;
         std::string _sink;
         EffectsConfig _config;
         double _yaw = 0;
         std::chrono::steady_clock::time_point _yawSentAt{};
-    };
-
-    // Pure-tone audiometry for the hearing profile, simplified Hughson-Westlake: 10 dB down after a tone was heard,
-    // 5 dB up after it was missed; the threshold is the first level heard twice on the way up. Left ear, then right,
-    // each at the audiogram frequencies. Only the procedure, the tones are played by the caller.
-    class HearingTest
-    {
-    public:
-        static constexpr int START_DB = 30, MIN_DB = -10, MAX_DB = 90;
-        static constexpr std::array<double, 6> FREQS{250, 500, 1000, 2000, 4000, 8000};
-
-        int Ear() const { return ear; }
-        double Frequency() const { return FREQS[freq]; }
-        int Level() const { return level; }
-        // tones answered so far and in total, for a progress bar
-        int Step() const { return ear * FREQS.size() + freq; }
-        static constexpr int STEPS = 2 * FREQS.size();
-        bool Done() const { return ear > 1; }
-        void Answer(bool heard);
-        // The tone is louder than the headphones play at full volume: no response at the loudest tone
-        void Unplayable() { Next(level); }
-        // "20 25 30 40 55 60" per ear, what ParseAudiogram reads
-        std::string Audiogram(int ear) const;
-
-    private:
-        int ear = 0;
-        size_t freq = 0;
-        int level = START_DB;
-        bool ascending = false; // the last tone was missed, so a heard one now counts
-        int presentations = 0;
-        std::array<int, (MAX_DB - MIN_DB) / 5 + 1> heardUp{};
-        std::array<std::array<int, 6>, 2> thresholds{};
-        void Next(int threshold);
     };
 }

@@ -29,7 +29,6 @@ Components.ScrollPage {
     readonly property var bluetoothCodec: capabilities?.bluetoothCodec ?? null
     readonly property var spatialAudioData: capabilities?.spatialAudio ?? null
     readonly property var equalizerData: capabilities?.equalizer ?? null
-    readonly property var hearingTestData: equalizerData?.hearingTest ?? null
     readonly property var autoSwitchData: capabilities?.autoSwitch ?? null
     readonly property var earDetectionData: capabilities?.earDetection ?? null
     readonly property var deviceInfoData: capabilities?.deviceInfo ?? null
@@ -555,88 +554,6 @@ Components.ScrollPage {
                         if (rootPage.equalizerData && value !== rootPage.equalizerData[modelData.field])
                             cppBackend.setCapability("equalizer", rootPage.currentAddress(), value, modelData.field);
                     }
-                }
-            }
-        }
-
-        // Hearing test: measures both audiograms with tones, the result switches the hearing profile on
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.equalizerData !== null && rootPage.hearingTestData === null
-            label: qsTrId("battery.hearing_test")
-            tooltip: qsTrId("battery.hearing_test.hint")
-
-            QQC2.Button {
-                text: qsTrId("battery.hearing_test.start")
-                enabled: !(rootPage.equalizerData?.readonly ?? true)
-                onClicked: cppBackend.setCapability("equalizer", rootPage.currentAddress(), "start", "hearingTest")
-            }
-        }
-
-        ColumnLayout {
-            id: hearingTestPanel
-            Layout.fillWidth: true
-            Layout.topMargin: MP.Units.smallSpacing
-            Layout.bottomMargin: MP.Units.smallSpacing
-            visible: rootPage.hearingTestData !== null
-            spacing: MP.Units.smallSpacing
-
-            function answer(command) {
-                cppBackend.setCapability("equalizer", rootPage.currentAddress(), command, "hearingTest");
-            }
-
-            MP.Label {
-                Layout.fillWidth: true
-                text: qsTrId("battery.hearing_test.tone")
-                    .arg(rootPage.hearingTestData?.ear ? qsTrId("battery.hearing_test.right") : qsTrId("battery.hearing_test.left"))
-                    .arg(Number(rootPage.hearingTestData?.frequency ?? 0).toLocaleString(Qt.locale(), "f", 0))
-                wrapMode: Text.WordWrap
-            }
-            MP.Label {
-                Layout.fillWidth: true
-                text: qsTrId("battery.hearing_test.hint")
-                font.pixelSize: 13
-                color: MP.Theme.secondaryText
-                wrapMode: Text.WordWrap
-            }
-            // the tone needs more volume than is set, so it didn't play
-            MP.Label {
-                Layout.fillWidth: true
-                visible: rootPage.hearingTestData?.tooQuiet ?? false
-                text: qsTrId("battery.hearing_test.too_quiet")
-                color: MP.Theme.orange
-                wrapMode: Text.WordWrap
-            }
-            QQC2.ProgressBar {
-                Layout.fillWidth: true
-                from: 0
-                to: rootPage.hearingTestData?.steps ?? 1
-                value: rootPage.hearingTestData?.step ?? 0
-                Accessible.name: qsTrId("battery.hearing_test")
-            }
-            Flow {
-                Layout.fillWidth: true
-                spacing: MP.Units.smallSpacing
-                QQC2.Button {
-                    text: qsTrId("battery.hearing_test.heard")
-                    highlighted: true
-                    enabled: !(rootPage.hearingTestData?.tooQuiet ?? false)
-                    onClicked: hearingTestPanel.answer("heard")
-                }
-                QQC2.Button {
-                    text: qsTrId("battery.hearing_test.missed")
-                    enabled: !(rootPage.hearingTestData?.tooQuiet ?? false)
-                    onClicked: hearingTestPanel.answer("missed")
-                }
-                QQC2.Button {
-                    text: qsTrId("battery.hearing_test.repeat")
-                    flat: true
-                    onClicked: hearingTestPanel.answer("repeat")
-                }
-                QQC2.Button {
-                    text: qsTrId("battery.hearing_test.cancel")
-                    flat: true
-                    onClicked: hearingTestPanel.answer("cancel")
                 }
             }
         }

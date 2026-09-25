@@ -75,12 +75,7 @@ namespace MagicPodsCore
         onConnectedId = device.GetConnectedPropertyChangedEvent().Subscribe([this](size_t, bool connected)
         {
             if (!connected)
-            {
-                // a test from before would come back without its tone
-                std::lock_guard lock{testLock};
-                test.reset();
                 return Reset();
-            }
             isAvailable = true;
             _onChanged.FireEvent(*this);
         });
@@ -127,11 +122,6 @@ namespace MagicPodsCore
             f = std::round(f);
         body["response"] = {{"frequencies", freqs}, {"left", round(AudioEffects::ResponseDb(config, 0, freqs))},
                             {"right", round(AudioEffects::ResponseDb(config, 1, freqs))}};
-
-        std::lock_guard lock{testLock};
-        if (test)
-            body["hearingTest"] = {{"ear", test->Ear()}, {"frequency", test->Frequency()}, {"step", test->Step()}, {"steps", HearingTest::STEPS},
-                                   {"tooQuiet", tooQuiet}};
         return body;
     }
 
@@ -140,12 +130,6 @@ namespace MagicPodsCore
         if (!json.contains(name))
             return;
         const auto &capability = json.at(name);
-        if (capability.contains("hearingTest"))
-        {
-            if (capability["hearingTest"].is_string())
-                HearingTestCommand(capability["hearingTest"].get<std::string>());
-            return;
-        }
         if (capability.contains("selected"))
         {
             if (!capability["selected"].is_string() ||
@@ -228,100 +212,10 @@ namespace MagicPodsCore
         }
         else
         {
-            Logger::Error("CmnEqualizerCapability::SetFromJson: expected selected, custom, tilt, correction, crossfeed, loudness, hearing, audiogramLeft/Right, bypass or hearingTest");
+            Logger::Error("CmnEqualizerCapability::SetFromJson: expected selected, custom, tilt, correction, crossfeed, loudness, hearing, audiogramLeft/Right or bypass");
             return;
         }
         _onChanged.FireEvent(*this);
         device.RouteAudioAsync();
-    }
-
-    void CmnEqualizerCapability::HearingTestCommand(const std::string &command)
-    {
-        bool finished = false;
-        {
-            std::lock_guard lock{testLock};
-            if (command == "start")
-            {
-                test.emplace();
-                GiveTonesHeadroom();
-            }
-            else if (!test)
-                return;
-            else if (command == "heard" || command == "missed")
-            {
-                if (tooQuiet)
-                {
-                    Logger::Error("CmnEqualizerCapability: the tone did not play, the volume is too low for it");
-                    return;
-                }
-                test->Answer(command == "heard");
-            }
-            else if (command == "cancel")
-                test.reset();
-            else if (command != "repeat")
-            {
-                Logger::Error("CmnEqualizerCapability: hearingTest is start, heard, missed, repeat or cancel");
-                return;
-            }
-
-            if (test && !test->Done())
-                PlayTestTone();
-            if (test && test->Done())
-            {
-                // the result goes straight into the hearing profile
-                for (int ear : {0, 1})
-                {
-                    audiograms[ear] = test->Audiogram(ear);
-                    device.SaveSettingString(ear ? "audiogramRight" : "audiogramLeft", audiograms[ear]);
-                }
-                hearing = true;
-                device.SaveSettingInt("hearingProfile", hearing);
-                test.reset();
-                finished = true;
-            }
-        }
-        _onChanged.FireEvent(*this);
-        if (finished)
-            device.RouteAudioAsync();
-    }
-
-    void CmnEqualizerCapability::GiveTonesHeadroom()
-    {
-        // Music plays through the chain at headphones x chain volume, so both change by the same factor and the music stays as
-        // loud; the tones go straight to the headphones and get their full range. Without a chain the volume keys do it.
-        auto pac = device.GetAudioClient();
-        auto sink = device.HeadphonesSink();
-        auto chain = pac->GetSinkVolume(AudioEffects::SINK_NAME);
-        auto headphones = sink ? pac->GetSinkVolume(*sink) : std::nullopt;
-        // chain down first, so nothing plays louder in between
-        if (chain && headphones && *headphones < 1 && pac->SetSinkVolume(AudioEffects::SINK_NAME, *chain * *headphones))
-            pac->SetSinkVolume(*sink, 1);
-    }
-
-    void CmnEqualizerCapability::PlayTestTone()
-    {
-        tooQuiet = false;
-        auto sink = device.HeadphonesSink();
-        if (!sink)
-        {
-            Logger::Error("CmnEqualizerCapability: no headphones sink to play the test tone on");
-            return;
-        }
-        double volume = device.GetAudioClient()->GetSinkVolume(*sink).value_or(1);
-        double reference = device.LoadEffectsConfig().loudnessReference;
-        while (!test->Done())
-        {
-            double dbfs = AudioEffects::ToneDbfs(test->Level(), test->Frequency(), volume, reference);
-            if (dbfs <= AudioEffects::TONE_MAX_DBFS)
-                return AudioEffects::Instance().PlayTone(*sink, test->Ear(), test->Frequency(), dbfs);
-            // Played cut down, a missed tone would count as missed at a level it never had. Turning the headphones up helps
-            // (the UI asks for it, then "repeat"); at full volume the tone is past what they can play.
-            if (volume < 0.99)
-            {
-                tooQuiet = true;
-                return;
-            }
-            test->Unplayable();
-        }
     }
 }

@@ -800,49 +800,5 @@
         <source></source>
         <translation>Heller</translation>
     </message>
-    <message id="battery.hearing_test">
-        <source></source>
-        <translation>Hörtest:</translation>
-    </message>
-    <message id="battery.hearing_test.start">
-        <source></source>
-        <translation>Starten</translation>
-    </message>
-    <message id="battery.hearing_test.hint">
-        <source></source>
-        <translation>Musik anhalten, ruhigen Ort suchen und die Lautstärke nicht verändern. Antworte, sobald du die Töne hörst, auch ganz leise. Das Ergebnis richtet das Hörprofil ein: ein Richtwert, kein medizinischer Test.</translation>
-    </message>
-    <message id="battery.hearing_test.too_quiet">
-        <source></source>
-        <translation>Dieser Ton braucht mehr Lautstärke. Kopfhörer lauter stellen und dann „Nochmal“.</translation>
-    </message>
-    <message id="battery.hearing_test.tone">
-        <source></source>
-        <translation>%1, %2 Hz: Hörst du die Töne?</translation>
-    </message>
-    <message id="battery.hearing_test.left">
-        <source></source>
-        <translation>Linkes Ohr</translation>
-    </message>
-    <message id="battery.hearing_test.right">
-        <source></source>
-        <translation>Rechtes Ohr</translation>
-    </message>
-    <message id="battery.hearing_test.heard">
-        <source></source>
-        <translation>Gehört</translation>
-    </message>
-    <message id="battery.hearing_test.missed">
-        <source></source>
-        <translation>Nicht gehört</translation>
-    </message>
-    <message id="battery.hearing_test.repeat">
-        <source></source>
-        <translation>Nochmal</translation>
-    </message>
-    <message id="battery.hearing_test.cancel">
-        <source></source>
-        <translation>Abbrechen</translation>
-    </message>
 </context>
 </TS>

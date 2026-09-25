@@ -800,49 +800,5 @@
         <source></source>
         <translation>Brighter</translation>
     </message>
-    <message id="battery.hearing_test">
-        <source></source>
-        <translation>Hearing test:</translation>
-    </message>
-    <message id="battery.hearing_test.start">
-        <source></source>
-        <translation>Start</translation>
-    </message>
-    <message id="battery.hearing_test.hint">
-        <source></source>
-        <translation>Pause the music, find a quiet place and leave the volume as it is. Answer as soon as you hear the beeps, even faintly. The result sets up the hearing profile: a guide, not a medical test.</translation>
-    </message>
-    <message id="battery.hearing_test.too_quiet">
-        <source></source>
-        <translation>This tone needs more volume. Turn the headphones up, then Play again.</translation>
-    </message>
-    <message id="battery.hearing_test.tone">
-        <source></source>
-        <translation>%1, %2 Hz: do you hear the beeps?</translation>
-    </message>
-    <message id="battery.hearing_test.left">
-        <source></source>
-        <translation>Left ear</translation>
-    </message>
-    <message id="battery.hearing_test.right">
-        <source></source>
-        <translation>Right ear</translation>
-    </message>
-    <message id="battery.hearing_test.heard">
-        <source></source>
-        <translation>Heard</translation>
-    </message>
-    <message id="battery.hearing_test.missed">
-        <source></source>
-        <translation>Not heard</translation>
-    </message>
-    <message id="battery.hearing_test.repeat">
-        <source></source>
-        <translation>Play again</translation>
-    </message>
-    <message id="battery.hearing_test.cancel">
-        <source></source>
-        <translation>Cancel</translation>
-    </message>
 </context>
 </TS>
