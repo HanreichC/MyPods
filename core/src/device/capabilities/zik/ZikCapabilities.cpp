@@ -122,12 +122,12 @@ namespace MagicPodsCore
 
         if (c.contains("selected") && c["selected"].is_number_integer())
         {
-            switch (static_cast<DeviceAncModes>(c["selected"].get<int>()))
+            switch (static_cast<DeviceAncModes>(SelectedByte(c).value_or(0))) // 0: no mode
             {
             case DeviceAncModes::Transparency: newType = "aoc"; break;
             case DeviceAncModes::NoiseCancellation: newType = "anc"; break;
             default:
-                Logger::Info("Error: ZikAncCapability::SetFromJson got unexpected option: %d", c["selected"].get<int>());
+                Logger::Info("Error: ZikAncCapability::SetFromJson got unexpected option: %s", c["selected"].dump().c_str());
                 return;
             }
         }

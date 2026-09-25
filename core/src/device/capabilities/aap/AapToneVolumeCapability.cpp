@@ -92,9 +92,9 @@ namespace MagicPodsCore
 
         const auto& capability = json.at(name);
 
-        if (capability.contains("selected") && capability["selected"].is_number_integer())
+        if (auto byte = SelectedByte(capability))
         {
-            unsigned char selected = static_cast<unsigned char>(capability["selected"].get<int>());            
+            unsigned char selected = *byte;
             if (selected >= 15 && selected <= 125){
                 unsigned char nativeMode = ConvertToRange15_100(selected);
                 SendData(AapSetToneVolume(nativeMode));
@@ -114,7 +114,7 @@ namespace MagicPodsCore
         }
         else
         {
-            Logger::Error("Error: %s::SetFromJson got no value or value is not an integer", name.c_str());
+            Logger::Error("Error: %s::SetFromJson got no value or value is not an integer in 0..255", name.c_str());
         }
     }
 }

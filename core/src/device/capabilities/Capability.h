@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <nlohmann/json.hpp>
 #include "Event.h"
@@ -29,6 +30,18 @@ namespace MagicPodsCore
 
         const std::string& GetName() const {
             return name;
+        }
+
+        // "selected" as a byte, nullopt when missing, not an integer or outside 0..255.
+        // Checked before narrowing, so 257 isn't taken for 1.
+        static std::optional<unsigned char> SelectedByte(const nlohmann::json &capability)
+        {
+            if (!capability.contains("selected") || !capability["selected"].is_number_integer())
+                return std::nullopt;
+            auto value = capability["selected"].get<int64_t>();
+            if (value < 0 || value > 255)
+                return std::nullopt;
+            return static_cast<unsigned char>(value);
         }
 
         nlohmann::json GetAsJson();

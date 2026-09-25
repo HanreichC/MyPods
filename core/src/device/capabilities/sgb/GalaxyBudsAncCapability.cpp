@@ -102,9 +102,9 @@ namespace MagicPodsCore
 
         const auto& capability = json.at(name);
 
-        if (capability.contains("selected") && capability["selected"].is_number_integer())
+        if (auto byte = SelectedByte(capability))
         {
-            unsigned char selected = static_cast<unsigned char>(capability["selected"].get<int>());
+            unsigned char selected = *byte;
             if (isValidDeviceAncModesType(selected))
             {
                 GalaxyBudsAnc nativeMode = DeviceAncModesToGalaxyBudsAnc(static_cast<DeviceAncModes>(selected));
@@ -118,7 +118,7 @@ namespace MagicPodsCore
         }
         else
         {
-            Logger::Info("Error: GalaxyBudsAncCapability::SetFromJson got no value or value is not an integer");
+            Logger::Info("Error: GalaxyBudsAncCapability::SetFromJson got no value or value is not an integer in 0..255");
         }
     }
 

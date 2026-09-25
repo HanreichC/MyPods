@@ -15,13 +15,41 @@
 #include "device/capabilities/aap/AapConversationAwarenessStateCapability.h"
 #include "sdk/aap/Att.h"
 #include "media/EarDetectionPause.h"
+#include "sdk/aap/watchers/AapAncWatcher.h"
 
+#include <atomic>
+#include <thread>
 #include <cmath>
 
 #include <filesystem>
 #include <fstream>
 
 using namespace MagicPodsCore;
+
+#ifndef _WIN32
+namespace
+{
+    // records where the control channel gets stopped
+    struct StopProbe : Device
+    {
+        std::atomic<bool> stopped{false};
+        std::thread::id stoppedOn{};
+        StopProbe(std::shared_ptr<DBusDeviceInfo> info, std::shared_ptr<SettingsService> settings) : Device(info, nullptr, settings)
+        {
+            _client = Client::CreateRFCOMM("00:00:00:00:00:00", ""); // empty UUID: fails at once, no Bluetooth
+            Init();
+        }
+        ~StopProbe() override { Shutdown(); }
+        void OnResponseDataReceived(const std::vector<unsigned char> &) override {}
+        void OnClientStopped() override
+        {
+            if (!stopped)
+                stoppedOn = std::this_thread::get_id();
+            stopped = true;
+        }
+    };
+}
+#endif
 
 TestsCore::TestsCore()
 {
@@ -181,6 +209,45 @@ TestsCore::TestsCore()
                                                  AapDeviceInfoCapability::RenamePacket(std::string(33, 'x')).empty() &&
                                                  AapDeviceInfoCapability::RenamePacket("a\nb").empty());
     }
+
+    // setters range-check before narrowing to a byte: 257 must not become 1 (ANC Off)
+    Test("Selected byte in range", Capability::SelectedByte({{"selected", 0}}) == 0 && Capability::SelectedByte({{"selected", 255}}) == 255);
+    Test("Selected byte rejects out of range and non-integers",
+         !Capability::SelectedByte({{"selected", 257}}) && !Capability::SelectedByte({{"selected", -1}}) &&
+             !Capability::SelectedByte({{"selected", 4294967297LL}}) && !Capability::SelectedByte({{"selected", "1"}}) &&
+             !Capability::SelectedByte(nlohmann::json::object()));
+
+    // an ANC byte outside 1..4 is ignored, not shown as Off
+    {
+        AapAncWatcher watcher;
+        bool fired = false;
+        watcher.GetEvent().Subscribe([&](size_t, AapAncMode) { fired = true; });
+        watcher.ProcessResponse({0x04, 0x00, 0x04, 0x00, 0x09, 0x00, 0x0d, 0x07, 0x00, 0x00, 0x00});
+        Test("ANC unknown mode ignored", !fired);
+    }
+
+#ifndef _WIN32
+    // BlueZ reports the disconnect on the D-Bus thread; stopping there waited for a Start() still connecting
+    try
+    {
+        std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces{{"org.bluez.Device1", {
+            {"Address", sdbus::Variant{std::string("00:00:00:00:00:01")}},
+            {"Connected", sdbus::Variant{true}},
+        }}};
+        auto info = std::make_shared<DBusDeviceInfo>(sdbus::ObjectPath{"/org/bluez/hci0/dev_00_00_00_00_00_01"}, interfaces);
+        auto path = std::filesystem::temp_directory_path() / "mypods-selftest-stop.toml";
+        StopProbe probe{info, std::make_shared<SettingsService>(path.string())};
+        info->GetConnectionStatus().SetValue(false); // what PropertiesChanged does
+        for (int i = 0; i < 200 && !probe.stopped; i++)
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        Test("Disconnect stops the channel off the D-Bus thread", probe.stopped && probe.stoppedOn != std::this_thread::get_id());
+        std::filesystem::remove(path);
+    }
+    catch (const sdbus::Error &e)
+    {
+        Logger::Info("Disconnect stop check skipped, no system bus: %s", e.getMessage().c_str());
+    }
+#endif
 }
 
 void TestsCore::Test(const char *name, bool ok)

@@ -17,6 +17,11 @@ namespace MagicPodsCore
         Adaptive = 0x04,
     };
 
+    static bool isValidAapAncMode(unsigned char value)
+    {
+        return value >= static_cast<unsigned char>(AapAncMode::Off) && value <= static_cast<unsigned char>(AapAncMode::Adaptive);
+    }
+
     static std::string AapAncModeToString(AapAncMode value)
     {
         switch (value)

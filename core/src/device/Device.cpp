@@ -82,9 +82,9 @@ namespace MagicPodsCore {
                     RequestClientStart(false);
                 }
                 else{
-                    _client->Stop();
-                    OnClientStopped();
-                    Logger::Info("%s _client stopped from PropertiesChanged", GetName().c_str());
+                    std::lock_guard lock{_workerLock};
+                    _stopRequested = true;
+                    _workerWake.notify_one();
                 }
             }
         });
@@ -109,9 +109,18 @@ namespace MagicPodsCore {
     {
         std::unique_lock lock{_workerLock};
         while (true) {
-            _workerWake.wait(lock, [this]() { return _startRequested || _workerExit; });
+            _workerWake.wait(lock, [this]() { return _startRequested || _stopRequested || _workerExit; });
             if (_workerExit)
                 return;
+            // before a pending start: disconnected and connected again stops the old session first
+            if (std::exchange(_stopRequested, false)) {
+                lock.unlock();
+                _client->Stop();
+                OnClientStopped();
+                Logger::Info("%s _client stopped from PropertiesChanged", GetName().c_str());
+                lock.lock();
+                continue;
+            }
             bool delayed = std::exchange(_startDelayed, false);
             _startRequested = false;
             // give the headphones a moment after they closed the channel

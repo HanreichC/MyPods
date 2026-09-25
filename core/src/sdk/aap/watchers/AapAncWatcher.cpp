@@ -23,6 +23,9 @@ namespace MagicPodsCore
         if (data[6] != static_cast<unsigned char>(AapCmdSettings::Anc))
             return;
 
+        if (!isValidAapAncMode(data[7]))
+            return;
+
         AapAncMode ancMode = static_cast<AapAncMode>(data[7]);
 
         Logger::Debug("%s: %s", _tag.c_str(), AapAncModeToString(ancMode).c_str());

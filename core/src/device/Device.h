@@ -41,11 +41,13 @@ namespace MagicPodsCore {
         std::string GetContainerName();
 
         // Opening the control channel blocks (connect attempts, spaced init packets), so it runs here
-        // instead of on the D-Bus thread that reports the connection.
+        // instead of on the D-Bus thread that reports the connection. Stopping runs here too: Stop()
+        // waits for a Start() that is still connecting, which would stall every D-Bus event meanwhile.
         std::thread _clientWorker{};
         std::mutex _workerLock{};
         std::condition_variable _workerWake{};
         bool _startRequested = false;
+        bool _stopRequested = false;
         bool _startDelayed = false;
         bool _workerExit = false;
         int _restarts = 0; // channel reopened after the headphones closed it, since the last connection

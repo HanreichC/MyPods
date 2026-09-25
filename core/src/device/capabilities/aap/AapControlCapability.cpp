@@ -90,17 +90,23 @@ namespace MagicPodsCore
             Update(selected.get<bool>() ? 0x01 : 0x02);
             return;
         case Kind::Choice:
-            if (!selected.is_number_integer() || std::find(choices.begin(), choices.end(), selected.get<int>()) == choices.end())
+        {
+            auto byte = SelectedByte(capability);
+            if (!byte || std::find(choices.begin(), choices.end(), *byte) == choices.end())
                 break;
-            device.SendData(Packet(id, static_cast<unsigned char>(selected.get<int>())));
-            Update(selected.get<int>());
+            device.SendData(Packet(id, *byte));
+            Update(*byte);
             return;
+        }
         case Kind::ListeningModes:
-            if (!selected.is_number_integer() || !IsValidListeningModes(selected.get<int>()))
+        {
+            auto byte = SelectedByte(capability);
+            if (!byte || !IsValidListeningModes(*byte))
                 break;
-            device.SendData(Packet(id, static_cast<unsigned char>(selected.get<int>())));
-            Update(selected.get<int>());
+            device.SendData(Packet(id, *byte));
+            Update(*byte);
             return;
+        }
         }
         Logger::Error("%s::SetFromJson: unexpected value %s", name.c_str(), selected.dump().c_str());
     }
