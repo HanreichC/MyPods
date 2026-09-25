@@ -10,14 +10,12 @@
 #include "Logger.h"
 #include "DevicesInfoFetcher.h"
 #include "dbus/BatteryProvider.h"
-#include "device/BatteryHistory.h"
 #include "device/capabilities/aap/AapControlCapability.h"
 #include "device/capabilities/aap/AapAttCapabilities.h"
 #include "device/capabilities/aap/AapConversationAwarenessStateCapability.h"
 #include "sdk/aap/Att.h"
 #include "media/EarDetectionPause.h"
 
-#include <algorithm>
 #include <cmath>
 
 #include <filesystem>
@@ -120,48 +118,6 @@ TestsCore::TestsCore()
                                                                   {DeviceBatteryType::Right, DeviceBatteryStatus::Connected, 60, false},
                                                                   {DeviceBatteryType::Case, DeviceBatteryStatus::Connected, 5, false}}) == 60 &&
                                              BatteryProvider::Level({{DeviceBatteryType::Left, DeviceBatteryStatus::Cached, 40, false}}) == std::nullopt);
-
-    // Battery history: cycles, runtime of a full charge and how it compares to the first charges
-    {
-        BatteryHistory::Stats s;
-        int64_t t = 0;
-        s.Add(0, 81);
-        s.Add(60, 80);
-        s.Add(150, 79);
-        auto json = s.ToJson(150);
-        Test("Battery history: progress while collecting", json["runtimeProgress"] == 4 && json["healthProgress"] == 0 &&
-                                                            !json.contains("runtime"));
-        s = {};
-        auto discharge = [&](int secondsPerPercent) {
-            s.Add(t, 100);
-            for (int level = 99; level >= 0; level--)
-                s.Add(t += secondsPerPercent, level);
-            s.Add(t += 3600, 100); // charged while connected
-        };
-        discharge(360);
-        json = s.ToJson(t);
-        Test("Battery history: one cycle, 10 h runtime", json["cycles"] == 1 && json["runtime"] == 10.0 && !json.contains("health") &&
-                                                         !json.contains("runtimeProgress") && json["healthProgress"] == 16);
-
-        s.Add(t += 7200, 99); // lying idle: counts as drained, not as runtime
-        s.Add(t += 60, std::nullopt);
-        s.Add(t += 60, 49); // drained on the iPhone
-        json = s.ToJson(t);
-        Test("Battery history: idle and elsewhere count as cycles only", s.drained == 151 && json["runtime"] == 10.0);
-
-        for (int i = 0; i < 2; i++)
-            discharge(360);
-        for (int i = 0; i < 3; i++)
-            discharge(288);
-        json = s.ToJson(t);
-        Test("Battery history: health against the first charges", json["baselineRuntime"] == 10.0 && json["runtime"] == 8.0 && json["health"] == 80 &&
-                                                                     !json.contains("healthProgress"));
-
-        auto &history = json["history"];
-        Test("Battery history: the last week, gaps as null", !history.empty() && history.back()[1] == 100 &&
-                                                            history.front()[0] >= t - 7 * 24 * 3600 &&
-                                                            std::any_of(history.begin(), history.end(), [](auto &p) { return p[1].is_null(); }));
-    }
 
     // ATT: request PDUs and the transparency characteristic (LibrePods Transparency.kt layout)
     {

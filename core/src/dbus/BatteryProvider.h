@@ -19,7 +19,7 @@ namespace MagicPodsCore
 {
     // Hands the exact battery level to BlueZ (org.bluez.BatteryProviderManager1), which publishes it as
     // the device's Battery1: the desktop's Bluetooth applet, UPower and other programs show it without
-    // MyPods. Windows: nothing to hand it to. Every level also goes to the BatteryHistory.
+    // MyPods. Windows: nothing to hand it to, every call is a no-op.
     class BatteryProvider
     {
     public:

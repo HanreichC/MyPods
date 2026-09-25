@@ -442,34 +442,6 @@ Unique capability structure that indicates the battery level of headphones. Alwa
 | `charging`        | bool        |
 | `status`          | enum        |
 
-##### Battery history (readonly)
-
-Recorded by the core from the level it hands to BlueZ (the emptier bud); present once a level was recorded
-for the device, for AirPods, Galaxy Buds and the Zik 2. `runtime` appears after about half a charge measured
-while connected, `health` and `baselineRuntime` after about six charges.
-
-```json
-{
-  "batteryHistory": {
-    "cycles": 12,
-    "runtime": 5.8,
-    "baselineRuntime": 6.2,
-    "health": 94,
-    "history": [[1790000000, 100], [1790000360, 99], [1790003600, null]]
-  }
-}
-```
-
-| Field             |                                                                                  |
-| ----------------- | -------------------------------------------------------------------------------- |
-| `cycles`          | int, every 100 % drained counts as one                                           |
-| `runtime`         | hours a full charge lasts, over the last three charges                           |
-| `baselineRuntime` | the same over the first three charges recorded                                   |
-| `health`          | int (0-100), `runtime` against `baselineRuntime`                                 |
-| `runtimeProgress` | int (0-99), how far the data for `runtime` is, only while `runtime` is missing   |
-| `healthProgress`  | int (0-99), the same for `health`                                                |
-| `history`         | the last 7 days as `[unix seconds, level]`, level `null` where it disconnected   |
-
 | status |              |
 | ------ | ------------ |
 | `0`    | NotAvailable |

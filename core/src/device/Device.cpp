@@ -4,7 +4,6 @@
 
 #include "Device.h"
 #include "DevicesInfoFetcher.h"
-#include "BatteryHistory.h"
 
 namespace MagicPodsCore {
     // A channel the headphones keep closing (another tool holds it, firmware quirk) isn't retried forever
@@ -238,8 +237,6 @@ namespace MagicPodsCore {
                 capabilitiesJson.update(capabilityJson);
         }
 
-        if (auto history = BatteryHistory::Instance().GetAsJson(GetAddress()); !history.is_null())
-            capabilitiesJson["batteryHistory"] = history;
         deviceJson["capabilities"] = capabilitiesJson;
 
         return deviceJson;
