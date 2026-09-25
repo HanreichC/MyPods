@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QHash>
 #include <QStringList>
@@ -18,6 +19,7 @@ inline const QStringList names = {
     QStringLiteral("noise-next"), QStringLiteral("noise-off"), QStringLiteral("noise-anc"),
     QStringLiteral("noise-transparency"), QStringLiteral("noise-adaptive"),
     QStringLiteral("conversation-awareness"), QStringLiteral("move-here"),
+    QStringLiteral("eq-next"), QStringLiteral("effects-bypass"),
 };
 
 // Noise control modes as the daemon sends them (DeviceAncModes): bits, cycled in this order
@@ -64,6 +66,15 @@ inline QJsonObject request(const QString &action, const QJsonObject &info)
         change.insert(QStringLiteral("conversationAwareness"), QJsonObject{{QStringLiteral("selected"), !on}});
     } else if (action == QStringLiteral("move-here") && caps.contains(QStringLiteral("autoSwitch"))) {
         change.insert(QStringLiteral("autoSwitch"), QJsonObject{{QStringLiteral("takeover"), true}});
+    } else if (action == QStringLiteral("eq-next") && caps.contains(QStringLiteral("equalizer"))) {
+        const QJsonObject eq = caps.value(QStringLiteral("equalizer")).toObject();
+        const QJsonArray options = eq.value(QStringLiteral("options")).toArray();
+        const qsizetype current = options.toVariantList().indexOf(eq.value(QStringLiteral("selected")).toVariant());
+        if (!options.isEmpty())
+            change.insert(QStringLiteral("equalizer"), QJsonObject{{QStringLiteral("selected"), options.at((current + 1) % options.size())}});
+    } else if (action == QStringLiteral("effects-bypass") && caps.contains(QStringLiteral("equalizer"))) {
+        const bool on = caps.value(QStringLiteral("equalizer")).toObject().value(QStringLiteral("bypass")).toBool();
+        change.insert(QStringLiteral("equalizer"), QJsonObject{{QStringLiteral("bypass"), !on}});
     }
 
     if (change.isEmpty())

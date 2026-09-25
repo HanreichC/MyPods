@@ -201,6 +201,43 @@ TestsAapAudio::TestsAapAudio()
     Test("A/B: spatial audio swaps to the unprocessed (downmixed) input",
          bconf.find("{ output = \"dmL:Out\" input = \"mixL:In 3\" }") != std::string::npos &&
          AudioEffects::ControlCommand(surround, 0).find("\"mixL:Gain 1\" 0.00 \"mixL:Gain 2\" 0.00 \"mixL:Gain 3\" 1.00") != std::string::npos);
+
+    // Custom EQ bands, tilt and the curve the UI draws
+    Test("Custom bands: ten gains within 12 dB", AudioEffects::ParseBands("3 2 0 0 -1 0 0 1 2 12") == std::array<double, 10>{3, 2, 0, 0, -1, 0, 0, 1, 2, 12} &&
+                                                 !AudioEffects::ParseBands("1 2 3") && !AudioEffects::ParseBands("0 0 0 0 0 0 0 0 0 13") &&
+                                                 !AudioEffects::ParseBands("0 0 0 0 0 0 0 0 0 0 0"));
+    EffectsConfig tilted;
+    tilted.tilt = 6;
+    auto tiltDb = AudioEffects::ResponseDb(tilted, 0, {30, 1000, 15000});
+    Test("Tilt: bass down, treble up, 1 kHz stays", !tilted.IsNeutral() && tiltDb[0] < -2.5 && tiltDb[2] > 2.5 && std::abs(tiltDb[1]) < 0.5 &&
+                                                    AudioEffects::ControlCommand(tilted, 0).find("\"tlR1:Gain\" 3.00") != std::string::npos);
+    auto flat = AudioEffects::ResponseDb(EffectsConfig{}, 1, {20, 1000, 20000});
+    Test("Curve: flat when nothing is on", std::all_of(flat.begin(), flat.end(), [](double d) { return std::abs(d) < 0.01; }));
+    EffectsConfig boosted;
+    boosted.eq = *AudioEffects::Preset("Bass Booster");
+    auto boostDb = AudioEffects::ResponseDb(boosted, 0, {32, 16000});
+    Test("Curve: Bass Booster lifts the bass, not the treble", boostDb[0] > 5 && std::abs(boostDb[1]) < 0.5);
+    boosted.bypass = true;
+    Test("Curve: A/B shows it flat", std::abs(AudioEffects::ResponseDb(boosted, 0, {32})[0]) < 0.01);
+
+    // Hearing test against a listener with known thresholds: it has to find them on the 5 dB grid
+    auto measure = [](const std::array<int, 6> &left, const std::array<int, 6> &right)
+    {
+        HearingTest test;
+        for (int answers = 0; !test.Done() && answers < 1000; answers++)
+        {
+            auto &ear = test.Ear() ? right : left;
+            size_t f = std::find(HearingTest::FREQS.begin(), HearingTest::FREQS.end(), test.Frequency()) - HearingTest::FREQS.begin();
+            test.Answer(test.Level() >= ear[f]);
+        }
+        return std::pair{test.Audiogram(0), test.Audiogram(1)};
+    };
+    Test("Hearing test: finds the thresholds", measure({25, 60, 0, -10, 45, 70}, {10, 10, 15, 20, 30, 40}) ==
+                                               std::pair<std::string, std::string>{"25 60 0 -10 45 70", "10 10 15 20 30 40"});
+    Test("Hearing test: deaf above the loudest tone ends there", measure({120, 120, 120, 120, 120, 120}, {0, 0, 0, 0, 0, 0}).first == "90 90 90 90 90 90");
+    Test("Hearing test: its audiogram feeds the hearing profile", AudioEffects::ParseAudiogram(measure({25, 60, 0, -10, 45, 70}, {}).first).has_value());
+    Test("Hearing test: 30 dB HL at 1 kHz, 100 % volume", std::abs(AudioEffects::ToneDbfs(30, 1000, 1, 90) + 53) < 1e-9 &&
+                                                         std::abs(AudioEffects::ToneDbfs(30, 1000, 0.5, 90) - AudioEffects::ToneDbfs(30, 1000, 1, 90) - 60 * std::log10(2)) < 1e-9);
 }
 
 void TestsAapAudio::Test(const char *name, bool ok)

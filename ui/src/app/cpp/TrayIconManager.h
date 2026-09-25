@@ -39,7 +39,8 @@ private:
     QString trayTooltipText() const;
     QString composeToolTip(const QString &details) const;
     QList<QVariantMap> sortedHeadphones() const;
-    QVariantMap ancDataForAddress(const QString &address) const;
+    QVariantMap capabilityForAddress(const QString &address, const QString &name) const;
+    void addEffectsActions(const QString &address, const QVariantMap &equalizer);
     void addHeadphoneAction(const QVariantMap &headphone);
     void addAncActions(const QString &address, const QVariantMap &ancData);
     void addAncAction(const QString &address,
@@ -58,4 +59,5 @@ private:
     QVariantMap infoData;
     QSet<QString> lowBatteryNotified; // LowBattery.h
     bool menuOpen = false;
+    QMenu *equalizerMenu = nullptr; // submenu, rebuilt with the menu
 };

@@ -18,4 +18,5 @@ namespace MagicPodsCore
     bool PulseAudioClient::SetDefaultSink(const std::string &) { return false; }
     std::optional<double> PulseAudioClient::GetSinkVolume(const std::string &) { return std::nullopt; }
     bool PulseAudioClient::SetSinkVolume(const std::string &, double) { return false; }
+    std::optional<SinkDetails> PulseAudioClient::GetSinkDetails(const std::string &) { return std::nullopt; }
 }

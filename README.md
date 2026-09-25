@@ -388,6 +388,8 @@ works on X11 and Wayland alike.
 | `noise-off`, `noise-anc`, `noise-transparency`, `noise-adaptive` | That noise control mode |
 | `conversation-awareness` | Conversation Awareness on/off |
 | `move-here` | Take the AirPods over from the iPhone ("Move here") |
+| `eq-next` | Next equalizer preset (Linux) |
+| `effects-bypass` | Compare with and without effects (A/B) on/off (Linux) |
 
 It exits with status 1 and a message when the daemon isn't running or the headphones can't do it.
 

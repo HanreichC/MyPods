@@ -760,5 +760,85 @@
         <source></source>
         <translation>App und laufender Daemon stammen aus verschiedenen Builds. Starte den Daemon neu (systemctl --user restart mypods-core) oder entferne die alte Installation.</translation>
     </message>
+    <message id="battery.codec_details">
+        <source></source>
+        <translation>Übertragung:</translation>
+    </message>
+    <message id="battery.codec_details.khz">
+        <source></source>
+        <translation>%1 kHz</translation>
+    </message>
+    <message id="battery.codec_details.bits">
+        <source></source>
+        <translation>%1 Bit</translation>
+    </message>
+    <message id="battery.codec_details.kbps">
+        <source></source>
+        <translation>%1 kbit/s</translation>
+    </message>
+    <message id="battery.equalizer.custom">
+        <source></source>
+        <translation>Eigener</translation>
+    </message>
+    <message id="battery.equalizer_curve">
+        <source></source>
+        <translation>Frequenzgang der Effekte</translation>
+    </message>
+    <message id="battery.equalizer_band">
+        <source></source>
+        <translation>Band %1 Hz</translation>
+    </message>
+    <message id="battery.tilt">
+        <source></source>
+        <translation>Klangfarbe:</translation>
+    </message>
+    <message id="battery.tilt.warm">
+        <source></source>
+        <translation>Wärmer</translation>
+    </message>
+    <message id="battery.tilt.bright">
+        <source></source>
+        <translation>Heller</translation>
+    </message>
+    <message id="battery.hearing_test">
+        <source></source>
+        <translation>Hörtest:</translation>
+    </message>
+    <message id="battery.hearing_test.start">
+        <source></source>
+        <translation>Starten</translation>
+    </message>
+    <message id="battery.hearing_test.hint">
+        <source></source>
+        <translation>Musik anhalten, ruhigen Ort suchen und die Lautstärke nicht verändern. Antworte, sobald du die Töne hörst, auch ganz leise. Das Ergebnis richtet das Hörprofil ein: ein Richtwert, kein medizinischer Test.</translation>
+    </message>
+    <message id="battery.hearing_test.tone">
+        <source></source>
+        <translation>%1, %2 Hz: Hörst du die Töne?</translation>
+    </message>
+    <message id="battery.hearing_test.left">
+        <source></source>
+        <translation>Linkes Ohr</translation>
+    </message>
+    <message id="battery.hearing_test.right">
+        <source></source>
+        <translation>Rechtes Ohr</translation>
+    </message>
+    <message id="battery.hearing_test.heard">
+        <source></source>
+        <translation>Gehört</translation>
+    </message>
+    <message id="battery.hearing_test.missed">
+        <source></source>
+        <translation>Nicht gehört</translation>
+    </message>
+    <message id="battery.hearing_test.repeat">
+        <source></source>
+        <translation>Nochmal</translation>
+    </message>
+    <message id="battery.hearing_test.cancel">
+        <source></source>
+        <translation>Abbrechen</translation>
+    </message>
 </context>
 </TS>

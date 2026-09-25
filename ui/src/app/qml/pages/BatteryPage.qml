@@ -29,6 +29,7 @@ Components.ScrollPage {
     readonly property var bluetoothCodec: capabilities?.bluetoothCodec ?? null
     readonly property var spatialAudioData: capabilities?.spatialAudio ?? null
     readonly property var equalizerData: capabilities?.equalizer ?? null
+    readonly property var hearingTestData: equalizerData?.hearingTest ?? null
     readonly property var autoSwitchData: capabilities?.autoSwitch ?? null
     readonly property var earDetectionData: capabilities?.earDetection ?? null
     readonly property var deviceInfoData: capabilities?.deviceInfo ?? null
@@ -120,6 +121,23 @@ Components.ScrollPage {
         }
         codec = codec.replace(/^MSBC$/i, "mSBC");
         return id.startsWith("headset") ? qsTrId("battery.bluetooth_codec.calls").arg(codec) : codec;
+    }
+
+    // bluetoothCodec "details" -> "aptX HD · 48 kHz · 24 bit · 576 kbit/s"; the bit depth only for integer formats
+    function codecDetails(details) {
+        if (!details)
+            return "";
+        var parts = [];
+        if (details.codec)
+            parts.push(details.codec.replace(/_/g, "-").toUpperCase().replace("APTX", "aptX").replace("-HD", " HD"));
+        if (details.rate)
+            parts.push(qsTrId("battery.codec_details.khz").arg(Number(details.rate / 1000).toLocaleString(Qt.locale(), "f", details.rate % 1000 ? 1 : 0)));
+        var bits = /^s(\d+)/.exec(details.format ?? "")?.[1];
+        if (bits)
+            parts.push(qsTrId("battery.codec_details.bits").arg(bits));
+        if (details.kbps)
+            parts.push(qsTrId("battery.codec_details.kbps").arg(details.kbps));
+        return parts.join(" · ");
     }
 
     function requestInfo() {
@@ -295,6 +313,20 @@ Components.ScrollPage {
             }
         }
 
+        // What the Bluetooth link actually carries, read from the headphones' sink
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.codecDetails(rootPage.bluetoothCodec?.details) !== ""
+            label: qsTrId("battery.codec_details")
+
+            MP.Label {
+                width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
+                text: rootPage.codecDetails(rootPage.bluetoothCodec?.details)
+                color: MP.Theme.secondaryText
+                elide: Text.ElideRight
+            }
+        }
+
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.spatialAudioData !== null
@@ -337,7 +369,7 @@ Components.ScrollPage {
             label: qsTrId("battery.equalizer")
 
             Components.Picker {
-                model: rootPage.equalizerData?.options ?? []
+                model: (rootPage.equalizerData?.options ?? []).map(o => o === "Custom" ? qsTrId("battery.equalizer.custom") : o)
                 currentIndex: (rootPage.equalizerData?.options ?? []).indexOf(rootPage.equalizerData?.selected)
                 enabled: !(rootPage.equalizerData?.readonly ?? true)
                 onActivated: {
@@ -346,6 +378,94 @@ Components.ScrollPage {
                         cppBackend.setCapability("equalizer", rootPage.currentAddress(), rootPage.equalizerData.selected);
                     }
                 }
+            }
+        }
+
+        // What all the effects together do to the sound
+        Components.ResponseCurve {
+            Layout.fillWidth: true
+            Layout.topMargin: MP.Units.smallSpacing
+            Layout.bottomMargin: MP.Units.smallSpacing
+            visible: rootPage.equalizerData?.response !== undefined
+            response: rootPage.equalizerData?.response ?? null
+            Accessible.name: qsTrId("battery.equalizer_curve")
+        }
+
+        // "Custom": the 10 bands by hand, sent when a slider is let go (or moved with the keyboard)
+        RowLayout {
+            Layout.fillWidth: true
+            visible: rootPage.equalizerData?.selected === "Custom"
+            spacing: 0
+
+            Repeater {
+                model: ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
+                delegate: ColumnLayout {
+                    id: band
+                    required property string modelData
+                    required property int index
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1 // all ten equally wide, whatever their labels say
+                    spacing: 2
+
+                    function send() {
+                        var bands = (rootPage.equalizerData?.bands ?? []).slice();
+                        bands[index] = bandSlider.value;
+                        cppBackend.setCapability("equalizer", rootPage.currentAddress(), bands, "custom");
+                    }
+
+                    MP.Label {
+                        Layout.fillWidth: true // a nested layout is only as wide as its widest filling child
+                        horizontalAlignment: Text.AlignHCenter
+                        text: (bandSlider.value > 0 ? "+" : "") + bandSlider.value.toLocaleString(Qt.locale(), "f", bandSlider.value % 1 ? 1 : 0)
+                        font.pixelSize: 11
+                        color: MP.Theme.secondaryText
+                    }
+                    QQC2.Slider {
+                        id: bandSlider
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.preferredHeight: 120
+                        orientation: Qt.Vertical
+                        from: -12
+                        to: 12
+                        stepSize: 0.5
+                        snapMode: QQC2.Slider.SnapAlways
+                        value: rootPage.equalizerData?.bands?.[band.index] ?? 0
+                        enabled: !(rootPage.equalizerData?.readonly ?? true)
+                        Accessible.name: qsTrId("battery.equalizer_band").arg(band.modelData)
+                        onPressedChanged: if (!pressed) band.send()
+                        onMoved: if (!pressed) band.send()
+                    }
+                    MP.Label {
+                        Layout.fillWidth: true // a nested layout is only as wide as its widest filling child
+                        horizontalAlignment: Text.AlignHCenter
+                        text: band.modelData
+                        font.pixelSize: 11
+                        color: MP.Theme.secondaryText
+                    }
+                }
+            }
+        }
+
+        // One knob for the tone: warmer (bass up, treble down) or brighter
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.equalizerData?.tilt !== undefined
+            label: qsTrId("battery.tilt")
+            tooltip: qsTrId("battery.tilt.warm") + " ← → " + qsTrId("battery.tilt.bright")
+
+            QQC2.Slider {
+                implicitWidth: rootPage.mWidth
+                from: -6
+                to: 6
+                stepSize: 1
+                snapMode: QQC2.Slider.SnapAlways
+                value: rootPage.equalizerData?.tilt ?? 0
+                enabled: !(rootPage.equalizerData?.readonly ?? true)
+                Accessible.name: qsTrId("battery.tilt")
+                Accessible.description: qsTrId("battery.tilt.warm") + " ← → " + qsTrId("battery.tilt.bright")
+                function send() { cppBackend.setCapability("equalizer", rootPage.currentAddress(), Math.round(value), "tilt"); }
+                onPressedChanged: if (!pressed) send()
+                onMoved: if (!pressed) send()
             }
         }
 
@@ -435,6 +555,78 @@ Components.ScrollPage {
                         if (rootPage.equalizerData && value !== rootPage.equalizerData[modelData.field])
                             cppBackend.setCapability("equalizer", rootPage.currentAddress(), value, modelData.field);
                     }
+                }
+            }
+        }
+
+        // Hearing test: measures both audiograms with tones, the result switches the hearing profile on
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.equalizerData !== null && rootPage.hearingTestData === null
+            label: qsTrId("battery.hearing_test")
+            tooltip: qsTrId("battery.hearing_test.hint")
+
+            QQC2.Button {
+                text: qsTrId("battery.hearing_test.start")
+                enabled: !(rootPage.equalizerData?.readonly ?? true)
+                onClicked: cppBackend.setCapability("equalizer", rootPage.currentAddress(), "start", "hearingTest")
+            }
+        }
+
+        ColumnLayout {
+            id: hearingTestPanel
+            Layout.fillWidth: true
+            Layout.topMargin: MP.Units.smallSpacing
+            Layout.bottomMargin: MP.Units.smallSpacing
+            visible: rootPage.hearingTestData !== null
+            spacing: MP.Units.smallSpacing
+
+            function answer(command) {
+                cppBackend.setCapability("equalizer", rootPage.currentAddress(), command, "hearingTest");
+            }
+
+            MP.Label {
+                Layout.fillWidth: true
+                text: qsTrId("battery.hearing_test.tone")
+                    .arg(rootPage.hearingTestData?.ear ? qsTrId("battery.hearing_test.right") : qsTrId("battery.hearing_test.left"))
+                    .arg(Number(rootPage.hearingTestData?.frequency ?? 0).toLocaleString(Qt.locale(), "f", 0))
+                wrapMode: Text.WordWrap
+            }
+            MP.Label {
+                Layout.fillWidth: true
+                text: qsTrId("battery.hearing_test.hint")
+                font.pixelSize: 13
+                color: MP.Theme.secondaryText
+                wrapMode: Text.WordWrap
+            }
+            QQC2.ProgressBar {
+                Layout.fillWidth: true
+                from: 0
+                to: rootPage.hearingTestData?.steps ?? 1
+                value: rootPage.hearingTestData?.step ?? 0
+                Accessible.name: qsTrId("battery.hearing_test")
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: MP.Units.smallSpacing
+                QQC2.Button {
+                    text: qsTrId("battery.hearing_test.heard")
+                    highlighted: true
+                    onClicked: hearingTestPanel.answer("heard")
+                }
+                QQC2.Button {
+                    text: qsTrId("battery.hearing_test.missed")
+                    onClicked: hearingTestPanel.answer("missed")
+                }
+                QQC2.Button {
+                    text: qsTrId("battery.hearing_test.repeat")
+                    flat: true
+                    onClicked: hearingTestPanel.answer("repeat")
+                }
+                QQC2.Button {
+                    text: qsTrId("battery.hearing_test.cancel")
+                    flat: true
+                    onClicked: hearingTestPanel.answer("cancel")
                 }
             }
         }

@@ -760,5 +760,85 @@
         <source></source>
         <translation>The app and the running daemon come from different builds. Restart the daemon (systemctl --user restart mypods-core) or remove the old installation.</translation>
     </message>
+    <message id="battery.codec_details">
+        <source></source>
+        <translation>Transmission:</translation>
+    </message>
+    <message id="battery.codec_details.khz">
+        <source></source>
+        <translation>%1 kHz</translation>
+    </message>
+    <message id="battery.codec_details.bits">
+        <source></source>
+        <translation>%1 bit</translation>
+    </message>
+    <message id="battery.codec_details.kbps">
+        <source></source>
+        <translation>%1 kbit/s</translation>
+    </message>
+    <message id="battery.equalizer.custom">
+        <source></source>
+        <translation>Custom</translation>
+    </message>
+    <message id="battery.equalizer_curve">
+        <source></source>
+        <translation>Frequency response of the effects</translation>
+    </message>
+    <message id="battery.equalizer_band">
+        <source></source>
+        <translation>%1 Hz band</translation>
+    </message>
+    <message id="battery.tilt">
+        <source></source>
+        <translation>Tone:</translation>
+    </message>
+    <message id="battery.tilt.warm">
+        <source></source>
+        <translation>Warmer</translation>
+    </message>
+    <message id="battery.tilt.bright">
+        <source></source>
+        <translation>Brighter</translation>
+    </message>
+    <message id="battery.hearing_test">
+        <source></source>
+        <translation>Hearing test:</translation>
+    </message>
+    <message id="battery.hearing_test.start">
+        <source></source>
+        <translation>Start</translation>
+    </message>
+    <message id="battery.hearing_test.hint">
+        <source></source>
+        <translation>Pause the music, find a quiet place and leave the volume as it is. Answer as soon as you hear the beeps, even faintly. The result sets up the hearing profile: a guide, not a medical test.</translation>
+    </message>
+    <message id="battery.hearing_test.tone">
+        <source></source>
+        <translation>%1, %2 Hz: do you hear the beeps?</translation>
+    </message>
+    <message id="battery.hearing_test.left">
+        <source></source>
+        <translation>Left ear</translation>
+    </message>
+    <message id="battery.hearing_test.right">
+        <source></source>
+        <translation>Right ear</translation>
+    </message>
+    <message id="battery.hearing_test.heard">
+        <source></source>
+        <translation>Heard</translation>
+    </message>
+    <message id="battery.hearing_test.missed">
+        <source></source>
+        <translation>Not heard</translation>
+    </message>
+    <message id="battery.hearing_test.repeat">
+        <source></source>
+        <translation>Play again</translation>
+    </message>
+    <message id="battery.hearing_test.cancel">
+        <source></source>
+        <translation>Cancel</translation>
+    </message>
 </context>
 </TS>

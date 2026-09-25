@@ -75,6 +75,7 @@ qt_add_qml_module(magicpods
         src/app/qml/components/Label.qml
         src/app/qml/components/NoiseControl.qml
         src/app/qml/components/Picker.qml
+        src/app/qml/components/ResponseCurve.qml
         src/app/qml/components/ScrollPage.qml
         src/app/qml/components/Toggle.qml
         src/app/qml/components/Separator.qml

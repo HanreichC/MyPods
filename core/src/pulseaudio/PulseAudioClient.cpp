@@ -192,6 +192,23 @@ namespace MagicPodsCore
         return volume;
     }
 
+    std::optional<SinkDetails> PulseAudioClient::GetSinkDetails(const std::string &name)
+    {
+        if (!Usable()) return std::nullopt;
+
+        std::optional<SinkDetails> details;
+        Lock lock{ml};
+        Wait(pa_context_get_sink_info_by_name(ctx, name.c_str(),
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                if (eol || !info)
+                    return;
+                const char *codec = pa_proplist_gets(info->proplist, "api.bluez5.codec");
+                *static_cast<std::optional<SinkDetails>*>(userdata) = SinkDetails{info->sample_spec.rate,
+                    pa_sample_format_to_string(info->sample_spec.format), info->sample_spec.channels, codec ? codec : ""};
+            }, &details));
+        return details;
+    }
+
     bool PulseAudioClient::SetSinkVolume(const std::string &name, double volume)
     {
         if (!Usable()) return false;

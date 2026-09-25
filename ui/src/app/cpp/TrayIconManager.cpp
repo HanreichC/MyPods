@@ -9,9 +9,11 @@
 #include "TrayIcon.h"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QApplication>
 #include <QIcon>
 #include <QMenu>
+#include <QRegularExpression>
 #include <QStringList>
 #include <QtGlobal>
 #include <algorithm>
@@ -145,6 +147,8 @@ void TrayIconManager::rebuildMenu()
     }
 
     menu->clear();
+    delete equalizerMenu; // clear() leaves submenus alive
+    equalizerMenu = nullptr;
 
     bool hasDynamicItems = false;
     if (backend->connected()) {
@@ -154,12 +158,15 @@ void TrayIconManager::rebuildMenu()
             hasDynamicItems = true;
 
             const QString address = headphone.value(QStringLiteral("address")).toString();
-            const QVariantMap ancData = ancDataForAddress(address);
+            const QVariantMap ancData = capabilityForAddress(address, QStringLiteral("anc"));
             if (!ancData.isEmpty()) {
                 menu->addSeparator();
                 addAncActions(address, ancData);
                 menu->addSeparator();
             }
+            const QVariantMap equalizer = capabilityForAddress(address, QStringLiteral("equalizer"));
+            if (!equalizer.isEmpty())
+                addEffectsActions(address, equalizer);
         }
     }
 
@@ -284,13 +291,13 @@ QList<QVariantMap> TrayIconManager::sortedHeadphones() const
     return headphones;
 }
 
-QVariantMap TrayIconManager::ancDataForAddress(const QString &address) const
+QVariantMap TrayIconManager::capabilityForAddress(const QString &address, const QString &name) const
 {
     if (address.isEmpty() || infoData.value(QStringLiteral("address")).toString() != address) {
         return {};
     }
 
-    return infoData.value(QStringLiteral("capabilities")).toMap().value(QStringLiteral("anc")).toMap();
+    return infoData.value(QStringLiteral("capabilities")).toMap().value(name).toMap();
 }
 
 void TrayIconManager::addHeadphoneAction(const QVariantMap &headphone)
@@ -345,6 +352,37 @@ void TrayIconManager::addAncAction(const QString &address,
     connect(action, &QAction::triggered, this, [this, address, value]() {
         backend->setAnc(address, value);
     });
+}
+
+void TrayIconManager::addEffectsActions(const QString &address, const QVariantMap &equalizer)
+{
+    // the row labels without their trailing colon
+    const auto title = [](const char *id) { return qtTrId(id).remove(QRegularExpression(QStringLiteral(":\\s*$"))); };
+    const bool readonly = equalizer.value(QStringLiteral("readonly")).toBool();
+    const QString selected = equalizer.value(QStringLiteral("selected")).toString();
+
+    equalizerMenu = menu->addMenu(title("battery.equalizer"));
+    equalizerMenu->setEnabled(!readonly);
+    auto *presets = new QActionGroup(equalizerMenu);
+    for (const QVariant &option : equalizer.value(QStringLiteral("options")).toList()) {
+        const QString name = option.toString();
+        QAction *action = equalizerMenu->addAction(name == QStringLiteral("Custom") ? qtTrId("battery.equalizer.custom") : name);
+        action->setCheckable(true);
+        action->setChecked(name == selected);
+        presets->addAction(action);
+        connect(action, &QAction::triggered, this, [this, address, name]() {
+            backend->setCapability(QStringLiteral("equalizer"), address, name, QStringLiteral("selected"));
+        });
+    }
+
+    QAction *bypass = menu->addAction(title("battery.bypass"));
+    bypass->setCheckable(true);
+    bypass->setChecked(equalizer.value(QStringLiteral("bypass")).toBool());
+    bypass->setEnabled(!readonly);
+    connect(bypass, &QAction::toggled, this, [this, address](bool on) {
+        backend->setCapability(QStringLiteral("equalizer"), address, on, QStringLiteral("bypass"));
+    });
+    menu->addSeparator();
 }
 
 QIcon TrayIconManager::iconFromAppAssets(const QString &fileName) const

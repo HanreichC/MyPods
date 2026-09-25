@@ -153,6 +153,8 @@ namespace MagicPodsCore {
         EffectsConfig LoadEffectsConfig();
         // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else ModelCorrection()
         std::vector<Biquad> Correction();
+        // The headphones' bluez sink, nullopt while there is none (not connected, A2DP off); blocking
+        std::optional<std::string> HeadphonesSink();
         // Headphone volume times the chain sink's volume, 1 = 100 %; blocking, never on the PulseAudio thread
         double ListeningVolume();
 

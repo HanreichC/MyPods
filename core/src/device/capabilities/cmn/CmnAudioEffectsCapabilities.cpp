@@ -4,6 +4,7 @@
 #include "CmnAudioEffectsCapabilities.h"
 #include "Logger.h"
 #include <algorithm>
+#include <cmath>
 #include <thread>
 
 namespace MagicPodsCore
@@ -62,6 +63,7 @@ namespace MagicPodsCore
     CmnEqualizerCapability::CmnEqualizerCapability(Device &device) : Capability("equalizer", false), device(device)
     {
         preset = device.LoadSettingString("equalizer").value_or("Off");
+        tilt = static_cast<int>(std::clamp<int64_t>(device.LoadSettingInt("tilt").value_or(0), -6, 6));
         corrected = device.LoadSettingInt("headphoneCorrection").value_or(0) != 0;
         crossfeed = device.LoadSettingInt("crossfeed").value_or(0) != 0;
         loudness = device.LoadSettingInt("loudness").value_or(0) != 0;
@@ -101,11 +103,28 @@ namespace MagicPodsCore
 
     nlohmann::json CmnEqualizerCapability::CreateJsonBody()
     {
-        nlohmann::json body{{"selected", preset}, {"options", AudioEffects::PresetNames()}, {"crossfeed", crossfeed},
+        auto options = AudioEffects::PresetNames();
+        options.push_back("Custom");
+        // ponytail: the curve shows the loudness compensation at full volume; the live one would need a blocking volume read here
+        auto config = device.LoadEffectsConfig();
+        nlohmann::json body{{"selected", preset}, {"options", options}, {"bands", config.eq}, {"tilt", tilt}, {"crossfeed", crossfeed},
                             {"loudness", loudness.load()}, {"hearing", hearing}, {"audiogramLeft", audiograms[0]},
                             {"audiogramRight", audiograms[1]}, {"bypass", device.effectsBypass.load()}};
-        if (!device.Correction().empty())
+        if (!config.correction.empty())
             body["correction"] = corrected;
+
+        // 40 points from 20 Hz to 20 kHz, a third of an octave apart at 0.1 dB, enough to draw
+        std::vector<double> freqs;
+        for (int i = 0; i < 40; i++)
+            freqs.push_back(20 * std::pow(1000.0, i / 39.0));
+        auto round = [](std::vector<double> db) { for (double &d : db) d = std::round(d * 10) / 10; return db; };
+        for (double &f : freqs)
+            f = std::round(f);
+        body["response"] = {{"frequencies", freqs}, {"left", round(AudioEffects::ResponseDb(config, 0, freqs))},
+                            {"right", round(AudioEffects::ResponseDb(config, 1, freqs))}};
+
+        if (test)
+            body["hearingTest"] = {{"ear", test->Ear()}, {"frequency", test->Frequency()}, {"step", test->Step()}, {"steps", HearingTest::STEPS}};
         return body;
     }
 
@@ -114,15 +133,57 @@ namespace MagicPodsCore
         if (!json.contains(name))
             return;
         const auto &capability = json.at(name);
+        if (capability.contains("hearingTest"))
+        {
+            if (capability["hearingTest"].is_string())
+                HearingTestCommand(capability["hearingTest"].get<std::string>());
+            return;
+        }
         if (capability.contains("selected"))
         {
-            if (!capability["selected"].is_string() || !AudioEffects::Preset(capability["selected"].get<std::string>()))
+            if (!capability["selected"].is_string() ||
+                (capability["selected"] != "Custom" && !AudioEffects::Preset(capability["selected"].get<std::string>())))
             {
                 Logger::Error("CmnEqualizerCapability::SetFromJson: unknown preset");
                 return;
             }
+            // the first "Custom" starts from the preset that was on, to edit it from there
+            if (capability["selected"] == "Custom" && !AudioEffects::ParseBands(device.LoadSettingString("customEq").value_or("")))
+            {
+                std::string text;
+                for (double g : device.LoadEffectsConfig().eq)
+                    text += std::to_string(g) + " ";
+                device.SaveSettingString("customEq", text);
+            }
             preset = capability["selected"].get<std::string>();
             device.SaveSettingString("equalizer", preset);
+        }
+        else if (capability.contains("custom"))
+        {
+            // the 10 bands as numbers; stored as text, the way ParseBands reads them back
+            const auto &bands = capability["custom"];
+            std::string text;
+            if (bands.is_array() && bands.size() == 10)
+                for (const auto &b : bands)
+                    text += (b.is_number() ? std::to_string(b.get<double>()) : "x") + " ";
+            if (!AudioEffects::ParseBands(text))
+            {
+                Logger::Error("CmnEqualizerCapability::SetFromJson: custom is 10 gains from -12 to 12 dB");
+                return;
+            }
+            device.SaveSettingString("customEq", text);
+            preset = "Custom";
+            device.SaveSettingString("equalizer", preset);
+        }
+        else if (capability.contains("tilt"))
+        {
+            if (!capability["tilt"].is_number_integer() || std::abs(capability["tilt"].get<int64_t>()) > 6)
+            {
+                Logger::Error("CmnEqualizerCapability::SetFromJson: tilt is -6 to 6 dB");
+                return;
+            }
+            tilt = capability["tilt"].get<int>();
+            device.SaveSettingInt("tilt", tilt);
         }
         else if (capability.contains("correction") && capability["correction"].is_boolean() && !device.Correction().empty())
         {
@@ -160,10 +221,59 @@ namespace MagicPodsCore
         }
         else
         {
-            Logger::Error("CmnEqualizerCapability::SetFromJson: expected selected, correction, crossfeed, loudness, hearing, audiogramLeft/Right or bypass");
+            Logger::Error("CmnEqualizerCapability::SetFromJson: expected selected, custom, tilt, correction, crossfeed, loudness, hearing, audiogramLeft/Right, bypass or hearingTest");
             return;
         }
         _onChanged.FireEvent(*this);
         device.RouteAudioAsync();
+    }
+
+    void CmnEqualizerCapability::HearingTestCommand(const std::string &command)
+    {
+        if (command == "start")
+            test.emplace();
+        else if (!test)
+            return;
+        else if (command == "heard" || command == "missed")
+            test->Answer(command == "heard");
+        else if (command == "cancel")
+            test.reset();
+        else if (command != "repeat")
+        {
+            Logger::Error("CmnEqualizerCapability: hearingTest is start, heard, missed, repeat or cancel");
+            return;
+        }
+
+        if (test && test->Done())
+        {
+            // the result goes straight into the hearing profile
+            for (int ear : {0, 1})
+            {
+                audiograms[ear] = test->Audiogram(ear);
+                device.SaveSettingString(ear ? "audiogramRight" : "audiogramLeft", audiograms[ear]);
+            }
+            hearing = true;
+            device.SaveSettingInt("hearingProfile", hearing);
+            test.reset();
+            _onChanged.FireEvent(*this);
+            device.RouteAudioAsync();
+            return;
+        }
+        _onChanged.FireEvent(*this);
+        if (test)
+            PlayTestTone();
+    }
+
+    void CmnEqualizerCapability::PlayTestTone()
+    {
+        auto sink = device.HeadphonesSink();
+        if (!sink)
+        {
+            Logger::Error("CmnEqualizerCapability: no headphones sink to play the test tone on");
+            return;
+        }
+        double volume = device.GetAudioClient()->GetSinkVolume(*sink).value_or(1);
+        double dbfs = AudioEffects::ToneDbfs(test->Level(), test->Frequency(), volume, device.LoadEffectsConfig().loudnessReference);
+        AudioEffects::Instance().PlayTone(*sink, test->Ear(), test->Frequency(), dbfs);
     }
 }

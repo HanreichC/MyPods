@@ -233,8 +233,10 @@ namespace MagicPodsCore {
         EffectsConfig config;
         config.spatial = static_cast<SpatialMode>(std::clamp<int64_t>(LoadSettingInt("spatialAudio").value_or(0), 0, HasHeadTracking() ? 2 : 1));
         config.surround = LoadSettingInt("surround").value_or(0) != 0;
-        if (auto gains = AudioEffects::Preset(LoadSettingString("equalizer").value_or("Off")))
+        auto preset = LoadSettingString("equalizer").value_or("Off");
+        if (auto gains = preset == "Custom" ? AudioEffects::ParseBands(LoadSettingString("customEq").value_or("")) : AudioEffects::Preset(preset))
             config.eq = *gains;
+        config.tilt = std::clamp<double>(LoadSettingInt("tilt").value_or(0), -6, 6);
         config.correction = Correction();
         config.corrected = LoadSettingInt("headphoneCorrection").value_or(0) != 0;
         config.crossfeed = LoadSettingInt("crossfeed").value_or(0) != 0;
@@ -272,12 +274,17 @@ namespace MagicPodsCore {
         return ModelCorrection();
     }
 
+    std::optional<std::string> Device::HeadphonesSink()
+    {
+        std::string mac = GetAddress();
+        std::replace(mac.begin(), mac.end(), ':', '_');
+        return GetAudioClient()->FindSink("bluez_output." + mac);
+    }
+
     double Device::ListeningVolume()
     {
         auto pac = GetAudioClient();
-        std::string mac = GetAddress();
-        std::replace(mac.begin(), mac.end(), ':', '_');
-        auto sink = pac->FindSink("bluez_output." + mac);
+        auto sink = HeadphonesSink();
         double volume = sink ? pac->GetSinkVolume(*sink).value_or(1) : 1;
         return volume * pac->GetSinkVolume(AudioEffects::SINK_NAME).value_or(1);
     }
@@ -288,9 +295,7 @@ namespace MagicPodsCore {
         std::lock_guard lock{routing};
 
         auto pac = GetAudioClient();
-        std::string mac = GetAddress();
-        std::replace(mac.begin(), mac.end(), ':', '_');
-        auto sink = pac->FindSink("bluez_output." + mac);
+        auto sink = HeadphonesSink();
         if (!sink)
         {
             AudioEffects::Instance().Stop();

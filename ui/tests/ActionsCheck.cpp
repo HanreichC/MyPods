@@ -34,6 +34,18 @@ int main()
     assert(Actions::request("move-here", Info(2, 2, true)).isEmpty()); // no automatic switching offered
     assert(Actions::request("noise-next", QJsonObject{}).isEmpty());  // no headphones connected
 
+    // Equalizer: next preset wraps around, an unknown one starts at the first; A/B toggles
+    auto eqInfo = [](const char *selected, bool bypass) {
+        return QJsonObject{{"address", "AA:BB"}, {"capabilities", QJsonObject{{"equalizer", QJsonObject{
+            {"selected", selected}, {"options", QJsonArray{"Off", "Rock", "Custom"}}, {"bypass", bypass}}}}}};
+    };
+    auto eqSelected = [](const QJsonObject &request) { return Change(request).value("equalizer").toObject().value("selected").toString(); };
+    assert(eqSelected(Actions::request("eq-next", eqInfo("Off", false))) == "Rock");
+    assert(eqSelected(Actions::request("eq-next", eqInfo("Custom", false))) == "Off");
+    assert(eqSelected(Actions::request("eq-next", eqInfo("Gone", false))) == "Off");
+    assert(Change(Actions::request("effects-bypass", eqInfo("Off", true))).value("equalizer").toObject().value("bypass") == false);
+    assert(Actions::request("eq-next", Info(2, 2, true)).isEmpty()); // headphones without effects
+
     std::puts("ActionsCheck: OK");
     return 0;
 }

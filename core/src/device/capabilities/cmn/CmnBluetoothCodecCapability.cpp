@@ -5,6 +5,7 @@
 #include "CmnBluetoothCodecCapability.h"
 #include "Logger.h"
 #include <chrono>
+#include <cmath>
 #include <thread>
 
 
@@ -22,7 +23,14 @@ namespace MagicPodsCore
             options.push_back({profile.first, profile.second});
         }        
         bodyJson["options"] = options;
-        
+        if (details)
+        {
+            bodyJson["details"] = {{"rate", details->rate}, {"format", details->format}, {"channels", details->channels}, {"codec", details->codec}};
+            // aptX packs 16 bits and aptX HD 24 bits 4:1, so their bitrate is fixed; LDAC, AAC and SBC adapt theirs
+            if (details->codec == "aptx" || details->codec == "aptx_hd")
+                bodyJson["details"]["kbps"] = static_cast<int>(std::lround(details->rate * details->channels * (details->codec == "aptx" ? 16 : 24) / 4 / 1000.0));
+        }
+
         return bodyJson;
     }
 
@@ -31,7 +39,9 @@ namespace MagicPodsCore
         {
             std::lock_guard lock{infoLock};
             info = {};
+            details.reset();
         }
+        detailsRequest++;
         Capability::Reset();
     }
 
@@ -63,6 +73,26 @@ namespace MagicPodsCore
         }
 
         _onChanged.FireEvent(*this);
+        UpdateDetails();
+    }
+
+    void CmnBluetoothCodecCapability::UpdateDetails()
+    {
+        std::thread([this, id = ++detailsRequest, keep = device.KeepAlive()]()
+        {
+            std::optional<SinkDetails> found;
+            // up to 3 s for PipeWire to recreate the sink with the new codec; none at all with A2DP off
+            for (int i = 0; i < 30 && id == detailsRequest; i++, std::this_thread::sleep_for(std::chrono::milliseconds(100)))
+                if (auto sink = device.HeadphonesSink(); sink && (found = device.GetAudioClient()->GetSinkDetails(*sink)))
+                    break;
+            {
+                std::lock_guard lock{infoLock};
+                if (id != detailsRequest || details == found)
+                    return;
+                details = found;
+            }
+            _onChanged.FireEvent(*this);
+        }).detach();
     }
 
     bool CmnBluetoothCodecCapability::IsValidSelected(const std::string &selected)

@@ -18,6 +18,10 @@ namespace MagicPodsCore
         std::mutex infoLock;
         std::mutex switching;
         std::atomic<int> request{0};
+        std::optional<SinkDetails> details; // what the headphones' sink plays, under infoLock
+        std::atomic<int> detailsRequest{0};
+        // Reads the sink's details on a worker: after a profile change the sink comes back a moment later
+        void UpdateDetails();
         void UpdateCodecInfo();
         void UpdateCardInfo(const CardInfo& newinfo);
         bool IsValidSelected(const std::string& selected);

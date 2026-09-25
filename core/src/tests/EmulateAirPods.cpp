@@ -237,8 +237,28 @@ int EmulateAirPods()
         Check("Generic: fixed speakers at +-30 degrees", WaitFor([&] { az = Azimuths(); return std::abs(az.first - 30) < 0.5 && std::abs(az.second - 330) < 0.5; }),
               std::to_string(az.first) + " " + std::to_string(az.second));
 
+        headphones->SetCapabilities({{"equalizer", {{"custom", {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}}}}});
+        Check("Generic: custom bands live in the chain", WaitFor([] { return Param("eqL9:Gain") == 10 && Param("eqR0:Gain") == 1; }, 2000),
+              std::to_string(Param("eqL9:Gain")));
+        headphones->SetCapabilities({{"equalizer", {{"tilt", 4}}}});
+        Check("Generic: tilt live in the chain", WaitFor([] { return Param("tlR1:Gain") == 2 && Param("tlL0:Gain") == -2; }, 2000),
+              std::to_string(Param("tlR1:Gain")));
+        auto eq = headphones->GetAsJson()["capabilities"]["equalizer"];
+        Check("Generic: the curve follows bands and tilt", eq["selected"] == "Custom" && eq["bands"][9] == 10 && eq["tilt"] == 4 &&
+                                                           eq["response"]["left"].size() == 40 && std::ranges::max(eq["response"]["left"].get<std::vector<double>>()) > 11,
+              eq["selected"].dump() + " " + eq["bands"].dump() + " " + eq["tilt"].dump() + " " + eq["response"]["left"].dump());
+        headphones->SetCapabilities({{"equalizer", {{"hearingTest", "start"}}}});
+        Check("Hearing test: a tone plays on the headphones, past the effects",
+              WaitFor([] { return Sh("pw-link -l").find(BLUEZ_SINK + ":playback_FL\n  |<- pw-play") != std::string::npos ||
+                                  Sh("pactl list sink-inputs").find("pw-play") != std::string::npos; }, 3000));
+        eq = headphones->GetAsJson()["capabilities"]["equalizer"];
+        Check("Hearing test: left ear, 250 Hz first", eq["hearingTest"]["ear"] == 0 && eq["hearingTest"]["frequency"] == 250, eq["hearingTest"].dump());
+        headphones->SetCapabilities({{"equalizer", {{"hearingTest", "cancel"}}}});
+        Check("Hearing test: cancelled", !headphones->GetAsJson()["capabilities"]["equalizer"].contains("hearingTest"));
+        headphones->SetCapabilities({{"equalizer", {{"tilt", 0}}}});
+
         info->GetConnectionStatus().SetValue(false);
-        Check("Generic: disconnected, chain gone and settings hidden", WaitFor([] { return Sh("pactl list short sinks | grep 'mypods_fx\s'").empty(); }) &&
+        Check("Generic: disconnected, chain gone and settings hidden", WaitFor([] { return Sh("pactl list short sinks | grep 'mypods_fx\\s'").empty(); }) &&
                                                                        !headphones->GetAsJson()["capabilities"].contains("equalizer"), Sh("pactl list short sinks"));
         info->GetConnectionStatus().SetValue(true);
         headphones->SetCapabilities({{"spatialAudio", {{"selected", 0}}}});

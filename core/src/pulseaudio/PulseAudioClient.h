@@ -30,6 +30,16 @@ namespace MagicPodsCore{
     }
     };
     
+    // What a sink plays: sample rate, format ("s24le"), channels and the Bluetooth codec PipeWire negotiated ("ldac", empty if none)
+    struct SinkDetails {
+        uint32_t rate = 0;
+        std::string format;
+        uint8_t channels = 0;
+        std::string codec;
+
+        bool operator==(const SinkDetails&) const = default;
+    };
+
     // Sound server access for codec display, output switching and effects. Windows has no A2DP/HFP
     // profiles or codecs to pick and routes to connected headphones itself, so there it's an empty
     // stub (PulseAudioClient_win.cpp) and the capabilities that need it stay hidden.
@@ -47,6 +57,7 @@ namespace MagicPodsCore{
             // Sink volume averaged over its channels, 1.0 = 100 %
             std::optional<double> GetSinkVolume(const std::string& name);
             bool SetSinkVolume(const std::string& name, double volume);
+            std::optional<SinkDetails> GetSinkDetails(const std::string& name);
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }
