@@ -232,9 +232,10 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         else if (ZikDevice::IsZikDevice(deviceInfo->GetUuids())) {
             newDevice = ZikDevice::Create(deviceInfo, _audioClient, _settingsService);
         }
-        //search headphones with handsfree service
+        //search headphones with handsfree service, or A2DP sink only (DIY headphones without a microphone)
         else if (auto uuids = deviceInfo->GetUuids();
-                std::find(uuids.begin(), uuids.end(), "0000111e-0000-1000-8000-00805f9b34fb") != uuids.end()) {
+                std::find(uuids.begin(), uuids.end(), "0000111e-0000-1000-8000-00805f9b34fb") != uuids.end() ||
+                std::find(uuids.begin(), uuids.end(), "0000110b-0000-1000-8000-00805f9b34fb") != uuids.end()) {
             newDevice = BhfDevice::Create(deviceInfo,_audioClient, _settingsService);
         }
 
