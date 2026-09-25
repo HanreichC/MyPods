@@ -511,6 +511,8 @@ int main(int argc, char** argv) {
         // so nothing else needs an orderly shutdown
         std::_Exit(0);
     }).detach();
+    // a chain a crashed run left behind would stay the default sink; the constructor ends it, now and not on first use
+    AudioEffects::Instance();
 #else
     // Bluetooth, media sessions and audio devices are WinRT/COM; every thread of the daemon joins this apartment
     winrt::init_apartment(winrt::apartment_type::multi_threaded);

@@ -247,7 +247,13 @@ int EmulateAirPods()
         Check("Generic: the curve follows bands and tilt", eq["selected"] == "Custom" && eq["bands"][9] == 10 && eq["tilt"] == 4 &&
                                                            eq["response"]["left"].size() == 40 && std::ranges::max(eq["response"]["left"].get<std::vector<double>>()) > 11,
               eq["selected"].dump() + " " + eq["bands"].dump() + " " + eq["tilt"].dump() + " " + eq["response"]["left"].dump());
+        Sh("pactl set-sink-volume " + BLUEZ_SINK + " 50%");
+        Sh("pactl set-sink-volume " + std::string(AudioEffects::SINK_NAME) + " 100%");
         headphones->SetCapabilities({{"equalizer", {{"hearingTest", "start"}}}});
+        Check("Hearing test: headphones to 100 %, the chain down by as much",
+              Sh("pactl get-sink-volume " + BLUEZ_SINK).find(" 100% ") != std::string::npos &&
+              Sh("pactl get-sink-volume " + std::string(AudioEffects::SINK_NAME)).find(" 50% ") != std::string::npos,
+              Sh("pactl get-sink-volume " + std::string(AudioEffects::SINK_NAME)));
         Check("Hearing test: a tone plays on the headphones, past the effects",
               WaitFor([] { return Sh("pw-link -l").find(BLUEZ_SINK + ":playback_FL\n  |<- pw-play") != std::string::npos ||
                                   Sh("pactl list sink-inputs").find("pw-play") != std::string::npos; }, 3000));
@@ -265,6 +271,34 @@ int EmulateAirPods()
         headphones->SetCapabilities({{"equalizer", {{"selected", "Off"}}}});
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached routing threads finish before the device goes
         Check("Generic: effects off, headphones are the default sink again", defaultSinkIs(BLUEZ_SINK), sink);
+
+        // without a chain the volume keys set the headphones; too low for the tone, it waits instead of playing cut down
+        auto tone = [] { return Sh("pactl list sink-inputs").find("pw-play") != std::string::npos; };
+        WaitFor([&] { return !tone(); }, 3000);
+        Sh("pactl set-sink-volume " + BLUEZ_SINK + " 5%");
+        headphones->SetCapabilities({{"equalizer", {{"hearingTest", "start"}}}});
+        headphones->SetCapabilities({{"equalizer", {{"hearingTest", "missed"}}}});
+        eq = headphones->GetAsJson()["capabilities"]["equalizer"];
+        Check("Hearing test: too quiet, no tone and no answer", eq["hearingTest"]["tooQuiet"] == true && eq["hearingTest"]["step"] == 0 && !WaitFor(tone, 1000),
+              eq["hearingTest"].dump());
+        Sh("pactl set-sink-volume " + BLUEZ_SINK + " 100%");
+        headphones->SetCapabilities({{"equalizer", {{"hearingTest", "repeat"}}}});
+        eq = headphones->GetAsJson()["capabilities"]["equalizer"];
+        Check("Hearing test: turned up, the tone plays", eq["hearingTest"]["tooQuiet"] == false && WaitFor(tone, 3000), eq["hearingTest"].dump());
+        info->GetConnectionStatus().SetValue(false);
+        info->GetConnectionStatus().SetValue(true);
+        Check("Hearing test: gone after the headphones went away", !headphones->GetAsJson()["capabilities"]["equalizer"].contains("hearingTest"));
+
+        // effects switched off leave a flat chain as the default sink; it has to go with the headphones
+        headphones->SetCapabilities({{"equalizer", {{"crossfeed", true}}}});
+        Check("Generic: crossfeed starts the chain", defaultSinkIs(AudioEffects::SINK_NAME), sink);
+        headphones->SetCapabilities({{"equalizer", {{"crossfeed", false}}}});
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached routing thread
+        Check("Generic: crossfeed off, the flat chain stays", Sh("pactl get-default-sink") == AudioEffects::SINK_NAME);
+        info->GetConnectionStatus().SetValue(false);
+        Check("Generic: disconnected with a flat chain, the chain goes", WaitFor([] { return Sh("pactl list short sinks | grep 'mypods_fx\\s'").empty(); }),
+              Sh("pactl list short sinks"));
+        info->GetConnectionStatus().SetValue(true);
         AudioEffects::Instance().Stop();
     }
 

@@ -599,6 +599,14 @@ Components.ScrollPage {
                 color: MP.Theme.secondaryText
                 wrapMode: Text.WordWrap
             }
+            // the tone needs more volume than is set, so it didn't play
+            MP.Label {
+                Layout.fillWidth: true
+                visible: rootPage.hearingTestData?.tooQuiet ?? false
+                text: qsTrId("battery.hearing_test.too_quiet")
+                color: MP.Theme.orange
+                wrapMode: Text.WordWrap
+            }
             QQC2.ProgressBar {
                 Layout.fillWidth: true
                 from: 0
@@ -612,10 +620,12 @@ Components.ScrollPage {
                 QQC2.Button {
                     text: qsTrId("battery.hearing_test.heard")
                     highlighted: true
+                    enabled: !(rootPage.hearingTestData?.tooQuiet ?? false)
                     onClicked: hearingTestPanel.answer("heard")
                 }
                 QQC2.Button {
                     text: qsTrId("battery.hearing_test.missed")
+                    enabled: !(rootPage.hearingTestData?.tooQuiet ?? false)
                     onClicked: hearingTestPanel.answer("missed")
                 }
                 QQC2.Button {

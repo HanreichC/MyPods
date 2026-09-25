@@ -812,6 +812,10 @@
         <source></source>
         <translation>Pause the music, find a quiet place and leave the volume as it is. Answer as soon as you hear the beeps, even faintly. The result sets up the hearing profile: a guide, not a medical test.</translation>
     </message>
+    <message id="battery.hearing_test.too_quiet">
+        <source></source>
+        <translation>This tone needs more volume. Turn the headphones up, then Play again.</translation>
+    </message>
     <message id="battery.hearing_test.tone">
         <source></source>
         <translation>%1, %2 Hz: do you hear the beeps?</translation>

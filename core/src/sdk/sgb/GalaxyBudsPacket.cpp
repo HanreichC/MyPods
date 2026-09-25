@@ -79,7 +79,6 @@ namespace MagicPodsCore
         else
         {
             unsigned short header = (static_cast<unsigned short>(buffer[2]) << 8) | buffer[1]; // to big Endian
-            bool isFragment = (header & 0x2000) != 0;
             type = (header & 0x1000) != 0 ? GalaxyBudsMsgTypes::Request : GalaxyBudsMsgTypes::Response;
             size = header & 0x3FF;
         }
@@ -92,12 +91,7 @@ namespace MagicPodsCore
         GalaxyBudsMsgIds id = static_cast<GalaxyBudsMsgIds>(idChar);
 
         // packet size -id - CRC1 - CRC2
-        uint16_t payloadSize = size - 3;
-        if (payloadSize < 0)
-        {
-            payloadSize = 0;
-            size = 3;
-        }
+        uint16_t payloadSize = size - 3; // PacketSize >= 3, checked on entry
 
         std::vector<unsigned char> crcData;
         crcData.reserve(size);

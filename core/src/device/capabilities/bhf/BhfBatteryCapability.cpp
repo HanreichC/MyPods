@@ -33,8 +33,8 @@ namespace MagicPodsCore
     }
 
     BhfBatteryCapability::BhfBatteryCapability(BhfDevice& device) : Capability("battery", true),
-                                                                    device(device),
-                                                                    battery(true)
+                                                                    battery(true),
+                                                                    device(device)
     {
 
         onHandsFreeBatteryPropertyChangedId = device.GetHandsFreeBatteryPropertyChangedEvent().Subscribe([this](size_t id, const uint8_t level){

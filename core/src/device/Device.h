@@ -150,6 +150,8 @@ namespace MagicPodsCore {
         void RouteAudio();
         // RouteAudio on a worker thread, if this computer plays to the connected headphones
         void RouteAudioAsync();
+        // Takes the effect chain away if it plays into these headphones; another pair's chain stays
+        void StopEffects();
         EffectsConfig LoadEffectsConfig();
         // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else ModelCorrection()
         std::vector<Biquad> Correction();

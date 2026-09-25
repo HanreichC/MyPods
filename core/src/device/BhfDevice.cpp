@@ -46,9 +46,9 @@ namespace MagicPodsCore
         });
         device->GetConnectedPropertyChangedEvent().Subscribe([raw](size_t, bool connected)
         {
-            // ponytail: one chain for all headphones (AudioEffects), so this also stops it for other headphones playing with effects
-            if (!connected && !raw->LoadEffectsConfig().IsNeutral())
-                AudioEffects::Instance().Stop();
+            // also a flat chain (effects switched off while connected) goes: it would stay the default sink, playing nowhere
+            if (!connected)
+                raw->StopEffects();
         });
 #endif
         device->Init();

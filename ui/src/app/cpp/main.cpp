@@ -77,10 +77,13 @@ static int runAction(int argc, char *argv[], const QString &action) {
     QObject::connect(&socket, &QWebSocket::connected, &app, [&]() {
         socket.sendTextMessage(QStringLiteral(R"({"method":"GetActiveDeviceInfo"})"));
     });
+    bool sent = false;
     QObject::connect(&socket, &QWebSocket::textMessageReceived, &app, [&](const QString &message) {
         const QJsonObject json = QJsonDocument::fromJson(message.toUtf8()).object();
-        if (!json.contains(QStringLiteral("info")))
-            return; // the handshake and broadcasts
+        // the socket also gets the broadcasts, among them the change just sent: acting on it again would undo a toggle
+        if (sent || !json.contains(QStringLiteral("info")))
+            return;
+        sent = true;
         const QJsonObject request = Actions::request(action, json.value(QStringLiteral("info")).toObject());
         if (request.isEmpty()) {
             std::fprintf(stderr, "No connected headphones that can do \"%s\"\n", qUtf8Printable(action));

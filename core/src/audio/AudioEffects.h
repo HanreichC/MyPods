@@ -71,6 +71,9 @@ namespace MagicPodsCore
         // Returns the sink applications should play to.
         std::string Apply(const std::string &sink, const std::string &description, EffectsConfig config);
         void Stop();
+        // Stop() if the chain plays into a sink whose name contains `sinkPart`: there is one chain for all
+        // headphones, and one pair going away must not take it from another
+        void StopFor(const std::string &sinkPart);
 
         // Head tracking: rotates the virtual speakers against the head so the sound stays anchored to the screen.
         void SetYaw(double degrees);
@@ -78,6 +81,7 @@ namespace MagicPodsCore
         void SetVolume(double volume);
         // Hearing test: a pulsed sine on one ear (0 = left) at `dbfs`, straight into `sink`, past the effects
         void PlayTone(const std::string &sink, int ear, double freq, double dbfs);
+        static constexpr double TONE_MAX_DBFS = -1; // the loudest tone PlayTone plays, louder ones are cut to it
 
         static std::vector<std::string> PresetNames();
         static std::optional<std::array<double, 10>> Preset(const std::string &name);
@@ -142,6 +146,8 @@ namespace MagicPodsCore
         static constexpr int STEPS = 2 * FREQS.size();
         bool Done() const { return ear > 1; }
         void Answer(bool heard);
+        // The tone is louder than the headphones play at full volume: no response at the loudest tone
+        void Unplayable() { Next(level); }
         // "20 25 30 40 55 60" per ear, what ParseAudiogram reads
         std::string Audiogram(int ear) const;
 

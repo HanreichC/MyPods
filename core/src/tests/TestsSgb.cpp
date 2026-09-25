@@ -51,7 +51,6 @@ bool TestsSgb::TestFindByGuid1()
         "d908aab5-7a90-4cbe-8641-86a553db0147",
         std::string(GalaxyBudsHelper::GALAXYBUDSNEW),
     };
-    GalaxyBudsHelper helper;
     std::pair<GalaxyBudsModelIds, std::string> pairModelColor = GalaxyBudsHelper::SearchModelColor(guids, "");
 
     return pairModelColor.first == GalaxyBudsModelIds::GalaxyBuds2Pro &&
@@ -64,7 +63,6 @@ bool TestsSgb::TestFindByGuid2()
         "d908aab5-7a90-4cbe-8641-86a553db0154",
         std::string(GalaxyBudsHelper::GALAXYBUDSNEW),
     };
-    GalaxyBudsHelper helper;
     std::pair<GalaxyBudsModelIds, std::string> pairModelColor = GalaxyBudsHelper::SearchModelColor(guids, "");
 
     return pairModelColor.first == GalaxyBudsModelIds::GalaxyBuds3Pro &&

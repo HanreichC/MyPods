@@ -235,6 +235,12 @@ TestsAapAudio::TestsAapAudio()
     Test("Hearing test: finds the thresholds", measure({25, 60, 0, -10, 45, 70}, {10, 10, 15, 20, 30, 40}) ==
                                                std::pair<std::string, std::string>{"25 60 0 -10 45 70", "10 10 15 20 30 40"});
     Test("Hearing test: deaf above the loudest tone ends there", measure({120, 120, 120, 120, 120, 120}, {0, 0, 0, 0, 0, 0}).first == "90 90 90 90 90 90");
+    HearingTest capped;
+    capped.Answer(false); // 30 missed, 35 next
+    capped.Answer(false); // 35 missed, 40 next
+    capped.Unplayable();  // 40 is past what the headphones play at full volume
+    Test("Hearing test: a tone past full volume ends that frequency there", capped.Frequency() == 500 && capped.Level() == HearingTest::START_DB &&
+                                                                            capped.Audiogram(0).starts_with("40 "));
     Test("Hearing test: its audiogram feeds the hearing profile", AudioEffects::ParseAudiogram(measure({25, 60, 0, -10, 45, 70}, {}).first).has_value());
     Test("Hearing test: 30 dB HL at 1 kHz, 100 % volume", std::abs(AudioEffects::ToneDbfs(30, 1000, 1, 90) + 53) < 1e-9 &&
                                                          std::abs(AudioEffects::ToneDbfs(30, 1000, 0.5, 90) - AudioEffects::ToneDbfs(30, 1000, 1, 90) - 60 * std::log10(2)) < 1e-9);

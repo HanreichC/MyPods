@@ -5,6 +5,7 @@
 #include "../Capability.h"
 #include "device/Device.h"
 #include <atomic>
+#include <mutex>
 #include <optional>
 
 namespace MagicPodsCore
@@ -43,8 +44,13 @@ namespace MagicPodsCore
         Device &device;
         std::string preset;
         int tilt;
+        std::mutex testLock; // the test is driven from the WebSocket loop and ends on the D-Bus thread when the headphones go
         std::optional<HearingTest> test; // running hearing test
+        bool tooQuiet = false; // the current tone is louder than the headphones' volume allows, so it didn't play
+        // Plays the current tone, skipping those the headphones can't play even at full volume; under testLock
         void PlayTestTone();
+        // With the effect chain in front the volume keys move the chain's sink: the headphones go to 100 % for the tones
+        void GiveTonesHeadroom();
         // the hearing test's commands: start, heard, missed, repeat, cancel
         void HearingTestCommand(const std::string &command);
         bool corrected;

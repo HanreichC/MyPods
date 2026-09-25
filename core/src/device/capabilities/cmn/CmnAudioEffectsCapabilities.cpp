@@ -75,7 +75,12 @@ namespace MagicPodsCore
         onConnectedId = device.GetConnectedPropertyChangedEvent().Subscribe([this](size_t, bool connected)
         {
             if (!connected)
+            {
+                // a test from before would come back without its tone
+                std::lock_guard lock{testLock};
+                test.reset();
                 return Reset();
+            }
             isAvailable = true;
             _onChanged.FireEvent(*this);
         });
@@ -123,8 +128,10 @@ namespace MagicPodsCore
         body["response"] = {{"frequencies", freqs}, {"left", round(AudioEffects::ResponseDb(config, 0, freqs))},
                             {"right", round(AudioEffects::ResponseDb(config, 1, freqs))}};
 
+        std::lock_guard lock{testLock};
         if (test)
-            body["hearingTest"] = {{"ear", test->Ear()}, {"frequency", test->Frequency()}, {"step", test->Step()}, {"steps", HearingTest::STEPS}};
+            body["hearingTest"] = {{"ear", test->Ear()}, {"frequency", test->Frequency()}, {"step", test->Step()}, {"steps", HearingTest::STEPS},
+                                   {"tooQuiet", tooQuiet}};
         return body;
     }
 
@@ -230,42 +237,70 @@ namespace MagicPodsCore
 
     void CmnEqualizerCapability::HearingTestCommand(const std::string &command)
     {
-        if (command == "start")
-            test.emplace();
-        else if (!test)
-            return;
-        else if (command == "heard" || command == "missed")
-            test->Answer(command == "heard");
-        else if (command == "cancel")
-            test.reset();
-        else if (command != "repeat")
+        bool finished = false;
         {
-            Logger::Error("CmnEqualizerCapability: hearingTest is start, heard, missed, repeat or cancel");
-            return;
-        }
-
-        if (test && test->Done())
-        {
-            // the result goes straight into the hearing profile
-            for (int ear : {0, 1})
+            std::lock_guard lock{testLock};
+            if (command == "start")
             {
-                audiograms[ear] = test->Audiogram(ear);
-                device.SaveSettingString(ear ? "audiogramRight" : "audiogramLeft", audiograms[ear]);
+                test.emplace();
+                GiveTonesHeadroom();
             }
-            hearing = true;
-            device.SaveSettingInt("hearingProfile", hearing);
-            test.reset();
-            _onChanged.FireEvent(*this);
-            device.RouteAudioAsync();
-            return;
+            else if (!test)
+                return;
+            else if (command == "heard" || command == "missed")
+            {
+                if (tooQuiet)
+                {
+                    Logger::Error("CmnEqualizerCapability: the tone did not play, the volume is too low for it");
+                    return;
+                }
+                test->Answer(command == "heard");
+            }
+            else if (command == "cancel")
+                test.reset();
+            else if (command != "repeat")
+            {
+                Logger::Error("CmnEqualizerCapability: hearingTest is start, heard, missed, repeat or cancel");
+                return;
+            }
+
+            if (test && !test->Done())
+                PlayTestTone();
+            if (test && test->Done())
+            {
+                // the result goes straight into the hearing profile
+                for (int ear : {0, 1})
+                {
+                    audiograms[ear] = test->Audiogram(ear);
+                    device.SaveSettingString(ear ? "audiogramRight" : "audiogramLeft", audiograms[ear]);
+                }
+                hearing = true;
+                device.SaveSettingInt("hearingProfile", hearing);
+                test.reset();
+                finished = true;
+            }
         }
         _onChanged.FireEvent(*this);
-        if (test)
-            PlayTestTone();
+        if (finished)
+            device.RouteAudioAsync();
+    }
+
+    void CmnEqualizerCapability::GiveTonesHeadroom()
+    {
+        // Music plays through the chain at headphones x chain volume, so both change by the same factor and the music stays as
+        // loud; the tones go straight to the headphones and get their full range. Without a chain the volume keys do it.
+        auto pac = device.GetAudioClient();
+        auto sink = device.HeadphonesSink();
+        auto chain = pac->GetSinkVolume(AudioEffects::SINK_NAME);
+        auto headphones = sink ? pac->GetSinkVolume(*sink) : std::nullopt;
+        // chain down first, so nothing plays louder in between
+        if (chain && headphones && *headphones < 1 && pac->SetSinkVolume(AudioEffects::SINK_NAME, *chain * *headphones))
+            pac->SetSinkVolume(*sink, 1);
     }
 
     void CmnEqualizerCapability::PlayTestTone()
     {
+        tooQuiet = false;
         auto sink = device.HeadphonesSink();
         if (!sink)
         {
@@ -273,7 +308,20 @@ namespace MagicPodsCore
             return;
         }
         double volume = device.GetAudioClient()->GetSinkVolume(*sink).value_or(1);
-        double dbfs = AudioEffects::ToneDbfs(test->Level(), test->Frequency(), volume, device.LoadEffectsConfig().loudnessReference);
-        AudioEffects::Instance().PlayTone(*sink, test->Ear(), test->Frequency(), dbfs);
+        double reference = device.LoadEffectsConfig().loudnessReference;
+        while (!test->Done())
+        {
+            double dbfs = AudioEffects::ToneDbfs(test->Level(), test->Frequency(), volume, reference);
+            if (dbfs <= AudioEffects::TONE_MAX_DBFS)
+                return AudioEffects::Instance().PlayTone(*sink, test->Ear(), test->Frequency(), dbfs);
+            // Played cut down, a missed tone would count as missed at a level it never had. Turning the headphones up helps
+            // (the UI asks for it, then "repeat"); at full volume the tone is past what they can play.
+            if (volume < 0.99)
+            {
+                tooQuiet = true;
+                return;
+            }
+            test->Unplayable();
+        }
     }
 }

@@ -29,7 +29,7 @@ namespace MagicPodsCore {
         if (capabilityEventIds.size() != capabilities.size())
             throw std::runtime_error("Size of capabilityEventIds and capabilities different");
 
-        for (int i=0; i<capabilities.size(); i++){
+        for (size_t i=0; i<capabilities.size(); i++){
             auto& c = capabilities[i];
             c->GetChangedEvent().Unsubscribe(capabilityEventIds[i]);
         }
@@ -274,11 +274,21 @@ namespace MagicPodsCore {
         return ModelCorrection();
     }
 
+    // What the headphones' bluez sink name contains: "bluez_output.AA_BB_CC_DD_EE_FF"
+    static std::string SinkPart(std::string mac)
+    {
+        std::replace(mac.begin(), mac.end(), ':', '_');
+        return "bluez_output." + mac;
+    }
+
     std::optional<std::string> Device::HeadphonesSink()
     {
-        std::string mac = GetAddress();
-        std::replace(mac.begin(), mac.end(), ':', '_');
-        return GetAudioClient()->FindSink("bluez_output." + mac);
+        return GetAudioClient()->FindSink(SinkPart(GetAddress()));
+    }
+
+    void Device::StopEffects()
+    {
+        AudioEffects::Instance().StopFor(SinkPart(GetAddress()));
     }
 
     double Device::ListeningVolume()
@@ -298,7 +308,7 @@ namespace MagicPodsCore {
         auto sink = HeadphonesSink();
         if (!sink)
         {
-            AudioEffects::Instance().Stop();
+            StopEffects();
             return;
         }
         auto config = LoadEffectsConfig();

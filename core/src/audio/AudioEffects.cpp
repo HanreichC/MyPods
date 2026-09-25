@@ -714,6 +714,7 @@ namespace MagicPodsCore
     AudioEffects::~AudioEffects() = default;
     std::string AudioEffects::Apply(const std::string &sink, const std::string &, EffectsConfig) { return sink; }
     void AudioEffects::Stop() {}
+    void AudioEffects::StopFor(const std::string &) {}
     void AudioEffects::StopLocked() {}
     void AudioEffects::SetYaw(double) {}
     void AudioEffects::SetVolume(double) {}
@@ -863,6 +864,13 @@ namespace MagicPodsCore
         StopLocked();
     }
 
+    void AudioEffects::StopFor(const std::string &sinkPart)
+    {
+        std::lock_guard lock{_lock};
+        if (!_sink.empty() && _sink.find(sinkPart) != std::string::npos)
+            StopLocked();
+    }
+
     void AudioEffects::StopLocked()
     {
         if (_ctlFd >= 0)
@@ -908,7 +916,7 @@ namespace MagicPodsCore
         Kill(_tone);
         // three 300 ms beeps: a pulsed tone stands out from tinnitus and background better than a steady one
         constexpr int RATE = 48000, BEEP = RATE * 3 / 10, GAP = RATE / 5, RAMP = RATE / 50;
-        double amplitude = std::pow(10.0, std::min(dbfs, -1.0) / 20); // the loudest the file can hold without clipping
+        double amplitude = std::pow(10.0, std::min(dbfs, TONE_MAX_DBFS) / 20); // the loudest the file can hold without clipping
         std::vector<float> samples(2 * 3 * (BEEP + GAP));
         for (int beep = 0; beep < 3; beep++)
             for (int i = 0; i < BEEP; i++)

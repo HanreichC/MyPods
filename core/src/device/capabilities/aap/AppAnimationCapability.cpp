@@ -182,18 +182,14 @@ namespace MagicPodsCore
 
     uint8_t AppAnimationCapability::ClampBattery(uint8_t value)
     {
-        if (value < 0)
-            value = 0;
-        else if (value > 10)
+        if (value > 10)
             value = 0; // disconnected
         return value * 10;
     }
 
     uint8_t AppAnimationCapability::ClampNativeBattery(uint8_t value)
     {
-        if (value < 0)
-            value = 0;
-        else if (value > 100)
+        if (value > 100)
             value = 0; // disconnected
         return value;
     }
@@ -208,7 +204,7 @@ namespace MagicPodsCore
             return std::nullopt;
 
         // Data is corrupted
-        if (buffer[1] + 2 != buffer.size())
+        if (buffer[1] + 2u != buffer.size())
             return std::nullopt;
 
         uint16_t leModel = (static_cast<uint16_t>(buffer[4]) << 8) | buffer[3];

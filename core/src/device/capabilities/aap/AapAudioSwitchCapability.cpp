@@ -202,7 +202,7 @@ namespace MagicPodsCore
         device.ownsAudio = true;
         released = false;
         sourceType = 0;
-        AudioEffects::Instance().Stop();
+        device.StopEffects();
         AapCapability::Reset();
     }
 
@@ -295,7 +295,7 @@ namespace MagicPodsCore
             if (!info || info->activeProfile == "off")
                 return;
             MprisClient::Instance().PausePlaying();
-            AudioEffects::Instance().Stop();
+            device.StopEffects();
             pac->SetCardProfile(card, "off");
         }).detach();
     }
