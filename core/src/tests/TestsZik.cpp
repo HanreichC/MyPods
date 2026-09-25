@@ -52,9 +52,12 @@ TestsZik::TestsZik()
     Test("Zik invalid_on is on", Zik::BoolAttr(R"(<anc_phone_mode enabled="invalid_on"/>)", "anc_phone_mode", "enabled") == true);
     Test("Zik notify path", Zik::Attr(notify, "notify", "path") == "/api/audio/noise_control/get");
 
-    Test("Zik equalizer off is flat", ZikEqualizerCapability::ThumbEqualizerArg("Off") == "0.0,0.0,0.0,0.0,0.0,0,0");
+    Test("Zik equalizer off is flat", ZikEqualizerCapability::ThumbEqualizerArg(ZikEqualizerCapability::Gains("Off")) == "0.0,0.0,0.0,0.0,0.0,0,0");
     // Bass Booster {5.5, 4.25, 3.5, 2.5, 1.25, 0...}: band pairs averaged, then doubled
-    Test("Zik equalizer bass booster", ZikEqualizerCapability::ThumbEqualizerArg("Bass Booster") == "9.8,6.0,1.2,0.0,0.0,0,0");
+    Test("Zik equalizer bass booster", ZikEqualizerCapability::ThumbEqualizerArg(ZikEqualizerCapability::Gains("Bass Booster")) == "9.8,6.0,1.2,0.0,0.0,0,0");
+    Test("Zik equalizer custom bands", ZikEqualizerCapability::ThumbEqualizerArg(*ZikEqualizerCapability::ParseCustom("3 -1.5 0 12 -12")) == "3.0,-1.5,0.0,12.0,-12.0,0,0");
+    Test("Zik equalizer custom refuses the wrong count or range", !ZikEqualizerCapability::ParseCustom("1 2 3 4") && !ZikEqualizerCapability::ParseCustom("1 2 3 4 5 6") &&
+                                                                  !ZikEqualizerCapability::ParseCustom("0 0 0 0 12.5") && !ZikEqualizerCapability::ParseCustom(""));
 
     // Captured from a Zik 2 (fw 2.05) after noise_control/set?arg=off: an answer carrying a notify
     // must still complete the request, or the queue stalls

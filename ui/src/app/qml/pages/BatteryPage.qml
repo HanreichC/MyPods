@@ -390,20 +390,22 @@ Components.ScrollPage {
             Accessible.name: qsTrId("battery.equalizer_curve")
         }
 
-        // "Custom": the 10 bands by hand, sent when a slider is let go (or moved with the keyboard)
+        // "Custom": the bands by hand (10 on this computer, 5 on the Zik), sent when a slider is let go (or moved with the keyboard)
         RowLayout {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.selected === "Custom"
             spacing: 0
 
             Repeater {
-                model: ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
+                // centers in Hz as the core sends them, "1k" style
+                model: (rootPage.equalizerData?.frequencies ?? [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000])
+                    .map(f => f >= 1000 ? Number(f / 1000).toLocaleString(Qt.locale(), "f", f % 1000 ? 1 : 0) + "k" : String(f))
                 delegate: ColumnLayout {
                     id: band
                     required property string modelData
                     required property int index
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 1 // all ten equally wide, whatever their labels say
+                    Layout.preferredWidth: 1 // all equally wide, whatever their labels say
                     spacing: 2
 
                     function send() {

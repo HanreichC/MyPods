@@ -99,7 +99,8 @@ service UUID.
   "Off" option, because it mutes the Zik 2.
 - Head detection (auto-pause)
 - Concert Hall effect with room size (silent, living, jazz, concert) and angle (30°–180°)
-- Equalizer on the headphone's DSP, using the same presets as the AirPods equalizer
+- Equalizer on the headphone's DSP, using the same presets as the AirPods equalizer, or your own
+  setting of its 5 bands ("Custom"); it stays in the headphones
 - Smart Audio Tune, ANC during phone calls, voice prompts, auto connection, auto power off
 
 ### Samsung Galaxy Buds

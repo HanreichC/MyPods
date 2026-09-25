@@ -7,6 +7,7 @@
 
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
+#include "device/ZikDevice.h"
 #include "device/capabilities/aap/AapAudioEffectsCapabilities.h"
 #include "audio/AudioEffects.h"
 #include "Logger.h"
@@ -269,6 +270,33 @@ int EmulateAirPods()
               Sh("pactl list short sinks"));
         info->GetConnectionStatus().SetValue(true);
         AudioEffects::Instance().Stop();
+    }
+
+    // Parrot Zik: its own 5-band equalizer on the headphones, "Custom" included (no audio path, the answers are fed in)
+    std::filesystem::remove(settingsPath);
+    {
+        std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces{{"org.bluez.Device1", {
+            {"Address", sdbus::Variant{MAC}},
+            {"Name", sdbus::Variant{std::string("Zik 2.0 (emuliert)")}},
+            {"Connected", sdbus::Variant{false}}, // no RFCOMM attempts; requests just queue
+        }}};
+        auto info = std::make_shared<DBusDeviceInfo>(sdbus::ObjectPath{"/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"}, interfaces);
+        auto zik = ZikDevice::Create(info, std::make_shared<PulseAudioClient>(), std::make_shared<SettingsService>(settingsPath.string()));
+        auto answer = [&](bool on) { zik->GetAnswerEvent().FireEvent(std::string(R"(<answer path="/api/audio/equalizer/enabled/get"><audio><equalizer enabled=")") +
+                                                                     (on ? "true" : "false") + R"("/></audio></answer>)"); };
+        answer(false);
+        auto eq = zik->GetAsJson()["capabilities"]["equalizer"];
+        Check("Zik: Custom offered, 5 bands", eq["options"].back() == "Custom" && eq["frequencies"].size() == 5 && eq["bands"].size() == 5, eq.dump());
+        zik->SetCapabilities({{"equalizer", {{"selected", "Bass Booster"}}}});
+        zik->SetCapabilities({{"equalizer", {{"selected", "Custom"}}}});
+        answer(true);
+        eq = zik->GetAsJson()["capabilities"]["equalizer"];
+        Check("Zik: the first Custom starts from the preset", eq["selected"] == "Custom" && eq["bands"][0] == 9.75 && eq["bands"][1] == 6.0, eq.dump());
+        zik->SetCapabilities({{"equalizer", {{"custom", {3, -1.5, 0, 12, -12}}}}});
+        eq = zik->GetAsJson()["capabilities"]["equalizer"];
+        Check("Zik: own bands kept", eq["selected"] == "Custom" && eq["bands"] == nlohmann::json({3.0, -1.5, 0.0, 12.0, -12.0}), eq.dump());
+        zik->SetCapabilities({{"equalizer", {{"custom", {3, 0, 0, 0, 13}}}}});
+        Check("Zik: out of range refused", zik->GetAsJson()["capabilities"]["equalizer"]["bands"][4] == -12.0);
     }
 
     if (!previousDefault.empty())

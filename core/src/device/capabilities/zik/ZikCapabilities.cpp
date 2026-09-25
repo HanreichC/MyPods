@@ -4,7 +4,9 @@
 #include "device/enums/DeviceAncModes.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
+#include <sstream>
 
 namespace MagicPodsCore
 {
@@ -155,22 +157,52 @@ namespace MagicPodsCore
     // not harsh, the unscaled presets were barely audible), hence the factor. Retune if it's too much.
     constexpr double ZikGainScale = 2.0;
 
-    std::string ZikEqualizerCapability::ThumbEqualizerArg(const std::string &preset)
+    std::array<double, 5> ZikEqualizerCapability::Gains(const std::string &preset)
     {
         auto gains = AudioEffects::Preset(preset).value_or(std::array<double, 10>{});
+        std::array<double, 5> zik{};
+        for (size_t i = 0; i < zik.size(); i++)
+            zik[i] = std::clamp((gains[2 * i] + gains[2 * i + 1]) / 2 * ZikGainScale, -12.0, 12.0);
+        return zik;
+    }
+
+    std::optional<std::array<double, 5>> ZikEqualizerCapability::ParseCustom(const std::string &text)
+    {
+        std::istringstream in(text);
+        std::array<double, 5> gains{};
+        for (double &g : gains)
+            if (!(in >> g) || std::abs(g) > 12)
+                return std::nullopt;
+        std::string rest;
+        if (in >> rest)
+            return std::nullopt;
+        return gains;
+    }
+
+    std::string ZikEqualizerCapability::ThumbEqualizerArg(const std::array<double, 5> &gains)
+    {
         std::string arg;
         char band[16];
-        for (int i = 0; i < 10; i += 2)
+        for (double g : gains)
         {
-            std::snprintf(band, sizeof(band), "%.1f,", std::clamp((gains[i] + gains[i + 1]) / 2 * ZikGainScale, -12.0, 12.0));
+            std::snprintf(band, sizeof(band), "%.1f,", g);
             arg += band;
         }
         return arg + "0,0";
     }
 
+    std::array<double, 5> ZikEqualizerCapability::CustomGains()
+    {
+        return ParseCustom(device.LoadSettingString("zikCustomEq").value_or("")).value_or(std::array<double, 5>{});
+    }
+
     nlohmann::json ZikEqualizerCapability::CreateJsonBody()
     {
-        return {{"selected", preset}, {"options", AudioEffects::PresetNames()}};
+        auto options = AudioEffects::PresetNames();
+        options.push_back("Custom");
+        // the bands' centers, as the preset pairs they average (32+64 Hz ... 8k+16k Hz)
+        return {{"selected", preset}, {"options", options}, {"bands", preset == "Custom" ? CustomGains() : Gains(preset)},
+                {"frequencies", {45, 180, 710, 2800, 11000}}};
     }
 
     void ZikEqualizerCapability::OnAnswer(const std::string &xml)
@@ -188,20 +220,56 @@ namespace MagicPodsCore
         }
     }
 
+    void ZikEqualizerCapability::Apply(const std::string &selected)
+    {
+        device.SaveSettingString("equalizer", selected);
+        if (selected != "Off")
+            device.Set("/api/audio/thumb_equalizer/value", ThumbEqualizerArg(selected == "Custom" ? CustomGains() : Gains(selected)));
+        device.Set("/api/audio/equalizer/enabled", selected == "Off" ? "false" : "true");
+    }
+
     void ZikEqualizerCapability::SetFromJson(const nlohmann::json &json)
     {
-        if (!json.contains(name) || !json.at(name).contains("selected") || !json.at(name)["selected"].is_string())
+        if (!json.contains(name))
             return;
-        std::string selected = json.at(name)["selected"];
-        if (!AudioEffects::Preset(selected))
+        const auto &capability = json.at(name);
+        if (capability.contains("custom"))
+        {
+            // the 5 bands as numbers; stored as text, the way ParseCustom reads them back
+            const auto &bands = capability["custom"];
+            std::string text;
+            if (bands.is_array() && bands.size() == 5)
+                for (const auto &b : bands)
+                    text += (b.is_number() ? std::to_string(b.get<double>()) : "x") + " ";
+            if (!ParseCustom(text))
+            {
+                Logger::Error("ZikEqualizerCapability::SetFromJson: custom is 5 gains from -12 to 12");
+                return;
+            }
+            device.SaveSettingString("zikCustomEq", text);
+            Apply("Custom");
+            preset = "Custom";
+            _onChanged.FireEvent(*this); // the bands changed, the Zik's answer only reports on/off
+            return;
+        }
+        if (!capability.contains("selected") || !capability["selected"].is_string())
+            return;
+        std::string selected = capability["selected"];
+        if (selected != "Custom" && !AudioEffects::Preset(selected))
         {
             Logger::Info("Error: ZikEqualizerCapability::SetFromJson unknown preset %s", selected.c_str());
             return;
         }
-        device.SaveSettingString("equalizer", selected);
-        if (selected != "Off")
-            device.Set("/api/audio/thumb_equalizer/value", ThumbEqualizerArg(selected));
-        device.Set("/api/audio/equalizer/enabled", selected == "Off" ? "false" : "true");
+        // the first "Custom" starts from the preset that was on, to edit it from there; the saved one, since `preset`
+        // waits for the Zik's answer
+        if (selected == "Custom" && !ParseCustom(device.LoadSettingString("zikCustomEq").value_or("")))
+        {
+            std::string text;
+            for (double g : Gains(device.LoadSettingString("equalizer").value_or("Off")))
+                text += std::to_string(g) + " ";
+            device.SaveSettingString("zikCustomEq", text);
+        }
+        Apply(selected);
     }
 
     // --- plain settings ---

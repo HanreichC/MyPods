@@ -6,6 +6,9 @@
 #include "device/ZikDevice.h"
 #include "device/DeviceBattery.h"
 
+#include <array>
+#include <optional>
+
 namespace MagicPodsCore
 {
     class ZikCapability : public Capability
@@ -59,9 +62,12 @@ namespace MagicPodsCore
 
     // Same preset list as the software equalizer of the AirPods, but applied by the Zik's own
     // DSP through /api/audio/thumb_equalizer/value, "Off" switches /api/audio/equalizer/enabled off.
+    // "Custom" sets the Zik's 5 bands by hand ("custom": 5 gains, -12 to 12), kept in the headphones like the presets.
     class ZikEqualizerCapability : public ZikCapability
     {
         std::string preset = "Off";
+        std::array<double, 5> CustomGains();
+        void Apply(const std::string &selected);
 
     protected:
         nlohmann::json CreateJsonBody() override;
@@ -70,7 +76,11 @@ namespace MagicPodsCore
     public:
         explicit ZikEqualizerCapability(ZikDevice &device);
         void SetFromJson(const nlohmann::json &json) override;
-        static std::string ThumbEqualizerArg(const std::string &preset);
+        // A preset's 10 bands on the Zik's 5
+        static std::array<double, 5> Gains(const std::string &preset);
+        // "Custom" as saved ("3 2 0 -1 4"), nullopt if it isn't 5 gains from -12 to 12
+        static std::optional<std::array<double, 5>> ParseCustom(const std::string &text);
+        static std::string ThumbEqualizerArg(const std::array<double, 5> &gains);
     };
 
     // One switch or one list value of the Zik API. `values` {"false","true"} makes it a
