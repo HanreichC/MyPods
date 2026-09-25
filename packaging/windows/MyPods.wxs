@@ -1,7 +1,7 @@
 <!--
   MyPods MSI (WiX v5). Built by .github/workflows/windows.yml:
-    wix build packaging/windows/MyPods.wxs -arch x64 -d Version=0.1.N -d DeployDir=deploy -o MyPods-x64.msi
-  DeployDir is magicpods.exe after windeployqt, with the daemon in modules\.
+    wix build packaging/windows/MyPods.wxs -arch x64 -d Version=1.0.N -d DeployDir=deploy -o MyPods-x64.msi
+  1.0.N is the version the app shows (CMakeLists.txt). DeployDir is magicpods.exe after windeployqt, with the daemon in modules\.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <!-- The UpgradeCode never changes: it is how a newer MSI finds and replaces an older install -->

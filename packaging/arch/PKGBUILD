@@ -21,13 +21,9 @@ sha256sums=(SKIP)
 
 pkgver() {
     cd MyPods
-    # v0.2.0-3-gabc1234 -> 0.2.0.r3.gabc1234; without a tag, the version from CMakeLists.txt
-    if described=$(git describe --long --tags --match 'v*' 2>/dev/null); then
-        echo "$described" | sed 's/^v//;s/-/.r/;s/-/./'
-    else
-        printf '%s.r%s.g%s' "$(sed -n 's/^project(mypods VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)" \
-            "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-    fi
+    # The same version the app shows (CMakeLists.txt): MAJOR.MINOR plus the commits since it was set
+    printf '%s.%s' "$(sed -n 's/^project(mypods VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)" \
+        "$(git rev-list --count "$(git log -1 --format=%H -G'^project.mypods VERSION' -- CMakeLists.txt)"..HEAD)"
 }
 
 build() {

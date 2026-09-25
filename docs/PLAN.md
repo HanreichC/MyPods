@@ -259,7 +259,7 @@ der Kopfbewegung, ob die Pro 3 den Head-Tracking-Start von LibrePods akzeptieren
 
 * P2 #14 erledigt: CA senkt die Lautstärke beim Sprechen auf 30 % (Level 1/2 → runter, 6/8/9 → zurück, wie LibrePods).
 * P3 #16/#17 erledigt: Tastenkürzel als `magicpods --action …` (bindet jede Desktop-Umgebung selbst),
-  PKGBUILD (`packaging/arch`), versionierte Releases per Tag `vX.Y.Z` plus `nightly`.
+  PKGBUILD (`packaging/arch`), jeder Push auf `main` ist ein Release `vX.Y.N`.
 * Neu: Modi für Drücken-und-Halten (`0x1A`) + „Aus“ erlauben (`0x34`), Mikrofon (`0x01`), Hörgerät (`0x2C`/`0x33`),
   Loud Sound Reduction und angepasste Transparenz über ATT (L2CAP PSM `0x1F`, Handles `0x1B`/`0x18`),
   Akkustand an BlueZ (`BatteryProviderManager1`), Bannername = Bluetooth-Alias des Adapters.

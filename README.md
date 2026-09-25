@@ -222,8 +222,8 @@ sudo pacman -S --needed bluez pipewire pipewire-pulse libpulse openssl \
 
 Download `MyPods-x86_64.AppImage` from the [latest release](https://github.com/HanreichC/MyPods/releases/latest),
 then run `chmod +x MyPods-x86_64.AppImage && ./MyPods-x86_64.AppImage`. Qt is bundled; BlueZ, PipeWire
-and libmysofa still come from the host. Releases are the tagged versions (`vX.Y.Z`); the
-[nightly](https://github.com/HanreichC/MyPods/releases/tag/nightly) pre-release is rebuilt from every push to `main`.
+and libmysofa still come from the host. Every push to `main` is a release
+(`vX.Y.N`, the version the app shows).
 To build it yourself: `podman run --rm -v "$PWD:/workspace:Z" -w /workspace docker.io/library/ubuntu:22.04 ./appimage.sh`
 
 ### Arch package
@@ -650,8 +650,8 @@ Something else might be using port 2020 on `127.0.0.1`, or an old daemon is stil
 MyPods again. `journalctl --user -u mypods-core` shows the daemon's log.
 
 **The About page shows different versions.**
-Versions carry the commit they were built from (`0.2.0.r3.gabc1234`, the same form as the Arch
-package's version). "MyPods Core" is the daemon that is actually running. If it differs from the app,
+Every build has one version, `MAJOR.MINOR.<commits since MAJOR.MINOR was set>` (e.g. `1.0.5`), the same
+in the About page, the MSI, the Arch package and the release title. "MyPods Core" is the daemon that is actually running. If it differs from the app,
 a daemon from another installation still runs, typically an old `mypods-core` user service:
 `systemctl --user cat mypods-core` shows which binary it starts; restart it or remove the old copy.
 
