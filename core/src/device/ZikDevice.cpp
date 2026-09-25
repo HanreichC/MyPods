@@ -16,8 +16,12 @@ namespace MagicPodsCore
         _poller = std::jthread([this](std::stop_token stop) {
             std::mutex m;
             std::unique_lock lock{m};
-            while (!_pollWake.wait_for(lock, stop, std::chrono::seconds(30), [] { return false; }))
+            while (true)
             {
+                // after a stop request wait_for returns false at once, so the stop has to end the loop itself
+                _pollWake.wait_for(lock, stop, std::chrono::seconds(30), [] { return false; });
+                if (stop.stop_requested())
+                    return;
                 if (!_client || !_client->IsStarted())
                     continue;
                 {
