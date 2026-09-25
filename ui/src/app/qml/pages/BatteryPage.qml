@@ -333,6 +333,41 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
+            visible: rootPage.equalizerData?.correction !== undefined
+            label: qsTrId("battery.headphone_correction")
+
+            Components.Toggle {
+                checked: rootPage.equalizerData?.correction ?? false
+                enabled: !(rootPage.equalizerData?.readonly ?? true)
+                onToggled: {
+                    if (rootPage.equalizerData) {
+                        rootPage.equalizerData.correction = checked;
+                        cppBackend.setCapability("equalizer", rootPage.currentAddress(), checked, "correction");
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.equalizerData?.crossfeed !== undefined
+            label: qsTrId("battery.crossfeed")
+
+            // spatial audio already lets each ear hear both channels
+            Components.Toggle {
+                checked: rootPage.equalizerData?.crossfeed ?? false
+                enabled: !(rootPage.equalizerData?.readonly ?? true) && (rootPage.spatialAudioData?.selected ?? 0) === 0
+                onToggled: {
+                    if (rootPage.equalizerData) {
+                        rootPage.equalizerData.crossfeed = checked;
+                        cppBackend.setCapability("equalizer", rootPage.currentAddress(), checked, "crossfeed");
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
             visible: rootPage.autoSwitchData !== null
             label: qsTrId("battery.auto_switch")
 

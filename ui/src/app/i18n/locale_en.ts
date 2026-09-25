@@ -418,6 +418,14 @@
         <source></source>
         <translation>Equalizer:</translation>
     </message>
+    <message id="battery.headphone_correction">
+        <source></source>
+        <translation>Headphone correction:</translation>
+    </message>
+    <message id="battery.crossfeed">
+        <source></source>
+        <translation>Crossfeed:</translation>
+    </message>
     <message id="battery.auto_switch">
         <source></source>
         <translation>Connect to this computer:</translation>

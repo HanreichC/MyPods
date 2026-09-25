@@ -46,24 +46,25 @@ namespace
         return ok();
     }
 
-    // current "spL:Azimuth"/"spR:Azimuth" of the running chain, NAN if there is none
-    std::pair<double, double> Azimuths()
+    // current value of a control of the running chain ("spL:Azimuth"), NAN if there is none
+    double Param(const std::string &name)
     {
         auto dump = nlohmann::json::parse(Sh("pw-dump " + std::string(AudioEffects::SINK_NAME) + " 2>/dev/null"), nullptr, false);
-        std::pair<double, double> az{NAN, NAN};
+        double value = NAN;
         if (!dump.is_array())
-            return az;
+            return value;
         for (auto &obj : dump)
             for (auto &props : obj["info"]["params"]["Props"])
                 if (props.contains("params"))
                     for (size_t i = 0; i + 1 < props["params"].size(); i += 2)
-                    {
-                        if (props["params"][i] == "spL:Azimuth")
-                            az.first = props["params"][i + 1].get<double>();
-                        if (props["params"][i] == "spR:Azimuth")
-                            az.second = props["params"][i + 1].get<double>();
-                    }
-        return az;
+                        if (props["params"][i] == name)
+                            value = props["params"][i + 1].get<double>();
+        return value;
+    }
+
+    std::pair<double, double> Azimuths()
+    {
+        return {Param("spL:Azimuth"), Param("spR:Azimuth")};
     }
 
     // AAP head-tracking packet (opcode 0x17) with the two orientation fields LibrePods reads
@@ -142,8 +143,21 @@ int EmulateAirPods()
         equalizer.SetFromJson({{"equalizer", {{"selected", "Bass Booster"}}}});
         Check("EQ change keeps the chain as default sink", defaultSinkIs(AudioEffects::SINK_NAME), sink);
         equalizer.SetFromJson({{"equalizer", {{"selected", "Off"}}}});
+        equalizer.SetFromJson({{"equalizer", {{"correction", true}}}});
+        Check("Correction on: live in the running chain", WaitFor([] { return std::abs(Param("coL0:Gain") + 3.0) < 0.01; }, 2000),
+              std::to_string(Param("coL0:Gain")));
 
         spatial.SetFromJson({{"spatialAudio", {{"selected", 0}}}});
+        Check("Spatial off, correction on: chain stays", defaultSinkIs(AudioEffects::SINK_NAME), sink);
+        equalizer.SetFromJson({{"equalizer", {{"crossfeed", true}}}});
+        Check("Crossfeed on: cross path live", WaitFor([] { return std::abs(Param("xmL:Gain 3") - 0.37) < 0.01; }, 2000),
+              std::to_string(Param("xmL:Gain 3")));
+        equalizer.SetFromJson({{"equalizer", {{"crossfeed", false}}}});
+        equalizer.SetFromJson({{"equalizer", {{"correction", false}}}});
+        Check("Correction off: flat chain keeps playing", WaitFor([] { return Param("coL0:Gain") == 0 && Param("xmL:Gain 3") == 0; }, 2000));
+
+        AudioEffects::Instance().Stop();
+        pods.RouteAudio();
         Check("Off: headphones are the default sink again", defaultSinkIs(BLUEZ_SINK), sink);
         AudioEffects::Instance().Stop();
     }

@@ -160,6 +160,10 @@ namespace MagicPodsCore
         config.spatial = static_cast<SpatialMode>(std::clamp<int64_t>(LoadSettingInt("spatialAudio").value_or(0), 0, AapSpatialAudioCapability::HasHeadTracking(GetProductId()) ? 2 : 1));
         if (auto gains = AudioEffects::Preset(LoadSettingString("equalizer").value_or("Off")))
             config.eq = *gains;
+        config.correction = AapEqualizerCapability::Correction(GetProductId());
+        config.corrected = LoadSettingInt("headphoneCorrection").value_or(0) != 0;
+        config.crossfeed = LoadSettingInt("crossfeed").value_or(0) != 0;
+        config.sofa = LoadSettingString("sofa").value_or("");
         return config;
     }
 

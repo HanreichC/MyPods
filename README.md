@@ -69,8 +69,10 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Hearing Aid on/off | Same switch, once the hearing test was set up on an iPhone. |
 | Battery in the menu bar and in Bluetooth settings | The exact level is handed to BlueZ, so the desktop's Bluetooth applet and UPower show it too. |
 | "When Last Connected to This Mac" | Same option; switching then happens only manually. |
-| Spatial Audio: Off / Fixed / Head Tracked | PipeWire filter chain with an HRTF (libmysofa). Head orientation streams from the AirPods. |
-| Equalizer (Music app) | The Apple Music presets (Acoustic, Bass Booster, Classical, Rock, Vocal Booster …), applied in front of the AirPods. |
+| Spatial Audio: Off / Fixed / Head Tracked | PipeWire filter chain with an HRTF (libmysofa), equalized so centered sound stays neutral (within 0.75 dB from 31 Hz to 8 kHz, measured). Head orientation streams from the AirPods. |
+| Equalizer (Music app) | The Apple Music presets (Acoustic, Bass Booster, Classical, Rock, Vocal Booster …), applied in front of the AirPods without clipping. |
+| Apple tunes the sound for each model | Headphone correction: measured [AutoEQ](https://github.com/jaakkopasanen/AutoEq) filters that bring the model to the Harman target, for AirPods 1–4, Pro, Pro 2, Max and most Beats (not Pro 3 or Max 2, nobody measured them yet). |
+| — | Crossfeed (bs2b style) for stereo music without spatial audio: each ear also hears a bit of the other channel's bass, as with speakers. Mono stays untouched. |
 | Conversation Awareness | On/off and current state. |
 | AirPods module in the menu bar / Control Center | Clicking the tray icon opens a popup right under the panel: battery, noise control, Conversation Awareness, "Move here", what's playing with play/pause/skip, and the output volume. A double click opens the full window. |
 | Press speed, press-and-hold duration, volume swipe, tone volume, personalized volume, mute/end call, ANC with one AirPod | Same settings, written to the AirPods. |
@@ -170,8 +172,10 @@ MyPods uses both.
    connection and stores them when they change. No iCloud involved.
 4. **Audio switching.** The AirPods relay Apple's "smart routing" messages between their sources.
    MyPods participates in that exchange, and watches MPRIS players to decide when to take over.
-5. **Effects.** Equalizer and spatial audio run as a PipeWire filter-chain sink (`mypods_fx`)
-   in front of the headphones. Head tracking rotates the virtual speakers via `pw-cli`.
+5. **Effects.** Equalizer, headphone correction, crossfeed and spatial audio run as a PipeWire
+   filter-chain sink (`mypods_fx`) in front of the headphones. A pre-gain takes off exactly as much
+   as the chain can boost (computed from the summed filter curves), so nothing clips. Head tracking
+   rotates the virtual speakers via `pw-cli`.
 
 A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](docs/PLAN.md)
 (German).
@@ -396,7 +400,31 @@ Most options are set through the UI. Global options live in the `[magicpods]` ta
 
 Per-device settings (for example the stored `irk`/`enc` keys, switching mode, spatial audio and
 equalizer choice) are saved in a table named after the device. Deleting the keys forces MyPods to
-request them again on the next connection.
+request them again on the next connection. One of them is only set by hand:
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `sofa` | libmysofa's default KEMAR | Path to a SOFA file (for example a personal HRTF) for spatial audio. The bass bypass and the tonal correction are tuned for the default KEMAR and are left out for other files. |
+
+### Bluetooth sound quality
+
+AirPods and Beats speak SBC and AAC only, so AAC is the best there is (LDAC and aptX aren't
+supported by the headphones). PipeWire's AAC encoder runs at a constant bitrate by default; its
+highest variable-bitrate quality is one WirePlumber setting away. It takes effect only for
+headphones that offer VBR, the rest stay on constant bitrate. MyPods leaves the system's PipeWire
+configuration alone, so this one is up to you:
+
+```
+# ~/.config/wireplumber/wireplumber.conf.d/51-aac-vbr.conf
+monitor.bluez.rules = [
+  {
+    matches = [ { device.name = "~bluez_card.*" } ]
+    actions = { update-props = { bluez5.a2dp.aac.bitratemode = 5 } }
+  }
+]
+```
+
+Restart with `systemctl --user restart wireplumber` and reconnect the headphones.
 
 ---
 
@@ -544,7 +572,11 @@ The full reference with request and response examples is in
 ## Known limitations
 
 - **Generic HRTF.** Spatial audio uses the generic KEMAR HRTF shipped with libmysofa. Apple
-  personalizes it from a scan of your ears. You can replace the SOFA file with a personal one.
+  personalizes it from a scan of your ears. A personal SOFA file can be set per device (`sofa`, see
+  [Configuration](#configuration)). Below 250 Hz the bass bypasses the HRTF, whose low end is
+  unusable. Spatial audio plays about 10 dB quieter so that nothing clips; turn the headphones up
+  to make up for it (the volume is applied in the headphones, so no quality is lost). Turning your head more than
+  45° away from the screen can still clip very loud material.
 - **Head tracking calibration.** Interpreting the head-tracking stream is a heuristic taken from
   LibrePods and not yet calibrated on real hardware.
 - **No takeover for non-MPRIS audio.** Games and system sounds deliberately do not trigger
@@ -657,6 +689,8 @@ copied locally and adapted:
   types and model IDs
 - [zik2ctl](https://github.com/kradhub/zik2ctl) and [pyParrotZik](https://github.com/m0sia/pyParrotZik):
   Parrot Zik 2.0 protocol
+- [AutoEQ](https://github.com/jaakkopasanen/AutoEq) by Jaakko Pasanen (MIT), with measurements by
+  oratory1990, crinacle and Rtings: the headphone correction filters
 
 The full list, including vendored libraries and academic papers, is in [CREDITS.md](CREDITS.md).
 

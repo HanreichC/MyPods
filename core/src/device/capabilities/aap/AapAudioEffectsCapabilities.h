@@ -3,6 +3,7 @@
 
 #pragma once
 #include "AapCapability.h"
+#include "audio/AudioEffects.h"
 #include <chrono>
 
 namespace MagicPodsCore
@@ -37,11 +38,15 @@ namespace MagicPodsCore
         static double Yaw(const std::vector<unsigned char> &packet, double neutral2, double neutral3);
     };
 
-    // Equalizer with Apple Music's presets, applied on this computer in front of the headphones.
+    // Equalizer with Apple Music's presets, applied on this computer in front of the headphones, plus the measured
+    // headphone correction ("correction", only for models with a measurement) and crossfeed ("crossfeed").
     class AapEqualizerCapability : public AapCapability
     {
     private:
         std::string preset;
+        const bool hasCorrection;
+        bool corrected;
+        bool crossfeed;
 
     protected:
         nlohmann::json CreateJsonBody() override;
@@ -50,5 +55,8 @@ namespace MagicPodsCore
     public:
         explicit AapEqualizerCapability(AapDevice &device);
         void SetFromJson(const nlohmann::json &json) override;
+
+        // AutoEQ correction to the Harman target for the model, empty if nobody measured it
+        static std::vector<Biquad> Correction(unsigned short model);
     };
 }

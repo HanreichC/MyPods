@@ -8,6 +8,7 @@ lokal kopiert und angepasst. Das Projekt steht deshalb ebenfalls unter GPL-3.0.
 | [MagicPodsCore](https://github.com/steam3d/MagicPodsCore) | Aleksandr Maslov, Andrei Litvintsev | `core/` komplett: AAP-SDK, BLE-Advertisement-Auswertung inkl. AES-Entschluesselung und RPA-Pruefung, Geraete-/Capability-Modell, WebSocket-API, Tests |
 | [MagicPodsLinux](https://github.com/steam3d/MagicPodsLinux) | Aleksandr Maslov | `ui/` komplett: Qt6/QML-Oberflaeche, `PopupAnimation.qml`, Animations-Sprites, Tray |
 | [AirPodsDesktop](https://github.com/SpriteOvO/AirPodsDesktop) | SpriteOvO | Referenz fuer die Continuity-Nachrichtentypen und Model-IDs (`Source/Core/AppleCP.*`); dort liegen auch die Popup-Videos |
+| [AutoEQ](https://github.com/jaakkopasanen/AutoEq) (MIT) | Jaakko Pasanen; Messungen von oratory1990, crinacle, Rtings | Kopfhoerer-Korrekturfilter (`ParametricEQ.txt`) als Tabelle in `AapAudioEffectsCapabilities.cpp` |
 | [LibrePods](https://github.com/librepods-org/librepods) | Kavish Devar u. a. | Protokolldokumentation (`docs/AAP Definitions.md`); geplante Uebernahme: Ohrerkennung, Metadaten-Parser, Umbenennen |
 
 Mitgelieferte Bibliotheken (unveraendert, damit der Build ohne Netz laeuft; Lizenztext jeweils daneben):

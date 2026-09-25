@@ -26,10 +26,23 @@ namespace MagicPodsCore
         HeadTracked = 2,
     };
 
+    // One of PipeWire's builtin biquads (RBJ cookbook, same Q meaning as AutoEQ's ParametricEQ.txt)
+    struct Biquad
+    {
+        enum Type { Peaking, LowShelf, HighShelf, LowPass, HighPass } type;
+        double freq, gain, q; // Hz, dB (ignored by the passes)
+
+        bool operator==(const Biquad &) const = default;
+    };
+
     struct EffectsConfig
     {
         SpatialMode spatial = SpatialMode::Off;
         std::array<double, 10> eq{}; // dB at 32, 64, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz
+        std::vector<Biquad> correction; // measured headphone correction for this model (AutoEQ), empty if there is none
+        bool corrected = false;         // correction on; its nodes stay in the chain either way, so toggling is a live update
+        bool crossfeed = false;         // only without spatial audio, which mixes the channels itself
+        std::string sofa;               // HRTF file, empty = the default KEMAR
 
         bool IsNeutral() const;
         bool operator==(const EffectsConfig &) const = default;
@@ -56,6 +69,8 @@ namespace MagicPodsCore
 
         static std::vector<std::string> PresetNames();
         static std::optional<std::array<double, 10>> Preset(const std::string &name);
+        // How far the chain can lift any input above full scale (dB, >= 0); the pre-gain takes this off so nothing clips
+        static double HeadroomDb(const EffectsConfig &config);
         static std::string BuildConfig(const std::string &sink, const std::string &description, const EffectsConfig &config, double yaw);
         // pw-cli line that sets every gain (and the speaker angles) of a running chain
         static std::string ControlCommand(const EffectsConfig &config, double yaw);
