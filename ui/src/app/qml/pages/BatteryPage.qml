@@ -396,13 +396,44 @@ Components.ScrollPage {
             visible: rootPage.equalizerData?.selected === "Custom"
             spacing: 0
 
+            // HIG (Sliders): label the range and its unit, like the scale beside the Music app's equalizer.
+            // Each label sits at the handle's center for its value: Material's 6 px padding plus half its 13 px handle.
+            Item {
+                Layout.alignment: Qt.AlignVCenter // the sliders sit centered between two equally tall labels
+                Layout.preferredHeight: 120
+                implicitWidth: scaleMin.implicitWidth
+                Accessible.ignored: true // each slider already says its value
+
+                MP.Label {
+                    anchors.right: parent.right
+                    y: 12.5 - height / 2
+                    text: "+12 dB"
+                    font.pixelSize: 11
+                    color: MP.Theme.secondaryText
+                }
+                MP.Label {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "0 dB"
+                    font.pixelSize: 11
+                    color: MP.Theme.secondaryText
+                }
+                MP.Label {
+                    id: scaleMin
+                    anchors.right: parent.right
+                    y: 120 - 12.5 - height / 2
+                    text: "−12 dB"
+                    font.pixelSize: 11
+                    color: MP.Theme.secondaryText
+                }
+            }
+
             Repeater {
-                // centers in Hz as the core sends them, "1k" style
-                model: (rootPage.equalizerData?.frequencies ?? [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000])
-                    .map(f => f >= 1000 ? Number(f / 1000).toLocaleString(Qt.locale(), "f", f % 1000 ? 1 : 0) + "k" : String(f))
+                // centers in Hz as the core sends them
+                model: rootPage.equalizerData?.frequencies ?? [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
                 delegate: ColumnLayout {
                     id: band
-                    required property string modelData
+                    required property int modelData
                     required property int index
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1 // all equally wide, whatever their labels say
@@ -417,7 +448,8 @@ Components.ScrollPage {
                     MP.Label {
                         Layout.fillWidth: true // a nested layout is only as wide as its widest filling child
                         horizontalAlignment: Text.AlignHCenter
-                        text: (bandSlider.value > 0 ? "+" : "") + bandSlider.value.toLocaleString(Qt.locale(), "f", bandSlider.value % 1 ? 1 : 0)
+                        // HIG typography: a real minus sign, as wide as the plus
+                        text: (bandSlider.value > 0 ? "+" : "") + bandSlider.value.toLocaleString(Qt.locale(), "f", bandSlider.value % 1 ? 1 : 0).replace("-", "\u2212")
                         font.pixelSize: 11
                         color: MP.Theme.secondaryText
                     }
@@ -439,7 +471,7 @@ Components.ScrollPage {
                     MP.Label {
                         Layout.fillWidth: true // a nested layout is only as wide as its widest filling child
                         horizontalAlignment: Text.AlignHCenter
-                        text: band.modelData
+                        text: band.modelData >= 1000 ? Number(band.modelData / 1000).toLocaleString(Qt.locale(), "f", band.modelData % 1000 ? 1 : 0) + "k" : band.modelData
                         font.pixelSize: 11
                         color: MP.Theme.secondaryText
                     }

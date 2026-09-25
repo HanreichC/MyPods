@@ -778,7 +778,7 @@
     </message>
     <message id="battery.equalizer.custom">
         <source></source>
-        <translation>Custom</translation>
+        <translation>Manual</translation>
     </message>
     <message id="battery.equalizer_curve">
         <source></source>

@@ -5,6 +5,7 @@
 #include "Backend.h"
 
 #include <QDebug>
+#include <QJSValue>
 #include <QMetaType>
 
 #include <nlohmann/json.hpp>
@@ -54,6 +55,10 @@ json variantToJson(const QVariant &value)
 {
     if (!value.isValid() || value.isNull()) {
         return nullptr;
+    }
+    // a JS array or object from QML arrives as QJSValue, whose toMap() turns an array into {}
+    if (value.metaType() == QMetaType::fromType<QJSValue>()) {
+        return variantToJson(value.value<QJSValue>().toVariant());
     }
 
     switch (value.typeId()) {

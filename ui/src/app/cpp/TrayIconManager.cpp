@@ -366,6 +366,8 @@ void TrayIconManager::addEffectsActions(const QString &address, const QVariantMa
     auto *presets = new QActionGroup(equalizerMenu);
     for (const QVariant &option : equalizer.value(QStringLiteral("options")).toList()) {
         const QString name = option.toString();
+        if (name == QStringLiteral("Custom"))
+            equalizerMenu->addSeparator(); // HIG: related items grouped, the presets apart from your own
         QAction *action = equalizerMenu->addAction(name == QStringLiteral("Custom") ? qtTrId("battery.equalizer.custom") : name);
         action->setCheckable(true);
         action->setChecked(name == selected);
@@ -375,13 +377,16 @@ void TrayIconManager::addEffectsActions(const QString &address, const QVariantMa
         });
     }
 
-    QAction *bypass = menu->addAction(title("battery.bypass"));
-    bypass->setCheckable(true);
-    bypass->setChecked(equalizer.value(QStringLiteral("bypass")).toBool());
-    bypass->setEnabled(!readonly);
-    connect(bypass, &QAction::toggled, this, [this, address](bool on) {
-        backend->setCapability(QStringLiteral("equalizer"), address, on, QStringLiteral("bypass"));
-    });
+    // HIG: no menu item for a command the device never has (the Zik's equalizer runs in the headphones)
+    if (equalizer.contains(QStringLiteral("bypass"))) {
+        QAction *bypass = menu->addAction(title("battery.bypass"));
+        bypass->setCheckable(true);
+        bypass->setChecked(equalizer.value(QStringLiteral("bypass")).toBool());
+        bypass->setEnabled(!readonly);
+        connect(bypass, &QAction::toggled, this, [this, address](bool on) {
+            backend->setCapability(QStringLiteral("equalizer"), address, on, QStringLiteral("bypass"));
+        });
+    }
     menu->addSeparator();
 }
 
