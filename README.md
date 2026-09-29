@@ -186,6 +186,11 @@ MyPods uses both.
    pre-gain takes off exactly as much as the chain can boost (computed from the summed filter
    curves), so nothing clips. Head tracking and the volume (for the loudness compensation) update the
    running chain via `pw-cli`.
+6. **The iPhone's now playing.** The UI talks to a paired iPhone directly, over the Apple Media
+   Service (AMS), the BLE GATT service an Apple Watch uses for the same thing. The iPhone pushes
+   title, artist, playback state and volume, and takes play/pause, skip and volume steps. On Linux
+   the UI registers a BlueZ LE advertisement that solicits AMS, and the iPhone connects to it; on
+   Windows the UI connects to the iPhone itself. The daemon isn't involved.
 
 A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](docs/PLAN.md)
 (German).
@@ -366,7 +371,9 @@ Then reconnect the AirPods once. `install.sh` reminds you if the line is missing
 3. **Open the case** near your computer. The popup appears with the animation and battery levels.
 4. **Click the tray icon** for the popup: battery, noise control, Conversation Awareness, what's
    playing with media controls, and the volume. It closes on a second click, Esc or a click
-   elsewhere. Without connected headphones, a click opens the window instead.
+   elsewhere. Without connected headphones, a click opens the window instead, unless a paired
+   iPhone is playing: then the popup shows the iPhone's music, and its volume slider moves the
+   iPhone's volume.
 5. **Double-click the tray icon** (or choose **MyPods Settings…** in the popup) for the full
    window: ear detection, automatic switching, spatial audio, equalizer and all device-specific
    settings. Right-click opens the context menu with connect/disconnect and Exit.
@@ -630,6 +637,11 @@ The full reference with request and response examples is in
   layer-shell surface anchored to the top-right corner: right for a panel at the top, wrong for
   one at the bottom. The AppImage is built without `layer-shell-qt`, so there the compositor
   places the popup. On X11 it opens at the pointer, for a panel on any edge.
+- **The iPhone's now playing** offers what AMS has: no mute, no browsing or choosing songs, and the
+  volume only in the iPhone's 16 steps. AMS sends no cover; it is looked up by artist and title and
+  missing for songs the iTunes catalog doesn't have. The iPhone's music shows when nothing plays
+  on the computer, or nothing is loaded there. On Linux it is tested against a stand-in for
+  bluetoothd, not yet with a real iPhone.
 - **Tray double click** is two clicks within the system's double-click interval, since the KDE
   tray protocol (StatusNotifierItem) has none. The popup opens on the first click and gives way
   to the window on the second.
@@ -687,6 +699,15 @@ in the About page, the MSI, the Arch package and the release title. "MyPods Core
 a daemon from another installation still runs, typically an old `mypods-core` user service:
 `systemctl --user cat mypods-core` shows which binary it starts; restart it or remove the old copy.
 
+**The iPhone's music doesn't show up in the tray popup.**
+The iPhone must be paired with this computer and play something.
+On Linux, `journalctl --user -b | grep iPhone` shows "no LE advertisement" when the adapter can't
+advertise, and `bluetoothctl info <iPhone address>` should list the service
+`89d3502b-0f36-433a-8ef4-c502ad55f8dc` while the iPhone is near. If it never appears, the pairing
+gave no LE keys (some Realtek adapters and USB dongles): remove the iPhone on both sides and pair
+again from the computer. On Windows the iPhone appears in Settings → Bluetooth & devices; pairing it
+there is enough.
+
 **Spatial audio has no effect.**
 Check that `/usr/share/libmysofa/default.sofa` exists (package `libmysofa`) and that applications
 play to the `mypods_fx` sink.
@@ -703,6 +724,12 @@ play to the `mypods_fx` sink.
 - The AirPods' IRK and ENC keys are stored in plain text in `~/.config/mypods/config.toml`. The daemon
   writes that file with mode `0600` and replaces it atomically, so a crash never leaves it half written.
   If it can't be parsed, it is moved to `config.toml.broken` and MyPods starts with defaults.
+- For the cover of the iPhone's music, the UI sends artist and title of each track to Apple's iTunes
+  Search API (`itunes.apple.com`). It is the only request MyPods makes to the internet, and only
+  for tracks on the iPhone.
+- On Linux the UI advertises over BLE while it runs, so the paired iPhone can connect. Other devices
+  in range can connect as well and see BlueZ's own GATT server, as with any LE peripheral; MyPods adds
+  nothing to it.
 
 ---
 
