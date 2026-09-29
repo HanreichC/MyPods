@@ -224,6 +224,7 @@ int main(int argc, char *argv[]) {
     TrayIcon trayIcon;
     MediaController mediaController;
     mediaController.watchIphone();
+    mediaController.watchPlayback();
     engine.rootContext()->setContextProperty("backendManager", &backendManager);
     engine.rootContext()->setContextProperty("desktopManager", &desktopManager);
     engine.rootContext()->setContextProperty("cppBackend", &backend);
@@ -325,7 +326,7 @@ int main(int argc, char *argv[]) {
             root->setProperty("visible", !visible);
         }
     };
-    TrayIconManager trayIconManager(&trayIcon, &trayMenu, &backend, toggleMainWindow, [&app]() {
+    TrayIconManager trayIconManager(&trayIcon, &trayMenu, &backend, &mediaController, toggleMainWindow, [&app]() {
         app.quit();
     });
     // The menu is rebuilt on every open; only the tooltip needs a nudge

@@ -13,6 +13,7 @@
 #include <QVariantMap>
 
 class Backend;
+class MediaController;
 class TrayIcon;
 class QMenu;
 
@@ -24,6 +25,7 @@ public:
     explicit TrayIconManager(TrayIcon *trayIcon,
                              QMenu *menu,
                              Backend *backend,
+                             MediaController *media,
                              std::function<void()> openSettings,
                              std::function<void()> exitApplication,
                              QObject *parent = nullptr);
@@ -53,6 +55,7 @@ private:
     TrayIcon *trayIcon = nullptr;
     QMenu *menu = nullptr;
     Backend *backend = nullptr;
+    MediaController *media = nullptr;
     std::function<void()> openSettings;
     std::function<void()> exitApplication;
     QVariantList headphonesData;

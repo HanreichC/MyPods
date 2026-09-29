@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <optional>
-
 #include <QElapsedTimer>
 #include <QSystemTrayIcon>
 
@@ -14,9 +12,15 @@ class TrayIcon final : public QSystemTrayIcon {
     Q_PROPERTY(int themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged)
 
 public:
-    enum class IconType {
-        Default,
-        Warning
+    // A monochrome glyph like a menu bar extra: the app logo (dimmed while nothing is connected) or the
+    // headphones in a ring that shows their battery, red when low. A badge says where music plays.
+    enum class Kind { Offline, Idle, Headphones };
+    enum class Badge { None, Play, Phone };
+    struct State {
+        Kind kind = Kind::Idle;
+        int battery = -1; // 0-100, -1 unknown
+        Badge badge = Badge::None;
+        bool operator==(const State &o) const { return kind == o.kind && battery == o.battery && badge == o.badge; }
     };
 
     enum class ThemeMode {
@@ -27,10 +31,7 @@ public:
 
     explicit TrayIcon(QObject *parent = nullptr);
 
-    void setIconType(IconType type);
-    IconType iconType() const;
-    void setTextIcon(int value);
-    void clearTextIcon();
+    void setState(const State &state);
 
     int themeMode() const;
     void setThemeMode(int mode);
@@ -45,13 +46,9 @@ protected:
 
 private:
     bool isDarkTheme() const;
-    QString iconFileName(IconType type) const;
-    QIcon themedIcon(IconType type) const;
-    QIcon themedTextIcon() const;
     void updateIcon();
 
-    IconType m_iconType = IconType::Default;
+    State m_state;
     ThemeMode m_themeMode = ThemeMode::Auto;
-    std::optional<int> m_textIconValue;
     QElapsedTimer m_lastTrigger;
 };

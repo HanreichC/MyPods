@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QSet>
+#include <QTimer>
 #include <QVariantMap>
 
 class QNetworkAccessManager;
@@ -32,10 +33,15 @@ public:
     int volume() const { return m_volume; }
     bool muted() const { return m_muted; }
     QVariantList iphones() const;
+    // What plays, for the tray icon: empty, or where ("here" or "iphone"), title, artist and the
+    // iPhone's name as source. Follows the players' own change signals; no covers, no network
+    QVariantMap nowPlaying() const { return m_nowPlaying; }
 
     Q_INVOKABLE void refresh();
     // Starts following a paired iPhone, so it is there by the first click
     void watchIphone();
+    // Starts following the players for nowPlaying()
+    void watchPlayback();
     // Looks for newly paired iPhones (Windows lists them once; BlueZ reports them anyway)
     Q_INVOKABLE void refreshIphones();
     Q_INVOKABLE void playPause();
@@ -51,8 +57,20 @@ signals:
     void playerChanged();
     void volumeChanged();
     void iphonesChanged();
+    void nowPlayingChanged();
+
+private slots:
+    // one update for a burst of changes
+    void playbackChangedSoon() { m_nowPlayingTimer.start(); }
+    // Linux: a bus name came or went, maybe a player
+    void onNameOwnerChanged(const QString &name)
+    {
+        if (name.startsWith(QLatin1String("org.mpris.MediaPlayer2.")))
+            playbackChangedSoon();
+    }
 
 private:
+    void updateNowPlaying();
     void callPlayer(const QString &method);
 #ifndef Q_OS_WIN
     static QString pactl(const QStringList &args);
@@ -71,4 +89,6 @@ private:
     QVariantMap m_player;
     int m_volume = -1;
     bool m_muted = false;
+    QVariantMap m_nowPlaying;
+    QTimer m_nowPlayingTimer;
 };

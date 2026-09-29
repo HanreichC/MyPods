@@ -83,6 +83,8 @@ public:
 
     // Called (on any thread) when the list of iPhones or their connection changes; set before starting
     void onIphonesChanged(std::function<void()> changed) { m_changed = std::move(changed); }
+    // Called (on any thread, maybe under m_lock) when the track or whether it plays changes; set before starting
+    void onNowPlayingChanged(std::function<void()> changed) { m_nowPlayingChanged = std::move(changed); }
 
     // Looks for iPhones among the paired devices and follows the first. Again at most every 30 s while
     // there is none; always, for a list that is new
@@ -348,6 +350,14 @@ private:
             m_playing = Ams::isPlaying(text);
         else if (entity == Player && attribute == PlayerVolume)
             m_volume = Ams::volumePercent(text);
+        if (entity != Player || attribute != PlayerVolume)
+            nowPlayingChanged();
+    }
+
+    void nowPlayingChanged()
+    {
+        if (m_nowPlayingChanged)
+            m_nowPlayingChanged();
     }
 
     // The whole value of one attribute, through the Entity Attribute characteristic
@@ -383,6 +393,7 @@ private:
         m_playing = false;
         m_volume = -1;
         m_commands.clear();
+        nowPlayingChanged();
     }
 
     void changed()
@@ -404,6 +415,7 @@ private:
     bool m_searched = false;
     std::chrono::steady_clock::time_point m_lastSearch;
     std::function<void()> m_changed; // set before any thread starts
+    std::function<void()> m_nowPlayingChanged; // likewise
     std::vector<bt::BluetoothLEDevice> m_phones; // every paired iPhone, for the list
     std::vector<bt::BluetoothLEDevice::ConnectionStatusChanged_revoker> m_phoneStatus;
     bt::BluetoothLEDevice m_device{nullptr}; // the one followed
@@ -436,7 +448,7 @@ auto offGuiThread(F &&work)
 }
 
 // ponytail: blocking like the MPRIS side, polled once a second while the popup is open
-Snapshot query(const QString &knownArtKey)
+Snapshot query(const QString &knownArtKey, bool art = true)
 {
     Snapshot best;
     try {
@@ -466,7 +478,7 @@ Snapshot query(const QString &knownArtKey)
         best.canGoPrevious = controls.IsPreviousEnabled();
 
         // the cover only when the track changed, reading it costs a stream round trip
-        if (props.Thumbnail() && best.title + QLatin1Char('\n') + best.artist != knownArtKey) {
+        if (art && props.Thumbnail() && best.title + QLatin1Char('\n') + best.artist != knownArtKey) {
             auto stream = props.Thumbnail().OpenReadAsync().get();
             winrt::Windows::Storage::Streams::Buffer buffer(static_cast<uint32_t>(stream.Size()));
             auto read = stream.ReadAsync(buffer, buffer.Capacity(), winrt::Windows::Storage::Streams::InputStreamOptions::None).get();
@@ -490,6 +502,83 @@ winrt::com_ptr<IAudioEndpointVolume> defaultEndpointVolume()
     return volume;
 }
 
+}
+
+// The system's media sessions, followed for the tray icon: every session's playback and track, again
+// whenever sessions come and go. Never destroyed, like AppleMedia.
+class MediaSessions
+{
+public:
+    static void watch(std::function<void()> changed)
+    {
+        static auto *sessions = new MediaSessions;
+        sessions->m_changed = std::move(changed);
+        std::thread([] {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+            try {
+                auto manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get();
+                {
+                    std::lock_guard lock{sessions->m_lock};
+                    sessions->m_manager = manager;
+                    sessions->m_sessionsChanged = manager.SessionsChanged(winrt::auto_revoke, [](auto &&, auto &&) { sessions->follow(); });
+                }
+                sessions->follow();
+            } catch (const winrt::hresult_error &) {
+                // no media service (Windows N without the Media Feature Pack): nothing ever plays here
+            }
+        }).detach();
+    }
+
+private:
+    void follow()
+    {
+        {
+            std::lock_guard lock{m_lock};
+            m_playback.clear();
+            m_media.clear();
+            try {
+                for (const auto &session : m_manager.GetSessions()) {
+                    m_playback.push_back(session.PlaybackInfoChanged(winrt::auto_revoke, [this](auto &&, auto &&) { m_changed(); }));
+                    m_media.push_back(session.MediaPropertiesChanged(winrt::auto_revoke, [this](auto &&, auto &&) { m_changed(); }));
+                }
+            } catch (const winrt::hresult_error &) {
+            }
+        }
+        m_changed();
+    }
+
+    std::mutex m_lock;
+    std::function<void()> m_changed;
+    GlobalSystemMediaTransportControlsSessionManager m_manager{nullptr};
+    GlobalSystemMediaTransportControlsSessionManager::SessionsChanged_revoker m_sessionsChanged;
+    std::vector<GlobalSystemMediaTransportControlsSession::PlaybackInfoChanged_revoker> m_playback;
+    std::vector<GlobalSystemMediaTransportControlsSession::MediaPropertiesChanged_revoker> m_media;
+};
+
+void MediaController::watchPlayback()
+{
+    m_nowPlayingTimer.setSingleShot(true);
+    m_nowPlayingTimer.setInterval(300);
+    connect(&m_nowPlayingTimer, &QTimer::timeout, this, &MediaController::updateNowPlaying);
+    const auto soon = [this] { QMetaObject::invokeMethod(this, &MediaController::playbackChangedSoon, Qt::QueuedConnection); };
+    AppleMedia::instance().onNowPlayingChanged(soon);
+    MediaSessions::watch(soon);
+}
+
+void MediaController::updateNowPlaying()
+{
+    const Snapshot here = offGuiThread([] { return query(QString(), false); });
+    const Snapshot phone = AppleMedia::instance().snapshot();
+    QVariantMap now;
+    if (here.playing)
+        now = {{QStringLiteral("where"), QStringLiteral("here")}, {QStringLiteral("title"), here.title}, {QStringLiteral("artist"), here.artist}};
+    else if (phone.playing)
+        now = {{QStringLiteral("where"), QStringLiteral("iphone")}, {QStringLiteral("title"), phone.title},
+               {QStringLiteral("artist"), phone.artist}, {QStringLiteral("source"), phone.source}};
+    if (now != m_nowPlaying) {
+        m_nowPlaying = now;
+        emit nowPlayingChanged();
+    }
 }
 
 void MediaController::watchIphone()

@@ -6,6 +6,7 @@
 
 #include "Backend.h"
 #include "LowBattery.h"
+#include "MediaController.h"
 #include "TrayIcon.h"
 
 #include <QAction>
@@ -49,6 +50,7 @@ QVariantMap batteryDataFromInfo(const QVariantMap &infoData)
 TrayIconManager::TrayIconManager(TrayIcon *trayIcon,
                                  QMenu *menu,
                                  Backend *backend,
+                                 MediaController *media,
                                  std::function<void()> openSettings,
                                  std::function<void()> exitApplication,
                                  QObject *parent)
@@ -56,14 +58,17 @@ TrayIconManager::TrayIconManager(TrayIcon *trayIcon,
     , trayIcon(trayIcon)
     , menu(menu)
     , backend(backend)
+    , media(media)
     , openSettings(std::move(openSettings))
     , exitApplication(std::move(exitApplication))
 {
     Q_ASSERT(this->trayIcon);
     Q_ASSERT(this->menu);
     Q_ASSERT(this->backend);
+    Q_ASSERT(this->media);
 
     connect(this->backend, &Backend::dataReceived, this, &TrayIconManager::handleDataReceived);
+    connect(this->media, &MediaController::nowPlayingChanged, this, &TrayIconManager::updateTrayIcon);
     connect(this->backend, &Backend::connectedChanged, this, [this]() {
 
         if (!this->backend->connected()) {
@@ -123,16 +128,38 @@ void TrayIconManager::updateTrayIcon()
         return;
     }
 
-    const int battery = trayBattery();
+    const bool headphones = infoData.value(QStringLiteral("connected")).toBool();
+    const QVariantMap now = media->nowPlaying();
+    const QString where = now.value(QStringLiteral("where")).toString();
+    TrayIcon::State state;
     if (!backend->connected()) {
-        trayIcon->setIconType(TrayIcon::IconType::Warning);
-    } else if (battery < 0) {
-        trayIcon->setIconType(TrayIcon::IconType::Default);
+        state.kind = TrayIcon::Kind::Offline;
     } else {
-        trayIcon->setTextIcon(battery);
+        if (headphones) {
+            state.kind = TrayIcon::Kind::Headphones;
+            state.battery = trayBattery();
+        }
+        // a click opens the popup for the iPhone's music; what plays here only counts with the headphones on
+        if (where == QLatin1String("iphone"))
+            state.badge = TrayIcon::Badge::Phone;
+        else if (where == QLatin1String("here") && headphones)
+            state.badge = TrayIcon::Badge::Play;
     }
+    trayIcon->setState(state);
 
-    trayIcon->setToolTip(composeToolTip(trayTooltipText()));
+    QString toolTip = composeToolTip(trayTooltipText());
+    if (state.badge != TrayIcon::Badge::None) {
+        QStringList track{now.value(QStringLiteral("title")).toString(), now.value(QStringLiteral("artist")).toString()};
+        track.removeAll(QString());
+        const QString song = track.join(QStringLiteral(" – "));
+        toolTip += QLatin1Char('\n') + (state.badge == TrayIcon::Badge::Phone
+                                            ? qtTrId("tray.playing_on_iphone").arg(now.value(QStringLiteral("source")).toString(), song)
+                                            : QStringLiteral("▶ ") + song);
+    }
+    // Windows shows at most 127 characters
+    if (toolTip.size() > 127)
+        toolTip = toolTip.left(126) + QChar(0x2026);
+    trayIcon->setToolTip(toolTip);
 }
 
 void TrayIconManager::rebuildMenu()
@@ -263,7 +290,10 @@ QString TrayIconManager::trayTooltipText() const
 
 QString TrayIconManager::composeToolTip(const QString &details) const
 {
-    const QString appName = QApplication::applicationDisplayName().isEmpty()
+    // the headphones' name while they are connected, the app's otherwise
+    const QString deviceName = infoData.value(QStringLiteral("connected")).toBool() ? infoData.value(QStringLiteral("name")).toString() : QString();
+    const QString appName = !deviceName.isEmpty() ? deviceName
+        : QApplication::applicationDisplayName().isEmpty()
         ? QGuiApplication::applicationName()
         : QApplication::applicationDisplayName();
 

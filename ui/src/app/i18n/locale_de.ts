@@ -395,6 +395,11 @@
         <source></source>
         <translation>Wenn das Problem weiterhin besteht, starte die App neu.</translation>
     </message>
+    <message id="tray.playing_on_iphone">
+        <location filename="../cpp/TrayIconManager.cpp" line="0"/>
+        <source></source>
+        <translation>Auf %1: %2</translation>
+    </message>
     <message id="tray.disconnected">
         <location filename="../cpp/TrayIconManager.cpp" line="211"/>
         <location filename="../cpp/TrayIconManager.cpp" line="232"/>

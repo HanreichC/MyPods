@@ -76,6 +76,8 @@ public:
 
     // Called when the list of iPhones or their connection changes
     void onIphonesChanged(std::function<void()> changed) { m_changed = std::move(changed); }
+    // Called when the track or whether it plays changes
+    void onNowPlayingChanged(std::function<void()> changed) { m_nowPlayingChanged = std::move(changed); }
     QVariantList iphones() const { return m_iphones; }
 
     // Advertises and follows BlueZ from the first call on
@@ -365,6 +367,8 @@ private:
             m_playing = Ams::isPlaying(text);
         else if (entity == Player && attribute == PlayerVolume)
             m_volume = Ams::volumePercent(text);
+        if ((entity != Player || attribute != PlayerVolume) && m_nowPlayingChanged)
+            m_nowPlayingChanged();
     }
 
     // Entity Attribute holds one value at a time: which one is written, then it is read. So the reads
@@ -439,10 +443,13 @@ private:
         m_playing = false;
         m_volume = -1;
         m_commands.clear();
+        if (m_nowPlayingChanged)
+            m_nowPlayingChanged();
     }
 
     bool m_started = false;
     std::function<void()> m_changed;
+    std::function<void()> m_nowPlayingChanged;
     QVariantList m_iphones;
     AmsAdvertisement m_advertisement;
     QString m_advertisedOn; // adapter path
@@ -463,6 +470,73 @@ private:
     QElapsedTimer m_steppedAt;
 };
 
+namespace {
+struct Mpris {
+    QString service;
+    QVariantMap props; // the player's properties
+    int rank = -1; // 2 playing, 1 paused, 0 stopped
+};
+
+// ponytail: blocking calls, a hung player costs kTimeoutMs each time. Go async if that ever shows.
+// A playing player wins, then a paused one, then whatever else is there
+Mpris bestPlayer()
+{
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    const QStringList names = bus.interface()->registeredServiceNames().value();
+    Mpris best;
+    for (const QString &name : names) {
+        // playerctld only mirrors the other players
+        if (!name.startsWith(QStringLiteral("org.mpris.MediaPlayer2.")) || name.endsWith(QStringLiteral(".playerctld")))
+            continue;
+        QDBusMessage call = QDBusMessage::createMethodCall(name, kPath, QStringLiteral("org.freedesktop.DBus.Properties"),
+                                                           QStringLiteral("GetAll"));
+        call << kPlayer;
+        const QDBusMessage reply = bus.call(call, QDBus::Block, kTimeoutMs);
+        if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty())
+            continue;
+        const QVariantMap props = qdbus_cast<QVariantMap>(reply.arguments().constFirst());
+        const QString status = props.value(QStringLiteral("PlaybackStatus")).toString();
+        const int rank = status == QLatin1String("Playing") ? 2 : status == QLatin1String("Paused") ? 1 : 0;
+        if (rank > best.rank)
+            best = {name, props, rank};
+    }
+    return best;
+}
+}
+
+void MediaController::watchPlayback()
+{
+    m_nowPlayingTimer.setSingleShot(true);
+    m_nowPlayingTimer.setInterval(300);
+    connect(&m_nowPlayingTimer, &QTimer::timeout, this, &MediaController::updateNowPlaying);
+    AppleMedia::instance().onNowPlayingChanged([this] { playbackChangedSoon(); });
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    bus.connect(QString(), kPath, QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("PropertiesChanged"),
+                this, SLOT(playbackChangedSoon()));
+    bus.connect(QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
+                QStringLiteral("NameOwnerChanged"), this, SLOT(onNameOwnerChanged(QString)));
+    playbackChangedSoon();
+}
+
+void MediaController::updateNowPlaying()
+{
+    const Mpris here = bestPlayer();
+    const AppleMedia &iphone = AppleMedia::instance();
+    QVariantMap now;
+    if (here.rank == 2) {
+        const QVariantMap meta = qdbus_cast<QVariantMap>(here.props.value(QStringLiteral("Metadata")));
+        now = {{QStringLiteral("where"), QStringLiteral("here")}, {QStringLiteral("title"), meta.value(QStringLiteral("xesam:title")).toString()},
+               {QStringLiteral("artist"), meta.value(QStringLiteral("xesam:artist")).toStringList().join(QStringLiteral(", "))}};
+    } else if (iphone.hasTrack() && iphone.playing()) {
+        now = {{QStringLiteral("where"), QStringLiteral("iphone")}, {QStringLiteral("title"), iphone.title()},
+               {QStringLiteral("artist"), iphone.artist()}, {QStringLiteral("source"), iphone.name()}};
+    }
+    if (now != m_nowPlaying) {
+        m_nowPlaying = now;
+        emit nowPlayingChanged();
+    }
+}
+
 void MediaController::watchIphone()
 {
     AppleMedia::instance().onIphonesChanged([this] { emit iphonesChanged(); });
@@ -479,38 +553,15 @@ void MediaController::refreshIphones()
     AppleMedia::instance().rescanSoon();
 }
 
-// ponytail: blocking calls, polled by the popup while it is open. A hung player costs kTimeoutMs per
-// poll; subscribe to PropertiesChanged and go async if the popup ever stays open for long.
+// Polled by the popup while it is open
 void MediaController::refresh()
 {
     AppleMedia &iphone = AppleMedia::instance();
     iphone.ensureStarted();
-    QDBusConnection bus = QDBusConnection::sessionBus();
-    const QStringList names = bus.interface()->registeredServiceNames().value();
-
-    // A playing player wins, then a paused one, then whatever else is there
-    int bestRank = -1;
-    QString bestService;
-    QVariantMap bestProps;
-    for (const QString &name : names) {
-        // playerctld only mirrors the other players
-        if (!name.startsWith(QStringLiteral("org.mpris.MediaPlayer2.")) || name.endsWith(QStringLiteral(".playerctld")))
-            continue;
-        QDBusMessage call = QDBusMessage::createMethodCall(name, kPath, QStringLiteral("org.freedesktop.DBus.Properties"),
-                                                           QStringLiteral("GetAll"));
-        call << kPlayer;
-        const QDBusMessage reply = bus.call(call, QDBus::Block, kTimeoutMs);
-        if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty())
-            continue;
-        const QVariantMap props = qdbus_cast<QVariantMap>(reply.arguments().constFirst());
-        const QString status = props.value(QStringLiteral("PlaybackStatus")).toString();
-        const int rank = status == QLatin1String("Playing") ? 2 : status == QLatin1String("Paused") ? 1 : 0;
-        if (rank > bestRank) {
-            bestRank = rank;
-            bestService = name;
-            bestProps = props;
-        }
-    }
+    const Mpris best = bestPlayer();
+    const int bestRank = best.rank;
+    const QString &bestService = best.service;
+    const QVariantMap &bestProps = best.props;
 
     QVariantMap player;
     if (!bestService.isEmpty()) {
