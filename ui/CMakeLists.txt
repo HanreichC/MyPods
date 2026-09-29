@@ -42,6 +42,7 @@ qt_add_executable(magicpods
     src/app/cpp/main.cpp
     # listed for AUTOMOC: its implementation is MediaController.cpp or MediaController_win.cpp per platform
     src/app/cpp/MediaController.h
+    src/app/cpp/MediaController_cover.cpp
     src/app/cpp/TrayIcon.cpp
     src/app/cpp/TrayIconManager.cpp
 )

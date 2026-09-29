@@ -6,8 +6,11 @@
 #include <QObject>
 #include <QVariantMap>
 
-// Now playing and the default output's volume, for the tray popup.
-// Linux: MPRIS and pactl (MediaController.cpp). Windows: system media sessions and Core Audio (MediaController_win.cpp).
+class QNetworkAccessManager;
+
+// Now playing and the default output's volume, for the tray popup, or a paired iPhone's (Ams.h).
+// Linux: MPRIS, pactl and BlueZ (MediaController.cpp). Windows: system media sessions, Core Audio and
+// WinRT Bluetooth (MediaController_win.cpp).
 class MediaController final : public QObject
 {
     Q_OBJECT
@@ -25,6 +28,8 @@ public:
     bool muted() const { return m_muted; }
 
     Q_INVOKABLE void refresh();
+    // Starts following a paired iPhone, so it is there by the first click
+    void watchIphone();
     Q_INVOKABLE void playPause();
     Q_INVOKABLE void next();
     Q_INVOKABLE void previous();
@@ -39,12 +44,15 @@ private:
     void callPlayer(const QString &method);
 #ifndef Q_OS_WIN
     static QString pactl(const QStringList &args);
-#else
+#endif
+    // Covers (MediaController_cover.cpp)
     void fetchIphoneArt(const QString &key, const QString &title, const QString &artist);
     void showArt(const QString &key, const QByteArray &art);
+    static QString saveArt(const QString &key, const QByteArray &art);
+    static void dropArt(const QString &url);
+
     QString m_artKey; // title + artist the cover in m_player belongs to
-    class QNetworkAccessManager *m_network = nullptr; // for the iPhone's covers, created on first use
-#endif
+    QNetworkAccessManager *m_network = nullptr; // for the iPhone's covers, created on first use
 
     QString m_service; // MPRIS bus name / app user model id of the shown player
     QVariantMap m_player;

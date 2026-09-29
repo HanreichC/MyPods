@@ -6,8 +6,22 @@
 #include <QString>
 #include <QtMath>
 
-// The values of the Apple Media Service (the iPhone's now playing over BLE, MediaController_win.cpp)
+#include <cstdint>
+
+// The Apple Media Service: the BLE service a watch uses for the iPhone's now playing and remote control.
+// It keeps working while the iPhone plays to its own headphones. MediaController_win.cpp (WinRT) and
+// MediaController.cpp (BlueZ) talk to it. Spec:
+// https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleMediaService_Reference/Specification/Specification.html
 namespace Ams {
+
+enum Command : uint8_t { TogglePlayPause = 2, NextTrack = 3, PreviousTrack = 4, VolumeUp = 5, VolumeDown = 6 };
+enum Entity : uint8_t { Player = 0, Track = 2 };
+enum Attribute : uint8_t { PlayerPlaybackInfo = 1, PlayerVolume = 2, TrackArtist = 0, TrackTitle = 2 };
+// Entity Update flag: the value goes on, the whole one is read through Entity Attribute
+constexpr uint8_t Truncated = 1;
+
+// MediaController's m_service while the iPhone's player is shown; MPRIS names and app ids never look like this
+inline const QString IphoneService = QStringLiteral("ams:iphone");
 
 // iOS moves the volume in 16 steps
 constexpr double VolumeStep = 100.0 / 16;

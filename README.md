@@ -84,6 +84,7 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Press speed, press-and-hold duration, volume swipe, tone volume, personalized volume, mute/end call, ANC with one AirPod | Same settings, written to the AirPods. |
 | Rename the AirPods; model number, serial number and firmware in the "About" pane | Same, in the "Device" section of the device page. The name is stored on the AirPods, so every paired device sees it. |
 | "Low battery" notification | A desktop notification when an AirPod or the Max drops to 10 %. It comes back after charging or once the level is above 20 %. |
+| Now playing of the iPhone on an Apple Watch | The tray popup shows and controls what plays on a paired iPhone while it plays to its own headphones: title, artist, cover, play/pause/skip and the iPhone's volume in its 16 steps, marked "Playing on <iPhone>". Over the Apple Media Service (BLE), like a watch. The cover comes from the iTunes Search API, which gets artist and title. |
 
 Also available: Bluetooth codec display, battery level in the tray icon, autostart,
 [keyboard shortcuts](#keyboard-shortcuts) for noise control and handoff, a Steam Deck / gamescope
@@ -203,6 +204,10 @@ A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](d
   `$LADSPA_PATH` or `/usr/lib/ladspa`). Without it spatial audio plays 7 dB quieter to stay clean.
 - An MPRIS-capable media player for auto-pause, automatic switching and the tray popup's now playing (browsers, Spotify, mpv with `mpv-mpris`, …)
 - `pactl` (part of `libpulse`) for the tray popup's volume slider
+- For the iPhone's now playing: the iPhone paired with this computer, and an adapter with LE advertising. MyPods
+  advertises for the Apple Media Service and the iPhone connects over LE by itself. The pairing must give
+  the LE keys too (the iPhone derives them from a Classic pairing); Intel adapters do, some Realtek
+  adapters and USB dongles don't
 - Optional: `layer-shell-qt` (ships with KDE Plasma) to place the tray popup under the panel on Wayland
 - A system tray. KDE Plasma, Cinnamon, XFCE and most panels have one; GNOME needs the
   *AppIndicator and KStatusNotifierItem Support* extension. Without a tray, MyPods opens as a window
@@ -313,7 +318,7 @@ L2CAP (AAP). MyPods ships no driver, so on Windows it does what user space allow
 | AirPods battery in the app and tray | Yes, from the advertisements: 10 % steps, 1 % with imported keys |
 | Ear detection (pause/resume) | Yes, from the advertisements; on/off is stored locally |
 | Tray popup: now playing, media keys, volume | Yes (system media sessions, Core Audio) |
-| The iPhone's music in the tray popup: title, cover, play/pause/skip, its volume | Yes, over the Apple Media Service (BLE), with the iPhone paired in the Windows Bluetooth settings. Works while the iPhone plays to its own headphones. The cover comes from the iTunes Search API, which gets artist and title. Windows only for now. |
+| The iPhone's music in the tray popup: title, cover, play/pause/skip, its volume | Yes, over the Apple Media Service (BLE), with the iPhone paired in the Windows Bluetooth settings. Windows connects to the iPhone itself, no advertising needed. |
 | Parrot Zik 2.0, Galaxy Buds (RFCOMM) | Yes, all features |
 | HFP battery of other headsets | Yes |
 | Noise control, Conversation Awareness, press/swipe settings, microphone, hearing aid | No, needs AAP |

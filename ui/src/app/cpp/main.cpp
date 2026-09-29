@@ -223,9 +223,7 @@ int main(int argc, char *argv[]) {
     Backend backend;
     TrayIcon trayIcon;
     MediaController mediaController;
-#ifdef Q_OS_WIN
-    mediaController.refresh(); // starts looking for a paired iPhone
-#endif
+    mediaController.watchIphone();
     engine.rootContext()->setContextProperty("backendManager", &backendManager);
     engine.rootContext()->setContextProperty("desktopManager", &desktopManager);
     engine.rootContext()->setContextProperty("cppBackend", &backend);
@@ -339,12 +337,10 @@ int main(int argc, char *argv[]) {
         // there is neither). Double click: the window.
         QObject::connect(&trayIcon, &TrayIcon::leftClicked, [&]() {
             bool showPopup = trayPopup && trayPopup->property("hasInfo").toBool();
-#ifdef Q_OS_WIN
             if (trayPopup && !showPopup) {
                 mediaController.refresh();
                 showPopup = mediaController.player().contains(QStringLiteral("source"));
             }
-#endif
             if (showPopup) {
                 toggleTrayPopup();
             } else {

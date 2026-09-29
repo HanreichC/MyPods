@@ -18,17 +18,6 @@
 #include "Ams.h"
 #include "MediaController.h"
 
-#include <QCryptographicHash>
-#include <QDir>
-#include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QLocale>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QUrl>
-#include <QUrlQuery>
 
 #include <algorithm>
 #include <chrono>
@@ -56,21 +45,13 @@ struct Snapshot {
     int volume = -1; // the iPhone's, 0-100
 };
 
-// m_service of the iPhone; app user model ids never look like this
-const QString IphoneService = QStringLiteral("ams:iphone");
+using namespace Ams;
 
-// Apple Media Service: the BLE service a watch uses for the iPhone's now playing and remote control.
-// It keeps working while the iPhone plays to its own headphones. Spec:
-// https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleMediaService_Reference/Specification/Specification.html
+// The Apple Media Service's UUIDs (Ams.h)
 const winrt::guid AmsService{0x89D3502B, 0x0F36, 0x433A, {0x8E, 0xF4, 0xC5, 0x02, 0xAD, 0x55, 0xF8, 0xDC}};
 const winrt::guid AmsRemoteCommand{0x9B3C81D8, 0x57B1, 0x4A8A, {0xB8, 0xDF, 0x0E, 0x56, 0xF7, 0xCA, 0x51, 0xC2}};
 const winrt::guid AmsEntityUpdate{0x2F7CABCE, 0x808D, 0x411F, {0x9A, 0x0C, 0xBB, 0x92, 0xBA, 0x96, 0xC1, 0x02}};
 const winrt::guid AmsEntityAttribute{0xC6B2F38C, 0x23AB, 0x46D8, {0xA6, 0xAB, 0xA3, 0xA8, 0x70, 0xBB, 0xD5, 0xD7}};
-
-enum AmsCommand : uint8_t { TogglePlayPause = 2, NextTrack = 3, PreviousTrack = 4, VolumeUp = 5, VolumeDown = 6 };
-enum AmsEntity : uint8_t { Player = 0, Track = 2 };
-enum AmsAttribute : uint8_t { PlayerPlaybackInfo = 1, PlayerVolume = 2, TrackArtist = 0, TrackTitle = 2 };
-constexpr uint8_t AmsTruncated = 1;
 
 IBuffer bytes(std::initializer_list<uint8_t> values)
 {
@@ -133,7 +114,7 @@ public:
         return snapshot;
     }
 
-    void send(AmsCommand command)
+    void send(Command command)
     {
         onWorker([this, command] {
             gatt::GattCharacteristic remote{nullptr};
@@ -163,7 +144,7 @@ public:
         onWorker([this] {
             for (;;) {
                 gatt::GattCharacteristic remote{nullptr};
-                AmsCommand command;
+                Command command;
                 {
                     std::lock_guard lock{m_lock};
                     if (m_pendingSteps == 0 || !m_remote) {
@@ -304,7 +285,7 @@ private:
             apply(entity, attribute, text);
         }
         // a notification carries what fits into one packet; the whole title is read separately
-        if ((value.data()[2] & AmsTruncated) && entity == Track) {
+        if ((value.data()[2] & Truncated) && entity == Track) {
             onWorker([this, attribute, text] {
                 const auto whole = read(Track, attribute);
                 std::lock_guard lock{m_lock};
@@ -363,7 +344,7 @@ private:
         m_commands.clear();
     }
 
-    bool supports(AmsCommand command) const
+    bool supports(Command command) const
     {
         // before the first list arrives, everything is offered
         return m_commands.empty() || std::find(m_commands.begin(), m_commands.end(), command) != m_commands.end();
@@ -447,19 +428,6 @@ Snapshot query(const QString &knownArtKey)
     return best;
 }
 
-// The cover as a file for the Image; a new file name per track, it would keep showing a cached one otherwise
-QString saveArt(const QString &key, const QByteArray &art)
-{
-    if (art.isEmpty())
-        return {};
-    const QString path = QDir::temp().filePath(QStringLiteral("mypods-cover-%1")
-        .arg(QString::fromLatin1(QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Md5).toHex())));
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly) || file.write(art) != art.size())
-        return {};
-    return QUrl::fromLocalFile(path).toString();
-}
-
 winrt::com_ptr<IAudioEndpointVolume> defaultEndpointVolume()
 {
     winrt::com_ptr<IMMDeviceEnumerator> enumerator;
@@ -472,6 +440,11 @@ winrt::com_ptr<IAudioEndpointVolume> defaultEndpointVolume()
     return volume;
 }
 
+}
+
+void MediaController::watchIphone()
+{
+    AppleMedia::instance().ensureStarted();
 }
 
 void MediaController::refresh()
@@ -490,7 +463,7 @@ void MediaController::refresh()
         const QString key = snapshot.title + QLatin1Char('\n') + snapshot.artist;
         QString artUrl = m_player.value(QStringLiteral("artUrl")).toString();
         if (key != m_artKey) {
-            QFile::remove(QUrl(artUrl).toLocalFile());
+            dropArt(artUrl);
             artUrl = saveArt(key, snapshot.art);
             m_artKey = key;
             if (!snapshot.source.isEmpty())
@@ -535,50 +508,6 @@ void MediaController::refresh()
         m_muted = muted;
         emit volumeChanged();
     }
-}
-
-// AMS has no cover: the iTunes Search API finds it by artist and title, which it sends to Apple
-void MediaController::fetchIphoneArt(const QString &key, const QString &title, const QString &artist)
-{
-    if (!m_network)
-        m_network = new QNetworkAccessManager(this);
-    QUrlQuery query;
-    query.addQueryItem(QStringLiteral("term"), artist + QLatin1Char(' ') + title);
-    query.addQueryItem(QStringLiteral("entity"), QStringLiteral("song"));
-    query.addQueryItem(QStringLiteral("limit"), QStringLiteral("1"));
-    // the store of this country, where Apple Music found the song too
-    if (const QString country = QLocale::territoryToCode(QLocale::system().territory()); !country.isEmpty())
-        query.addQueryItem(QStringLiteral("country"), country);
-    QUrl url(QStringLiteral("https://itunes.apple.com/search"));
-    url.setQuery(query);
-
-    QNetworkReply *search = m_network->get(QNetworkRequest(url));
-    connect(search, &QNetworkReply::finished, this, [this, search, key] {
-        search->deleteLater();
-        const QJsonArray results = QJsonDocument::fromJson(search->readAll()).object().value(QStringLiteral("results")).toArray();
-        QString artwork = results.isEmpty() ? QString() : results.first().toObject().value(QStringLiteral("artworkUrl100")).toString();
-        if (key != m_artKey || artwork.isEmpty())
-            return;
-        artwork.replace(QStringLiteral("100x100"), QStringLiteral("300x300")); // the same picture, larger
-        QNetworkReply *image = m_network->get(QNetworkRequest(QUrl(artwork)));
-        connect(image, &QNetworkReply::finished, this, [this, image, key] {
-            image->deleteLater();
-            if (image->error() == QNetworkReply::NoError)
-                showArt(key, image->readAll());
-        });
-    });
-}
-
-// A cover that arrived after the track was shown, if the track is still the same
-void MediaController::showArt(const QString &key, const QByteArray &art)
-{
-    if (key != m_artKey || m_player.isEmpty())
-        return;
-    const QString artUrl = saveArt(key, art);
-    if (artUrl.isEmpty())
-        return;
-    m_player[QStringLiteral("artUrl")] = artUrl;
-    emit playerChanged();
 }
 
 void MediaController::callPlayer(const QString &method)
