@@ -621,6 +621,16 @@
         <source></source>
         <translation>Playing on %1</translation>
     </message>
+    <message id="tray.popup.favorite">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Favorite</translation>
+    </message>
+    <message id="tray.popup.unfavorite">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Undo Favorite</translation>
+    </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>

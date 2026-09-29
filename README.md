@@ -84,7 +84,7 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Press speed, press-and-hold duration, volume swipe, tone volume, personalized volume, mute/end call, ANC with one AirPod | Same settings, written to the AirPods. |
 | Rename the AirPods; model number, serial number and firmware in the "About" pane | Same, in the "Device" section of the device page. The name is stored on the AirPods, so every paired device sees it. |
 | "Low battery" notification | A desktop notification when an AirPod or the Max drops to 10 %. It comes back after charging or once the level is above 20 %. |
-| Now playing of the iPhone on an Apple Watch | The tray popup shows and controls what plays on a paired iPhone while it plays to its own headphones: title, artist, cover, play/pause/skip and the iPhone's volume in its 16 steps, marked "Playing on <iPhone>". Over the Apple Media Service (BLE), like a watch. The cover comes from the iTunes Search API, which gets artist and title. The Bluetooth page lists the paired iPhones and whether they are connected. |
+| Now playing of the iPhone on an Apple Watch | The tray popup shows and controls what plays on a paired iPhone while it plays to its own headphones: title, artist, cover, play/pause/skip, Apple Music's star (favorite) and the iPhone's volume in its 16 steps, marked "Playing on <iPhone>". Over the Apple Media Service (BLE), like a watch. The cover comes from the iTunes Search API, which gets artist and title. The Bluetooth page lists the paired iPhones and whether they are connected. |
 
 Also available: Bluetooth codec display, battery level in the tray icon, autostart,
 [keyboard shortcuts](#keyboard-shortcuts) for noise control and handoff, a Steam Deck / gamescope
@@ -637,7 +637,8 @@ The full reference with request and response examples is in
   layer-shell surface anchored to the top-right corner: right for a panel at the top, wrong for
   one at the bottom. The AppImage is built without `layer-shell-qt`, so there the compositor
   places the popup. On X11 it opens at the pointer, for a panel on any edge.
-- **The iPhone's now playing** offers what AMS has: no mute, no browsing or choosing songs, and the
+- **The iPhone's now playing** offers what AMS has: no mute, no browsing or choosing songs, no way to
+  tell whether a track already is a favorite (the star shows what was clicked in MyPods), and the
   volume only in the iPhone's 16 steps. AMS sends no cover; it is looked up by artist and title and
   missing for songs the iTunes catalog doesn't have. The iPhone's music shows when nothing plays
   on the computer, or nothing is loaded there. On Linux it is tested against a stand-in for

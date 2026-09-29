@@ -41,6 +41,7 @@ struct Snapshot {
     QString artist;
     QByteArray art;
     bool playing = false;
+    bool canLike = false;
     bool canGoNext = false;
     bool canGoPrevious = false;
     int volume = -1; // the iPhone's, 0-100
@@ -136,6 +137,8 @@ public:
         snapshot.volume = m_volume;
         snapshot.canGoNext = supports(NextTrack);
         snapshot.canGoPrevious = supports(PreviousTrack);
+        // only when the player lists it: the star is no use to one that ignores it
+        snapshot.canLike = std::find(m_commands.begin(), m_commands.end(), LikeTrack) != m_commands.end();
         return snapshot;
     }
 
@@ -540,6 +543,8 @@ void MediaController::refresh()
         if (!snapshot.source.isEmpty()) {
             player.insert(QStringLiteral("source"), snapshot.source);
             player.insert(QStringLiteral("volumeStep"), Ams::VolumeStep);
+            player.insert(QStringLiteral("canLike"), snapshot.canLike);
+            player.insert(QStringLiteral("liked"), m_liked.contains(key));
         }
     } else {
         m_artKey.clear();
@@ -609,6 +614,20 @@ void MediaController::playPause()
     callPlayer(QStringLiteral("PlayPause"));
     // Flip at once; the next poll corrects it if the player refused
     m_player[QStringLiteral("playing")] = !m_player.value(QStringLiteral("playing")).toBool();
+    emit playerChanged();
+}
+
+void MediaController::toggleLike()
+{
+    if (m_service != IphoneService)
+        return;
+    AppleMedia::instance().send(LikeTrack);
+    const bool liked = !m_liked.contains(m_artKey);
+    if (liked)
+        m_liked.insert(m_artKey);
+    else
+        m_liked.remove(m_artKey);
+    m_player[QStringLiteral("liked")] = liked;
     emit playerChanged();
 }
 

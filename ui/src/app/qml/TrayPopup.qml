@@ -309,6 +309,27 @@ QQC2.ApplicationWindow {
                         elide: Text.ElideRight
                     }
                 }
+
+                // Apple Music's star (favorite), for the iPhone's player when it takes it
+                QQC2.AbstractButton {
+                    id: star
+                    readonly property bool liked: popup.player.liked ?? false
+                    visible: popup.player.canLike ?? false
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 34
+                    implicitHeight: 34
+                    Accessible.name: liked ? qsTrId("tray.popup.unfavorite") : qsTrId("tray.popup.favorite")
+                    onClicked: cppMedia.toggleLike()
+                    background: Rectangle {
+                        radius: width / 2
+                        color: star.pressed ? MP.Theme.fill : star.hovered ? MP.Theme.tertiaryFill : "transparent"
+                    }
+                    contentItem: Impl.IconImage {
+                        sourceSize: Qt.size(20, 20)
+                        source: MP.Theme.asset(star.liked ? "icons/icon-star-fill.svg" : "icons/icon-star.svg")
+                        color: star.liked ? MP.Theme.red : MP.Theme.text
+                    }
+                }
             }
 
             RowLayout {

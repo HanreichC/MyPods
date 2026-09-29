@@ -116,6 +116,8 @@ public:
         // before the first list arrives, everything is offered
         return m_commands.isEmpty() || m_commands.contains(char(command));
     }
+    // Only when the player lists it: the star is no use to one that ignores it
+    bool offers(Command command) const { return m_commands.contains(char(command)); }
 
     void send(Command command)
     {
@@ -546,6 +548,8 @@ void MediaController::refresh()
             {QStringLiteral("canGoPrevious"), iphone.supports(PreviousTrack)},
             {QStringLiteral("source"), iphone.name()},
             {QStringLiteral("volumeStep"), Ams::VolumeStep},
+            {QStringLiteral("canLike"), iphone.offers(LikeTrack)},
+            {QStringLiteral("liked"), m_liked.contains(key)},
         };
         service = IphoneService;
     } else {
@@ -609,6 +613,20 @@ void MediaController::playPause()
     callPlayer(QStringLiteral("PlayPause"));
     // Flip at once; the next poll corrects it if the player refused
     m_player[QStringLiteral("playing")] = !m_player.value(QStringLiteral("playing")).toBool();
+    emit playerChanged();
+}
+
+void MediaController::toggleLike()
+{
+    if (m_service != IphoneService)
+        return;
+    AppleMedia::instance().send(LikeTrack);
+    const bool liked = !m_liked.contains(m_artKey);
+    if (liked)
+        m_liked.insert(m_artKey);
+    else
+        m_liked.remove(m_artKey);
+    m_player[QStringLiteral("liked")] = liked;
     emit playerChanged();
 }
 

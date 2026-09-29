@@ -14,7 +14,8 @@
 // https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleMediaService_Reference/Specification/Specification.html
 namespace Ams {
 
-enum Command : uint8_t { TogglePlayPause = 2, NextTrack = 3, PreviousTrack = 4, VolumeUp = 5, VolumeDown = 6 };
+// LikeTrack is Apple Music's star (favorite)
+enum Command : uint8_t { TogglePlayPause = 2, NextTrack = 3, PreviousTrack = 4, VolumeUp = 5, VolumeDown = 6, LikeTrack = 11 };
 enum Entity : uint8_t { Player = 0, Track = 2 };
 enum Attribute : uint8_t { PlayerPlaybackInfo = 1, PlayerVolume = 2, TrackArtist = 0, TrackTitle = 2 };
 // Entity Update flag: the value goes on, the whole one is read through Entity Attribute

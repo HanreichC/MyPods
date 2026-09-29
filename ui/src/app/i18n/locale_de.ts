@@ -621,6 +621,16 @@
         <source></source>
         <translation>Wird auf %1 abgespielt</translation>
     </message>
+    <message id="tray.popup.favorite">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Favorisieren</translation>
+    </message>
+    <message id="tray.popup.unfavorite">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Nicht mehr favorisieren</translation>
+    </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
