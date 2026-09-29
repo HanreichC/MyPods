@@ -13,14 +13,19 @@ class TrayIcon final : public QSystemTrayIcon {
 
 public:
     // A monochrome glyph like a menu bar extra: the app logo (dimmed while nothing is connected) or the
-    // headphones in a ring that shows their battery, red when low. A badge says where music plays.
+    // headphones in a ring that shows their battery, red when low. A badge says where music plays, else
+    // a bolt that they charge.
     enum class Kind { Offline, Idle, Headphones };
     enum class Badge { None, Play, Phone };
     struct State {
         Kind kind = Kind::Idle;
         int battery = -1; // 0-100, -1 unknown
+        bool charging = false;
         Badge badge = Badge::None;
-        bool operator==(const State &o) const { return kind == o.kind && battery == o.battery && badge == o.badge; }
+        bool operator==(const State &o) const
+        {
+            return kind == o.kind && battery == o.battery && charging == o.charging && badge == o.badge;
+        }
     };
 
     enum class ThemeMode {

@@ -38,6 +38,7 @@ private:
     void rebuildMenu();
     bool batteryAvailable(const QVariantMap &batteryPart) const;
     int trayBattery() const; // -1 when no earbud level is available
+    bool trayCharging() const; // an earbud (or single-unit headphones) charges
     QString trayTooltipText() const;
     QString composeToolTip(const QString &details) const;
     QList<QVariantMap> sortedHeadphones() const;

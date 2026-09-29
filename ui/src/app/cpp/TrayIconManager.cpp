@@ -138,6 +138,7 @@ void TrayIconManager::updateTrayIcon()
         if (headphones) {
             state.kind = TrayIcon::Kind::Headphones;
             state.battery = trayBattery();
+            state.charging = trayCharging();
         }
         // a click opens the popup for the iPhone's music; what plays here only counts with the headphones on
         if (where == QLatin1String("iphone"))
@@ -251,6 +252,17 @@ int TrayIconManager::trayBattery() const
     }
     // Only the case (or nothing) is reported: no earbud level to show
     return -1;
+}
+
+bool TrayIconManager::trayCharging() const
+{
+    const QVariantMap batteryData = batteryDataFromInfo(infoData);
+    for (const char *part : {"single", "left", "right"}) { // not the case, it isn't worn
+        const QVariantMap b = batteryData.value(QLatin1String(part)).toMap();
+        if (batteryAvailable(b) && b.value(QStringLiteral("charging")).toBool())
+            return true;
+    }
+    return false;
 }
 
 QString TrayIconManager::trayTooltipText() const

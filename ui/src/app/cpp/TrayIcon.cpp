@@ -35,7 +35,7 @@ QImage render(const TrayIcon::State &state, int size, bool darkPanel)
     p.setBrush(fg);
 
     if (state.kind == TrayIcon::Kind::Headphones) {
-        // the battery ring, clockwise from 12 o'clock over a faint track; red at 20 % like on iOS
+        // the battery ring, clockwise from 12 o'clock over a faint track; red at 20 % like on iOS, not while charging
         const QRectF ring(1.1, 1.1, 13.8, 13.8);
         QPen pen(fg, 1.6);
         pen.setCapStyle(Qt::RoundCap);
@@ -45,7 +45,7 @@ QImage render(const TrayIcon::State &state, int size, bool darkPanel)
         p.drawEllipse(ring);
         p.setOpacity(1);
         if (state.battery > 0) {
-            pen.setColor(state.battery <= LowBattery::kRearmAbove ? red : fg);
+            pen.setColor(state.battery <= LowBattery::kRearmAbove && !state.charging ? red : fg);
             p.setPen(pen);
             p.drawArc(ring, 90 * 16, -qRound(state.battery * 3.6 * 16));
         }
@@ -78,14 +78,22 @@ QImage render(const TrayIcon::State &state, int size, bool darkPanel)
         p.setOpacity(1);
     }
 
-    if (state.badge != TrayIcon::Badge::None) {
-        // cut a gap around the badge, then draw it: a play triangle for here, a phone for the iPhone
+    const bool bolt = state.kind == TrayIcon::Kind::Headphones && state.charging && state.badge == TrayIcon::Badge::None;
+    if (state.badge != TrayIcon::Badge::None || bolt) {
+        // cut a gap around the badge, then draw it: a play triangle for here, a phone for the iPhone, a
+        // bolt while charging and no music plays
         p.setPen(Qt::NoPen);
         p.setBrush(fg);
         p.setCompositionMode(QPainter::CompositionMode_Clear);
         p.drawEllipse(QPointF(12.6, 12.6), 4.4, 4.4);
         p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        if (state.badge == TrayIcon::Badge::Play) {
+        if (bolt) {
+            QPen pen(fg, 0.6);
+            pen.setJoinStyle(Qt::RoundJoin);
+            p.setPen(pen);
+            p.drawPolygon(QPolygonF({QPointF(14.1, 8.9), QPointF(10.4, 13.3), QPointF(12.5, 13.3), QPointF(11.3, 16.3),
+                                     QPointF(15.1, 11.9), QPointF(13.0, 11.9)}));
+        } else if (state.badge == TrayIcon::Badge::Play) {
             QPen pen(fg, 0.8);
             pen.setJoinStyle(Qt::RoundJoin);
             p.setPen(pen);
