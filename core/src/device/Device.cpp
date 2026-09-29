@@ -58,6 +58,8 @@ namespace MagicPodsCore {
             clientClosedEventId = _client->GetOnClosedEvent().Subscribe([this](size_t id, bool)
             {
                 std::lock_guard lock{_workerLock};
+                if (_restarts > MAX_RESTARTS_PER_CONNECTION) // gave up already, or disconnecting on request
+                    return;
                 if (++_restarts > MAX_RESTARTS_PER_CONNECTION) {
                     Logger::Error("%s control channel keeps closing, giving up until the next connection", GetName().c_str());
                     return;
@@ -192,11 +194,27 @@ namespace MagicPodsCore {
         _deviceInfo->ConnectAsync(std::move(callback));
     }
 
+    // Our open control channel holds the link up on Windows (the audio disconnect leaves it alone) and,
+    // reopened after the headphones close it, reconnects them on BlueZ. Close it and keep it closed until
+    // the next connection, which resets _restarts.
+    void Device::RequestClientStopForDisconnect()
+    {
+        if (!_client)
+            return;
+        std::lock_guard lock{_workerLock};
+        _restarts = MAX_RESTARTS_PER_CONNECTION + 1;
+        _startRequested = false;
+        _stopRequested = true;
+        _workerWake.notify_one();
+    }
+
     void Device::Disconnect() {
+        RequestClientStopForDisconnect();
         _deviceInfo->Disconnect();
     }
 
     void Device::DisconnectAsync(BtCallback&& callback) {
+        RequestClientStopForDisconnect();
         _deviceInfo->DisconnectAsync(std::move(callback));
     }
 

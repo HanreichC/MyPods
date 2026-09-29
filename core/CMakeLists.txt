@@ -139,7 +139,7 @@ if(WIN32)
     )
     target_compile_definitions(magicpodscore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
     target_compile_options(magicpodscore PRIVATE /utf-8 /bigobj)
-    target_link_libraries(magicpodscore PRIVATE windowsapp ws2_32 ole32)
+    target_link_libraries(magicpodscore PRIVATE windowsapp ws2_32 ole32 bthprops)
 else()
     # BlueZ (D-Bus, L2CAP/RFCOMM sockets), PulseAudio/PipeWire, MPRIS
     target_sources(magicpodscore PRIVATE

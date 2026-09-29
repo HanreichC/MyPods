@@ -54,6 +54,7 @@ namespace MagicPodsCore {
         bool _workerExit = false;
         int _restarts = 0; // channel reopened after the headphones closed it, since the last connection
         void RequestClientStart(bool delayed);
+        void RequestClientStopForDisconnect();
         void ClientWorker();
 
     protected:

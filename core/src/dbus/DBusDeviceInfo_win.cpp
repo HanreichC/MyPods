@@ -6,7 +6,9 @@
 //  * The UUIDs are the RFCOMM services from the SDP record Windows cached at pairing, which covers every
 //    UUID the daemon looks for (Hands-Free, Parrot Zik, Galaxy Buds).
 //  * Windows has no API to connect a paired audio device; the Bluetooth audio driver's
-//    KSPROPERTY_ONESHOT_RECONNECT/DISCONNECT (what the Sound settings use) does it.
+//    KSPROPERTY_ONESHOT_RECONNECT (what the Sound settings use) does it. Disconnecting drops the whole link
+//    through the radio (IOCTL_BTH_DISCONNECT_DEVICE): Intel's Bluetooth audio offload driver accepts
+//    KSPROPERTY_ONESHOT_DISCONNECT and ignores it.
 
 #include "DBusDeviceInfo.h"
 #include "Logger.h"
@@ -18,6 +20,10 @@
 #include <winrt/Windows.Devices.Enumeration.h>
 
 #include <windows.h>
+#include <bluetoothapis.h>
+#include <bthdef.h>
+#include <winioctl.h>
+#include <bthioctl.h>
 #include <mmdeviceapi.h>
 #include <devicetopology.h>
 #include <ks.h>
@@ -40,6 +46,7 @@ namespace MagicPodsCore {
         BluetoothDevice device{nullptr};
         winrt::event_token connectionToken{};
         DeviceWatcher batteryWatcher{nullptr};
+        winrt::guid container{}; // shared by the device's PnP nodes and its audio endpoints
     };
 
     static std::string FormatAddress(uint64_t address) {
@@ -96,7 +103,8 @@ namespace MagicPodsCore {
             auto aep = DeviceInformation::CreateFromIdAsync(device.DeviceId(), {CONTAINER_KEY}, DeviceInformationKind::AssociationEndpoint).get();
             auto container = aep.Properties().TryLookup(CONTAINER_KEY);
             if (container) {
-                auto aqs = L"System.Devices.ContainerId:=\"" + winrt::to_hstring(winrt::unbox_value<winrt::guid>(container)) + L"\"";
+                _native->container = winrt::unbox_value<winrt::guid>(container);
+                auto aqs = L"System.Devices.ContainerId:=\"" + winrt::to_hstring(_native->container) + L"\"";
                 for (const auto& node : DeviceInformation::FindAllAsync(aqs, {HARDWARE_IDS_KEY, BATTERY_KEY}, DeviceInformationKind::Device).get()) {
                     if (auto ids = node.Properties().TryLookup(HARDWARE_IDS_KEY).try_as<winrt::Windows::Foundation::IPropertyValue>()) {
                         winrt::com_array<winrt::hstring> list;
@@ -144,10 +152,14 @@ namespace MagicPodsCore {
         _native->device.ConnectionStatusChanged(_native->connectionToken);
     }
 
-    // Sends KSPROPERTY_ONESHOT_(RE|DIS)CONNECT to the Bluetooth audio filters of this device. The filters
-    // are found through the audio endpoints' topology; their ids contain the device address
-    // ("...bthhfenum#...&0&a4c6f0123456_c00000000#...").
-    static bool SendBtAudioOneShot(const std::string& address, ULONG property) {
+    // DEVPKEY_Device_ContainerId as an endpoint property key (no initguid.h needed)
+    static constexpr PROPERTYKEY CONTAINER_ID_KEY{{0x8c7ed206, 0x3f8a, 0x4827, {0xb3, 0xab, 0xae, 0x9e, 0x1f, 0xae, 0xfc, 0x6c}}, 2};
+
+    // Sends KSPROPERTY_ONESHOT_(RE|DIS)CONNECT to the Bluetooth audio filters of this device, found through
+    // the audio endpoints' topology. An endpoint belongs to the device by its container id; the filter id
+    // carries the address too ("...bthhfenum#...&0&a4c6f0123456_c00000000#..."), but not with Intel's
+    // Bluetooth audio offload ("...intelaudio#...\intcbttoporender_..."), where only the container id matches.
+    static bool SendBtAudioOneShot(const std::string& address, const winrt::guid& container, ULONG property) {
         std::wstring needle;
         for (char c : address)
             if (c != ':')
@@ -181,7 +193,16 @@ namespace MagicPodsCore {
             CoTaskMemFree(filterId);
             std::wstring lower = id;
             std::transform(lower.begin(), lower.end(), lower.begin(), ::towlower);
-            if (lower.find(needle) == std::wstring::npos || std::find(done.begin(), done.end(), lower) != done.end())
+            bool sameContainer = false;
+            winrt::com_ptr<IPropertyStore> properties;
+            if (container != winrt::guid{} && SUCCEEDED(endpoint->OpenPropertyStore(STGM_READ, properties.put()))) {
+                PROPVARIANT value;
+                PropVariantInit(&value);
+                if (SUCCEEDED(properties->GetValue(CONTAINER_ID_KEY, &value)) && value.vt == VT_CLSID)
+                    sameContainer = winrt::guid{*value.puuid} == container;
+                PropVariantClear(&value);
+            }
+            if ((!sameContainer && lower.find(needle) == std::wstring::npos) || std::find(done.begin(), done.end(), lower) != done.end())
                 continue;
             done.push_back(lower);
 
@@ -202,11 +223,11 @@ namespace MagicPodsCore {
     }
 
     // COM for the audio calls: the caller's thread may belong to no apartment, so run on our own MTA thread
-    static std::optional<std::string> OneShot(const std::string& address, ULONG property) {
+    static std::optional<std::string> OneShot(const std::string& address, const winrt::guid& container, ULONG property) {
         std::optional<std::string> error;
         std::thread([&] {
             winrt::init_apartment(winrt::apartment_type::multi_threaded);
-            if (!SendBtAudioOneShot(address, property))
+            if (!SendBtAudioOneShot(address, container, property))
                 error = "no Bluetooth audio endpoint for " + address;
             winrt::uninit_apartment();
         }).join();
@@ -214,7 +235,7 @@ namespace MagicPodsCore {
     }
 
     void DBusDeviceInfo::Connect() {
-        if (auto error = OneShot(_address, KSPROPERTY_ONESHOT_RECONNECT))
+        if (auto error = OneShot(_address, _native->container, KSPROPERTY_ONESHOT_RECONNECT))
             throw std::runtime_error(*error);
     }
 
@@ -222,7 +243,7 @@ namespace MagicPodsCore {
     // the up to 10 s wait would be gone under it. A weak_ptr handle would close that gap.
     void DBusDeviceInfo::ConnectAsync(BtCallback&& callback) {
         std::thread([this, callback = std::move(callback)] {
-            auto error = OneShot(_address, KSPROPERTY_ONESHOT_RECONNECT);
+            auto error = OneShot(_address, _native->container, KSPROPERTY_ONESHOT_RECONNECT);
             // the reconnect request returns at once; give the link time like BlueZ's Connect reply does
             for (int i = 0; !error && i < 100 && !_connectionStatus.GetValue(); i++)
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -231,14 +252,31 @@ namespace MagicPodsCore {
         }).detach();
     }
 
+    static std::optional<std::string> DisconnectLink(uint64_t address) {
+        BLUETOOTH_FIND_RADIO_PARAMS params{sizeof params};
+        HANDLE radio = nullptr;
+        HBLUETOOTH_RADIO_FIND find = BluetoothFindFirstRadio(&params, &radio);
+        if (!find)
+            return "no Bluetooth radio";
+        BluetoothFindRadioClose(find);
+        BTH_ADDR bthAddress = address;
+        DWORD returned = 0;
+        bool ok = DeviceIoControl(radio, IOCTL_BTH_DISCONNECT_DEVICE, &bthAddress, sizeof bthAddress, nullptr, 0, &returned, nullptr);
+        auto error = GetLastError();
+        CloseHandle(radio);
+        if (!ok)
+            return "IOCTL_BTH_DISCONNECT_DEVICE failed: " + std::to_string(error);
+        return std::nullopt;
+    }
+
     void DBusDeviceInfo::Disconnect() {
-        if (auto error = OneShot(_address, KSPROPERTY_ONESHOT_DISCONNECT))
+        if (auto error = DisconnectLink(_native->device.BluetoothAddress()))
             throw std::runtime_error(*error);
     }
 
     void DBusDeviceInfo::DisconnectAsync(BtCallback&& callback) {
         std::thread([this, callback = std::move(callback)] {
-            auto error = OneShot(_address, KSPROPERTY_ONESHOT_DISCONNECT);
+            auto error = DisconnectLink(_native->device.BluetoothAddress());
             for (int i = 0; !error && i < 100 && _connectionStatus.GetValue(); i++)
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if (callback)
