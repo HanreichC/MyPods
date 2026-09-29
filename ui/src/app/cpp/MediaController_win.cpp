@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <future>
 #include <mutex>
 #include <optional>
@@ -79,13 +80,17 @@ public:
         return *media;
     }
 
-    // Looks for an iPhone among the paired devices, again at most every 30 s while there is none
-    void ensureStarted()
+    // Called (on any thread) when the list of iPhones or their connection changes; set before starting
+    void onIphonesChanged(std::function<void()> changed) { m_changed = std::move(changed); }
+
+    // Looks for iPhones among the paired devices and follows the first. Again at most every 30 s while
+    // there is none; always, for a list that is new
+    void ensureStarted(bool always = false)
     {
         const auto now = std::chrono::steady_clock::now();
         {
             std::lock_guard lock{m_lock};
-            if (m_device || m_searching || (m_searched && now - m_lastSearch < std::chrono::seconds(30)))
+            if (m_searching || (!always && (m_device || (m_searched && now - m_lastSearch < std::chrono::seconds(30)))))
                 return;
             m_searching = m_searched = true;
             m_lastSearch = now;
@@ -95,6 +100,26 @@ public:
             std::lock_guard lock{m_lock};
             m_searching = false;
         });
+    }
+
+    QVariantList iphones()
+    {
+        std::vector<std::pair<QString, bool>> phones;
+        {
+            std::lock_guard lock{m_lock};
+            for (const auto &phone : m_phones) {
+                try {
+                    phones.emplace_back(QString::fromStdWString(std::wstring(phone.Name())),
+                                        phone.ConnectionStatus() == bt::BluetoothConnectionStatus::Connected);
+                } catch (const winrt::hresult_error &) {
+                }
+            }
+        }
+        std::sort(phones.begin(), phones.end(), [](const auto &a, const auto &b) { return a.first.localeAwareCompare(b.first) < 0; });
+        QVariantList list;
+        for (const auto &[name, connected] : phones)
+            list.append(QVariantMap{{QStringLiteral("name"), name}, {QStringLiteral("connected"), connected}});
+        return list;
     }
 
     Snapshot snapshot()
@@ -187,11 +212,25 @@ private:
         try {
             const auto paired = winrt::Windows::Devices::Enumeration::DeviceInformation::FindAllAsync(
                 bt::BluetoothLEDevice::GetDeviceSelectorFromPairingState(true)).get();
+            std::vector<bt::BluetoothLEDevice> phones;
             for (const auto &info : paired) {
                 auto device = bt::BluetoothLEDevice::FromIdAsync(info.Id()).get();
                 // from the cache, so paired mice and keyboards aren't woken up for this
-                if (!device || device.GetGattServicesForUuidAsync(AmsService, bt::BluetoothCacheMode::Cached).get().Services().Size() == 0)
-                    continue;
+                if (device && device.GetGattServicesForUuidAsync(AmsService, bt::BluetoothCacheMode::Cached).get().Services().Size() > 0)
+                    phones.push_back(device);
+            }
+            bool follow = false;
+            {
+                std::lock_guard lock{m_lock};
+                m_phoneStatus.clear();
+                for (const auto &phone : phones) // for the list's "connected"
+                    m_phoneStatus.push_back(phone.ConnectionStatusChanged(winrt::auto_revoke, [this](const auto &, const auto &) { changed(); }));
+                m_phones = phones;
+                follow = !m_device;
+            }
+            changed();
+            if (follow && !phones.empty()) {
+                const bt::BluetoothLEDevice device = phones.front();
                 auto session = gatt::GattSession::FromDeviceIdAsync(device.BluetoothDeviceId()).get();
                 session.MaintainConnection(true); // Windows reconnects whenever the iPhone comes back in range
                 {
@@ -208,7 +247,6 @@ private:
                         clear();
                 });
                 subscribe();
-                return;
             }
         } catch (const winrt::hresult_error &) {
             // Bluetooth off: the next search tries again
@@ -344,6 +382,12 @@ private:
         m_commands.clear();
     }
 
+    void changed()
+    {
+        if (m_changed)
+            m_changed();
+    }
+
     bool supports(Command command) const
     {
         // before the first list arrives, everything is offered
@@ -356,7 +400,10 @@ private:
     bool m_searching = false;
     bool m_searched = false;
     std::chrono::steady_clock::time_point m_lastSearch;
-    bt::BluetoothLEDevice m_device{nullptr};
+    std::function<void()> m_changed; // set before any thread starts
+    std::vector<bt::BluetoothLEDevice> m_phones; // every paired iPhone, for the list
+    std::vector<bt::BluetoothLEDevice::ConnectionStatusChanged_revoker> m_phoneStatus;
+    bt::BluetoothLEDevice m_device{nullptr}; // the one followed
     gatt::GattSession m_session{nullptr};
     bool m_subscribed = false; // under m_subscribeLock
     gatt::GattCharacteristic m_remote{nullptr};
@@ -444,7 +491,20 @@ winrt::com_ptr<IAudioEndpointVolume> defaultEndpointVolume()
 
 void MediaController::watchIphone()
 {
+    AppleMedia::instance().onIphonesChanged([this] {
+        QMetaObject::invokeMethod(this, [this] { emit iphonesChanged(); }, Qt::QueuedConnection);
+    });
     AppleMedia::instance().ensureStarted();
+}
+
+QVariantList MediaController::iphones() const
+{
+    return AppleMedia::instance().iphones();
+}
+
+void MediaController::refreshIphones()
+{
+    AppleMedia::instance().ensureStarted(true);
 }
 
 void MediaController::refresh()

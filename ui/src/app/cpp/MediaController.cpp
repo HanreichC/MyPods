@@ -15,6 +15,7 @@
 #include <QRegularExpression>
 #include <QTimer>
 
+#include <algorithm>
 #include <deque>
 #include <functional>
 #include <optional>
@@ -72,6 +73,10 @@ public:
         static auto *media = new AppleMedia;
         return *media;
     }
+
+    // Called when the list of iPhones or their connection changes
+    void onIphonesChanged(std::function<void()> changed) { m_changed = std::move(changed); }
+    QVariantList iphones() const { return m_iphones; }
 
     // Advertises and follows BlueZ from the first call on
     void ensureStarted()
@@ -134,8 +139,11 @@ public:
         return m_stepping || (m_steppedAt.isValid() && m_steppedAt.elapsed() < 700);
     }
 
-private slots:
+public slots:
+    // one GetManagedObjects for a burst of changes
     void rescanSoon() { m_rescan.start(); }
+
+private slots:
 
     void onPropertiesChanged(const QDBusMessage &message)
     {
@@ -148,8 +156,9 @@ private slots:
             onEntityUpdate(changed.value(QStringLiteral("Value")).toByteArray());
         else if (path == m_remote && changed.contains(QStringLiteral("Value")))
             m_commands = changed.value(QStringLiteral("Value")).toByteArray(); // the commands the player supports now
-        else if (changed.contains(QStringLiteral("ServicesResolved")))
-            rescanSoon(); // a device's LE connection came or went, maybe the iPhone's
+        else if (changed.contains(QStringLiteral("ServicesResolved")) || changed.contains(QStringLiteral("Paired"))
+                 || changed.contains(QStringLiteral("Connected")) || changed.contains(QStringLiteral("Alias")))
+            rescanSoon(); // a device came, went or was renamed, maybe an iPhone
     }
 
 private:
@@ -186,6 +195,7 @@ private:
             const QDBusMessage reply = watcher->reply();
             if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
                 clear(); // no bluetoothd
+                listIphones({});
                 return;
             }
             // path -> interface -> properties
@@ -207,6 +217,7 @@ private:
 
     void onObjects(const QMap<QString, Interfaces> &objects)
     {
+        listIphones(objects);
         QString adapter, service, device;
         for (auto it = objects.cbegin(); it != objects.cend(); ++it) {
             if (adapter.isEmpty() && it->contains(QStringLiteral("org.bluez.LEAdvertisingManager1")))
@@ -270,6 +281,38 @@ private:
         for (const auto &entry : current) {
             const uint8_t entity = entry.first, attribute = entry.second;
             read(entity, attribute, [this, entity, attribute](const QString &text) { apply(entity, attribute, text); });
+        }
+    }
+
+    // Paired devices that offer AMS, or that BlueZ calls a phone by Apple (vendor 0x004C) while their
+    // services aren't known; connected while AMS answers
+    void listIphones(const QMap<QString, Interfaces> &objects)
+    {
+        QMap<QString, bool> ams; // device -> its AMS answers
+        for (const Interfaces &interfaces : objects) {
+            const QVariantMap gatt = interfaces.value(QStringLiteral("org.bluez.GattService1"));
+            if (gatt.value(QStringLiteral("UUID")).toString().compare(kAmsService, Qt::CaseInsensitive) == 0) {
+                const QString owner = gatt.value(QStringLiteral("Device")).value<QDBusObjectPath>().path();
+                ams.insert(owner, objects.value(owner).value(kDevice).value(QStringLiteral("ServicesResolved")).toBool());
+            }
+        }
+        std::vector<std::pair<QString, bool>> phones;
+        for (auto it = objects.cbegin(); it != objects.cend(); ++it) {
+            const QVariantMap device = it->value(kDevice);
+            if (!device.value(QStringLiteral("Paired")).toBool())
+                continue;
+            const bool apple = device.value(QStringLiteral("Modalias")).toString().startsWith(QLatin1String("bluetooth:v004C"), Qt::CaseInsensitive);
+            if (ams.contains(it.key()) || (apple && device.value(QStringLiteral("Icon")).toString() == QLatin1String("phone")))
+                phones.emplace_back(device.value(QStringLiteral("Alias")).toString(), ams.value(it.key()));
+        }
+        std::sort(phones.begin(), phones.end(), [](const auto &a, const auto &b) { return a.first.localeAwareCompare(b.first) < 0; });
+        QVariantList list;
+        for (const auto &phone : phones)
+            list.append(QVariantMap{{QStringLiteral("name"), phone.first}, {QStringLiteral("connected"), phone.second}});
+        if (list != m_iphones) {
+            m_iphones = list;
+            if (m_changed)
+                m_changed();
         }
     }
 
@@ -397,6 +440,8 @@ private:
     }
 
     bool m_started = false;
+    std::function<void()> m_changed;
+    QVariantList m_iphones;
     AmsAdvertisement m_advertisement;
     QString m_advertisedOn; // adapter path
     QTimer m_rescan;
@@ -418,7 +463,18 @@ private:
 
 void MediaController::watchIphone()
 {
+    AppleMedia::instance().onIphonesChanged([this] { emit iphonesChanged(); });
     AppleMedia::instance().ensureStarted();
+}
+
+QVariantList MediaController::iphones() const
+{
+    return AppleMedia::instance().iphones();
+}
+
+void MediaController::refreshIphones()
+{
+    AppleMedia::instance().rescanSoon();
 }
 
 // ponytail: blocking calls, polled by the popup while it is open. A hung player costs kTimeoutMs per

@@ -19,6 +19,9 @@ class MediaController final : public QObject
     // 0-100, -1 when the volume can't be read
     Q_PROPERTY(int volume READ volume NOTIFY volumeChanged)
     Q_PROPERTY(bool muted READ muted NOTIFY volumeChanged)
+    // The paired iPhones, by name: name, connected (their Apple Media Service answers, so the popup can
+    // show and control them)
+    Q_PROPERTY(QVariantList iphones READ iphones NOTIFY iphonesChanged)
 
 public:
     using QObject::QObject;
@@ -26,10 +29,13 @@ public:
     QVariantMap player() const { return m_player; }
     int volume() const { return m_volume; }
     bool muted() const { return m_muted; }
+    QVariantList iphones() const;
 
     Q_INVOKABLE void refresh();
     // Starts following a paired iPhone, so it is there by the first click
     void watchIphone();
+    // Looks for newly paired iPhones (Windows lists them once; BlueZ reports them anyway)
+    Q_INVOKABLE void refreshIphones();
     Q_INVOKABLE void playPause();
     Q_INVOKABLE void next();
     Q_INVOKABLE void previous();
@@ -39,6 +45,7 @@ public:
 signals:
     void playerChanged();
     void volumeChanged();
+    void iphonesChanged();
 
 private:
     void callPlayer(const QString &method);

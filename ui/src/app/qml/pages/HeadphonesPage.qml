@@ -50,6 +50,7 @@ Components.ScrollPage {
     }
     Component.onCompleted: {
         requestDevicesData();
+        cppMedia.refreshIphones();
     }
 
     Components.HelpMessage {
@@ -120,5 +121,46 @@ Components.ScrollPage {
                 }
             }
         }
+    }
+
+    // Paired iPhones, whose music the tray popup shows. No switch: the iPhone connects by itself, and
+    // connecting it from here would offer it this computer as a speaker.
+    MP.Heading {
+        visible: cppMedia.iphones.length > 0 && hasBtAdapter
+        level: 5
+        Layout.topMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("headphones.iphones")
+    }
+
+    Components.Card {
+        visible: cppMedia.iphones.length > 0 && hasBtAdapter
+
+        Repeater {
+            model: cppMedia.iphones
+            delegate: MP.FormRow {
+                enabled: bt.checked
+                label: modelData.name
+                iconSource: MP.Theme.asset("icons/icon-iphone.svg")
+                iconColor: modelData.connected ? MP.Theme.accent : MP.Theme.gray
+
+                MP.Label {
+                    text: modelData.connected ? qsTrId("headphones.iphone.connected") : qsTrId("headphones.iphone.not_connected")
+                    color: MP.Theme.secondaryText
+                }
+            }
+        }
+    }
+
+    // section footer
+    MP.Label {
+        visible: cppMedia.iphones.length > 0 && hasBtAdapter
+        Layout.fillWidth: true
+        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.rightMargin: MP.Units.largeSpacing
+        wrapMode: Text.WordWrap
+        color: MP.Theme.secondaryText
+        font.pixelSize: 13
+        text: qsTrId("headphones.iphones.footer")
     }
 }

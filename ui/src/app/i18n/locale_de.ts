@@ -33,6 +33,26 @@
         <source></source>
         <translation>Bluetooth:</translation>
     </message>
+    <message id="headphones.iphones">
+        <location filename="../qml/pages/HeadphonesPage.qml" line="0"/>
+        <source></source>
+        <translation>iPhones</translation>
+    </message>
+    <message id="headphones.iphone.connected">
+        <location filename="../qml/pages/HeadphonesPage.qml" line="0"/>
+        <source></source>
+        <translation>Verbunden</translation>
+    </message>
+    <message id="headphones.iphone.not_connected">
+        <location filename="../qml/pages/HeadphonesPage.qml" line="0"/>
+        <source></source>
+        <translation>Nicht verbunden</translation>
+    </message>
+    <message id="headphones.iphones.footer">
+        <location filename="../qml/pages/HeadphonesPage.qml" line="0"/>
+        <source></source>
+        <translation>Was auf einem verbundenen iPhone läuft, zeigt und steuert das Popup am Tray-Symbol.</translation>
+    </message>
     <message id="headphones.headphones">
         <location filename="../qml/pages/HeadphonesPage.qml" line="108"/>
         <source></source>
