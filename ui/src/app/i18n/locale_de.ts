@@ -596,6 +596,11 @@
         <source></source>
         <translation>Ton einschalten</translation>
     </message>
+    <message id="tray.popup.playing_on">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Wird auf %1 abgespielt</translation>
+    </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>

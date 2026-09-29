@@ -40,7 +40,10 @@ private:
 #ifndef Q_OS_WIN
     static QString pactl(const QStringList &args);
 #else
+    void fetchIphoneArt(const QString &key, const QString &title, const QString &artist);
+    void showArt(const QString &key, const QByteArray &art);
     QString m_artKey; // title + artist the cover in m_player belongs to
+    class QNetworkAccessManager *m_network = nullptr; // for the iPhone's covers, created on first use
 #endif
 
     QString m_service; // MPRIS bus name / app user model id of the shown player

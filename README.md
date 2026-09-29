@@ -313,6 +313,7 @@ L2CAP (AAP). MyPods ships no driver, so on Windows it does what user space allow
 | AirPods battery in the app and tray | Yes, from the advertisements: 10 % steps, 1 % with imported keys |
 | Ear detection (pause/resume) | Yes, from the advertisements; on/off is stored locally |
 | Tray popup: now playing, media keys, volume | Yes (system media sessions, Core Audio) |
+| The iPhone's music in the tray popup: title, cover, play/pause/skip, its volume | Yes, over the Apple Media Service (BLE), with the iPhone paired in the Windows Bluetooth settings. Works while the iPhone plays to its own headphones. The cover comes from the iTunes Search API, which gets artist and title. Windows only for now. |
 | Parrot Zik 2.0, Galaxy Buds (RFCOMM) | Yes, all features |
 | HFP battery of other headsets | Yes |
 | Noise control, Conversation Awareness, press/swipe settings, microphone, hearing aid | No, needs AAP |
@@ -528,11 +529,12 @@ python3 tools/check_translations.py
 ```
 
 `run_checks.sh` also compiles and runs the standalone checks for the ANC and battery wire paths,
-the low battery warning, the keyboard shortcut actions and the picker
+the low battery warning, the keyboard shortcut actions, the iPhone's now playing values and the picker
 ([core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp),
 [core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp),
 [ui/tests/LowBatteryCheck.cpp](ui/tests/LowBatteryCheck.cpp),
 [ui/tests/ActionsCheck.cpp](ui/tests/ActionsCheck.cpp),
+[ui/tests/AmsCheck.cpp](ui/tests/AmsCheck.cpp),
 [ui/tests/tst_picker.qml](ui/tests/tst_picker.qml)); each file also names its own compile command.
 
 Two checks do need hardware, because the behavior they guard only exists on a real adapter:

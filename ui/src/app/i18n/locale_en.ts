@@ -596,6 +596,11 @@
         <source></source>
         <translation>Unmute</translation>
     </message>
+    <message id="tray.popup.playing_on">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Playing on %1</translation>
+    </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>

@@ -223,6 +223,9 @@ int main(int argc, char *argv[]) {
     Backend backend;
     TrayIcon trayIcon;
     MediaController mediaController;
+#ifdef Q_OS_WIN
+    mediaController.refresh(); // starts looking for a paired iPhone
+#endif
     engine.rootContext()->setContextProperty("backendManager", &backendManager);
     engine.rootContext()->setContextProperty("desktopManager", &desktopManager);
     engine.rootContext()->setContextProperty("cppBackend", &backend);
@@ -275,6 +278,16 @@ int main(int argc, char *argv[]) {
         trayPopupAnchored = true;
     }
 #endif
+    // Bottom edge of the work area a popup placed above a bottom panel sits on, -1 otherwise
+    int trayPopupBottom = -1;
+    // The height follows the content, which is only laid out (and the player only read) as the popup
+    // opens: the first time it was placed for a smaller height and grew into the taskbar
+    if (trayPopup) {
+        QObject::connect(trayPopup, &QWindow::heightChanged, [&](int height) {
+            if (trayPopupBottom >= 0)
+                trayPopup->setY(trayPopupBottom + 1 - height);
+        });
+    }
     auto toggleTrayPopup = [&]() {
         // X11: under (or above) the pointer, inside the work area, so a panel on any edge works
         if (!trayPopupAnchored && !trayPopup->isVisible()) {
@@ -282,7 +295,8 @@ int main(int argc, char *argv[]) {
             if (QScreen *screen = QGuiApplication::screenAt(cursor)) {
                 const QRect area = screen->availableGeometry();
                 const int x = qBound(area.left(), cursor.x() - trayPopup->width() / 2, area.right() + 1 - trayPopup->width());
-                const int y = cursor.y() < area.center().y() ? area.top() : area.bottom() + 1 - trayPopup->height();
+                trayPopupBottom = cursor.y() < area.center().y() ? -1 : area.bottom();
+                const int y = trayPopupBottom < 0 ? area.top() : trayPopupBottom + 1 - trayPopup->height();
                 trayPopup->setPosition(x, y);
             }
         }
@@ -321,10 +335,17 @@ int main(int argc, char *argv[]) {
 
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         trayIcon.setContextMenu(&trayMenu);
-        // Click: the popup for the connected headphones (the window when there are none).
-        // Double click: the window.
+        // Click: the popup for the connected headphones or the music on the iPhone (the window when
+        // there is neither). Double click: the window.
         QObject::connect(&trayIcon, &TrayIcon::leftClicked, [&]() {
-            if (trayPopup && trayPopup->property("hasInfo").toBool()) {
+            bool showPopup = trayPopup && trayPopup->property("hasInfo").toBool();
+#ifdef Q_OS_WIN
+            if (trayPopup && !showPopup) {
+                mediaController.refresh();
+                showPopup = mediaController.player().contains(QStringLiteral("source"));
+            }
+#endif
+            if (showPopup) {
                 toggleTrayPopup();
             } else {
                 toggleMainWindow();

@@ -36,6 +36,9 @@ $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/LowBatteryCheck.cpp $QTCORE -o "
 # shellcheck disable=SC2086
 $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/ActionsCheck.cpp $QTCORE -o "$OUT/actions"
 "$OUT/actions"
+# shellcheck disable=SC2086
+$CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/AmsCheck.cpp $QTCORE -o "$OUT/ams"
+"$OUT/ams"
 
 # QML: the picker against the sources, with the qmldir the build generated
 mkdir -p "$OUT/qml/magicpods"

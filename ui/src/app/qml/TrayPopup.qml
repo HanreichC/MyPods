@@ -25,6 +25,8 @@ QQC2.ApplicationWindow {
     readonly property var conversationAwarenessData: capabilities?.conversationAwareness ?? null
     readonly property var player: cppMedia.player
     readonly property bool hasPlayer: Object.keys(player).length > 0
+    // the music on the iPhone opens the popup even without headphones here
+    readonly property bool canShow: hasInfo || !!player.source
     property double hiddenAt: 0
 
     // room for the shadow around the panel; the panel itself sits just under the menu bar
@@ -59,7 +61,7 @@ QQC2.ApplicationWindow {
     onVisibleChanged: if (!visible) hiddenAt = Date.now()
     // HIG: a menu bar extra closes as soon as the person clicks elsewhere
     onActiveChanged: if (!active) visible = false
-    onHasInfoChanged: if (!hasInfo) visible = false
+    onCanShowChanged: if (!canShow) visible = false
 
     Connections {
         target: cppBackend
@@ -141,6 +143,7 @@ QQC2.ApplicationWindow {
             // Device: render, name and the battery rings
             RowLayout {
                 Layout.fillWidth: true
+                visible: popup.hasInfo
                 spacing: 12
 
                 Components.DeviceImage {
@@ -174,6 +177,7 @@ QQC2.ApplicationWindow {
 
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
+                visible: popup.hasInfo
                 spacing: MP.Units.largeSpacing
 
                 Repeater {
@@ -240,17 +244,18 @@ QQC2.ApplicationWindow {
                 }
             }
 
-            Components.Separator { Layout.fillWidth: true; visible: popup.hasPlayer }
+            Components.Separator { Layout.fillWidth: true; visible: popup.hasPlayer && popup.hasInfo }
 
-            // Now playing
+            // Now playing, like the Mac's Control Center: cover and text across the width, the controls under them
             RowLayout {
                 Layout.fillWidth: true
                 visible: popup.hasPlayer
-                spacing: 10
+                spacing: 12
 
                 Rectangle {
-                    Layout.preferredWidth: 44
-                    Layout.preferredHeight: 44
+                    Layout.preferredWidth: 52
+                    Layout.preferredHeight: 52
+                    Layout.alignment: Qt.AlignTop
                     radius: 8
                     color: MP.Theme.tertiaryFill
                     clip: true
@@ -258,7 +263,7 @@ QQC2.ApplicationWindow {
                     Impl.IconImage {
                         anchors.centerIn: parent
                         visible: art.status !== Image.Ready
-                        sourceSize: Qt.size(22, 22)
+                        sourceSize: Qt.size(24, 24)
                         source: MP.Theme.asset("icons/icon-headphones.svg")
                         color: MP.Theme.secondaryText
                     }
@@ -266,7 +271,7 @@ QQC2.ApplicationWindow {
                         id: art
                         anchors.fill: parent
                         source: popup.player.artUrl ?? ""
-                        sourceSize: Qt.size(88, 88)
+                        sourceSize: Qt.size(104, 104)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
@@ -274,6 +279,7 @@ QQC2.ApplicationWindow {
 
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
                     spacing: 1
 
                     Text {
@@ -282,6 +288,8 @@ QQC2.ApplicationWindow {
                         color: MP.Theme.text
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
                         elide: Text.ElideRight
                     }
                     Text {
@@ -292,7 +300,22 @@ QQC2.ApplicationWindow {
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
+                    Text {
+                        Layout.fillWidth: true
+                        visible: !!popup.player.source
+                        text: qsTrId("tray.popup.playing_on").arg(popup.player.source ?? "")
+                        color: MP.Theme.secondaryText
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                    }
                 }
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: -4
+                visible: popup.hasPlayer
+                spacing: 20
 
                 Repeater {
                     model: [
@@ -302,8 +325,11 @@ QQC2.ApplicationWindow {
                     ]
                     delegate: QQC2.AbstractButton {
                         required property var modelData
-                        implicitWidth: 30
-                        implicitHeight: 30
+                        // HIG: play/pause is the primary control, larger than its neighbours
+                        readonly property bool primary: index === 1
+                        required property int index
+                        implicitWidth: primary ? 40 : 34
+                        implicitHeight: primary ? 40 : 34
                         enabled: modelData.enabled
                         opacity: enabled ? 1 : 0.35
                         Accessible.name: modelData.name
@@ -313,7 +339,7 @@ QQC2.ApplicationWindow {
                             color: parent.pressed ? MP.Theme.fill : parent.hovered ? MP.Theme.tertiaryFill : "transparent"
                         }
                         contentItem: Impl.IconImage {
-                            sourceSize: Qt.size(18, 18)
+                            sourceSize: primary ? Qt.size(26, 26) : Qt.size(20, 20)
                             source: MP.Theme.asset("icons/" + modelData.icon)
                             color: MP.Theme.text
                         }
@@ -332,7 +358,7 @@ QQC2.ApplicationWindow {
                     icon.source: MP.Theme.asset("icons/icon-minus.svg")
                     enabled: volumeSlider.value > 0
                     Accessible.name: qsTrId("tray.popup.volume_down")
-                    onClicked: cppMedia.setVolume(Math.ceil(volumeSlider.value / 5) * 5 - 5)
+                    onClicked: cppMedia.setVolume(volumeSlider.neighbour(-1))
                 }
 
                 QQC2.Slider {
@@ -342,8 +368,22 @@ QQC2.ApplicationWindow {
                     padding: 0
                     from: 0
                     to: 100
-                    stepSize: 1
-                    value: Math.max(0, cppMedia.volume)
+                    // the iPhone's volume only moves in its own steps
+                    stepSize: popup.player.volumeStep ?? 1
+                    snapMode: QQC2.Slider.SnapAlways
+                    // not while dragged: the slider's own value would come back rounded and pull it away
+                    Binding on value {
+                        when: !volumeSlider.pressed
+                        value: Math.max(0, cppMedia.volume)
+                        restoreMode: Binding.RestoreNone
+                    }
+                    // The next value for − and +: the neighbouring multiple of 5, the iPhone's neighbouring step
+                    function neighbour(direction) {
+                        const step = popup.player.volumeStep;
+                        if (step)
+                            return Math.round((Math.round(value / step) + direction) * step);
+                        return direction > 0 ? Math.floor(value / 5) * 5 + 5 : Math.ceil(value / 5) * 5 - 5;
+                    }
                     Accessible.name: qsTrId("tray.popup.volume")
                     onMoved: cppMedia.setVolume(value)
 
@@ -356,7 +396,9 @@ QQC2.ApplicationWindow {
                             anchors.right: parent.right
                             anchors.rightMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
-                            text: qsTrId("format.percent").arg(Math.round(volumeSlider.value))
+                            // the iPhone in its own steps, like its volume buttons
+                            text: popup.player.volumeStep ? Math.round(volumeSlider.value / popup.player.volumeStep) + " / " + Math.round(100 / popup.player.volumeStep)
+                                                          : qsTrId("format.percent").arg(Math.round(volumeSlider.value))
                             color: MP.Theme.secondaryText
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -384,6 +426,7 @@ QQC2.ApplicationWindow {
                     // HIG: like Control Center, the speaker is the mute button; muting keeps the level
                     QQC2.AbstractButton {
                         id: muteButton
+                        enabled: !popup.player.source // the iPhone can't be muted from here, the speaker still shows
                         width: parent.height
                         height: parent.height
                         Accessible.name: cppMedia.muted ? qsTrId("tray.popup.unmute") : qsTrId("tray.popup.mute")
@@ -405,7 +448,7 @@ QQC2.ApplicationWindow {
                     icon.source: MP.Theme.asset("icons/icon-plus.svg")
                     enabled: volumeSlider.value < 100
                     Accessible.name: qsTrId("tray.popup.volume_up")
-                    onClicked: cppMedia.setVolume(Math.floor(volumeSlider.value / 5) * 5 + 5)
+                    onClicked: cppMedia.setVolume(volumeSlider.neighbour(1))
                 }
             }
 
