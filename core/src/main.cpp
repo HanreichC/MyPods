@@ -26,6 +26,7 @@
 #include <cstdlib>
 #ifdef _WIN32
 #include <winrt/base.h>
+#include <windows.h>
 #else
 #include <csignal>
 #include <pthread.h>
@@ -495,12 +496,13 @@ int main(int argc, char** argv) {
     if (argc > 1 && std::string{argv[1]} == "--emulate-airpods")
         return EmulateAirPods();
 
-    // SIGTERM (systemd, the UI) and SIGINT take the effect chain down too; its pipewire process would
+    // SIGTERM (systemd, the UI), SIGHUP (logind at logout) and SIGINT take the effect chain down too; its pipewire process would
     // otherwise outlive the daemon. Blocked before any thread starts, so only the thread below gets them.
     sigset_t stopSignals;
     sigemptyset(&stopSignals);
     sigaddset(&stopSignals, SIGTERM);
     sigaddset(&stopSignals, SIGINT);
+    sigaddset(&stopSignals, SIGHUP);
     pthread_sigmask(SIG_BLOCK, &stopSignals, nullptr);
     std::thread([stopSignals]() {
         int signal = 0;
@@ -516,6 +518,10 @@ int main(int argc, char** argv) {
 #else
     // Bluetooth, media sessions and audio devices are WinRT/COM; every thread of the daemon joins this apartment
     winrt::init_apartment(winrt::apartment_type::multi_threaded);
+    // Shutting Windows down or signing out ends the hidden console with a control event. Its default handler
+    // calls ExitProcess, which runs static destructors under the WinRT and device threads still using them,
+    // and Windows reports the daemon as crashed. Like SIGTERM on Linux nothing needs an orderly shutdown.
+    SetConsoleCtrlHandler([](DWORD) -> BOOL { TerminateProcess(GetCurrentProcess(), 0); return TRUE; }, TRUE);
 #endif
 
     std::shared_ptr<SettingsService> settingsService = std::make_shared<SettingsService>(SettingsService::GetConfigPath("config.toml"));
