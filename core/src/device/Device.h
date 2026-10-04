@@ -73,6 +73,8 @@ namespace MagicPodsCore {
         void Shutdown();
         // The model's measured headphone correction, empty if nobody measured it
         virtual std::vector<Biquad> ModelCorrection() const { return {}; }
+        // What the headphones' sink name contains: "bluez_output.AA_BB_CC_DD_EE_FF"
+        virtual std::string SinkPart() const;
 
     public:
         Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
@@ -156,8 +158,10 @@ namespace MagicPodsCore {
         EffectsConfig LoadEffectsConfig();
         // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else ModelCorrection()
         std::vector<Biquad> Correction();
-        // The headphones' bluez sink, nullopt while there is none (not connected, A2DP off); blocking
-        std::optional<std::string> HeadphonesSink();
+        // The headphones' sink, nullopt while there is none (not connected, A2DP off); blocking
+        virtual std::optional<std::string> HeadphonesSink();
+        // "jack" or "usb" for wired headphones, nullptr for Bluetooth
+        virtual const char* WiredConnection() const { return nullptr; }
         // Headphone volume times the chain sink's volume, 1 = 100 %; blocking, never on the PulseAudio thread
         double ListeningVolume();
 

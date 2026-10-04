@@ -72,7 +72,7 @@
     <message id="battery.connect_headphones.description">
         <location filename="../qml/pages/BatteryPage.qml" line="85"/>
         <source></source>
-        <translation>Connect headphones to display their battery level and adjust settings</translation>
+        <translation>Connect Bluetooth headphones or plug in wired ones to adjust their sound and settings</translation>
     </message>
     <message id="battery.battery_single">
         <location filename="../qml/pages/BatteryPage.qml" line="167"/>
@@ -839,6 +839,16 @@
     <message id="battery.tilt.bright">
         <source></source>
         <translation>Brighter</translation>
+    </message>
+    <message id="battery.wired.jack">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Headphone Port</translation>
+    </message>
+    <message id="battery.wired.usb">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>USB</translation>
     </message>
 </context>
 </TS>

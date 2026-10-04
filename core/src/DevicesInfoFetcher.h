@@ -18,6 +18,7 @@
 #include <map>
 #include <array>
 #include <mutex>
+#include <atomic>
 #include <nlohmann/json.hpp>
 #include "settings/SettingsService.h"
 
@@ -38,6 +39,16 @@ namespace MagicPodsCore {
         std::shared_ptr<SettingsService> _settingsService{};
         size_t _onSettingsChangeId = 0;
         bool _bleScanActive = false;
+#ifndef _WIN32
+        // Wired headphones come and go with the sound server's sinks, ports and card profiles
+        size_t _sinkEventId = 0;
+        size_t _cardEventId = 0;
+        std::atomic<bool> _wiredPending{false};
+        std::mutex _wiredLock{};
+        // Blocking PulseAudio queries, never on the PulseAudio thread. `startup`: they were plugged in before the daemon
+        void RefreshWired(bool startup);
+        void RefreshWiredSoon();
+#endif
         std::mutex _bleStateMutex{};
         void UpdateBleState();
 

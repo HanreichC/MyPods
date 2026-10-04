@@ -72,7 +72,7 @@
     <message id="battery.connect_headphones.description">
         <location filename="../qml/pages/BatteryPage.qml" line="85"/>
         <source></source>
-        <translation>Verbinde Kopfhörer, um ihren Ladestand zu sehen und Einstellungen anzupassen</translation>
+        <translation>Verbinde Bluetooth-Kopfhörer oder schließe Kopfhörer per Kabel an, um Klang und Einstellungen anzupassen</translation>
     </message>
     <message id="battery.battery_single">
         <location filename="../qml/pages/BatteryPage.qml" line="167"/>
@@ -839,6 +839,16 @@
     <message id="battery.tilt.bright">
         <source></source>
         <translation>Heller</translation>
+    </message>
+    <message id="battery.wired.jack">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Kopfhöreranschluss</translation>
+    </message>
+    <message id="battery.wired.usb">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>USB</translation>
     </message>
 </context>
 </TS>

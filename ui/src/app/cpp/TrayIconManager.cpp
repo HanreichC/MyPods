@@ -182,7 +182,14 @@ void TrayIconManager::rebuildMenu()
     if (backend->connected()) {
         const QList<QVariantMap> headphones = sortedHeadphones();
         for (const QVariantMap &headphone : headphones) {
-            addHeadphoneAction(headphone);
+            // wired headphones: nothing to connect or disconnect, only their name above their effects
+            if (headphone.contains(QStringLiteral("wired"))) {
+                if (!headphone.value(QStringLiteral("connected")).toBool())
+                    continue;
+                menu->addAction(headphone.value(QStringLiteral("name")).toString())->setEnabled(false);
+            } else {
+                addHeadphoneAction(headphone);
+            }
             hasDynamicItems = true;
 
             const QString address = headphone.value(QStringLiteral("address")).toString();
@@ -269,6 +276,12 @@ QString TrayIconManager::trayTooltipText() const
 {
     if (!backend->connected()) {
         return qtTrId("tray.socket_error_tooltip");
+    }
+
+    // no battery on a cable: how they are connected instead
+    const QString wired = infoData.value(QStringLiteral("wired")).toString();
+    if (!wired.isEmpty() && infoData.value(QStringLiteral("connected")).toBool()) {
+        return wired == QLatin1String("usb") ? qtTrId("battery.wired.usb") : qtTrId("battery.wired.jack");
     }
 
     const QVariantMap batteryData = batteryDataFromInfo(infoData);

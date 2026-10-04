@@ -40,6 +40,15 @@ namespace MagicPodsCore{
         bool operator==(const SinkDetails&) const = default;
     };
 
+    // Headphones on a jack or USB that this computer plays into right now
+    struct WiredOutput {
+        std::string sink;   // the sink's name
+        std::string name;   // what the system calls them: the jack's port ("Headphones"), the USB product
+        bool usb = false;
+
+        bool operator==(const WiredOutput&) const = default;
+    };
+
     // Sound server access for codec display, output switching and effects. Windows has no A2DP/HFP
     // profiles or codecs to pick and routes to connected headphones itself, so there it's an empty
     // stub (PulseAudioClient_win.cpp) and the capabilities that need it stay hidden.
@@ -58,10 +67,16 @@ namespace MagicPodsCore{
             std::optional<double> GetSinkVolume(const std::string& name);
             bool SetSinkVolume(const std::string& name, double volume);
             std::optional<SinkDetails> GetSinkDetails(const std::string& name);
+            // Wired headphones that are plugged in and active; blocking
+            std::vector<WiredOutput> GetWiredHeadphones();
+#ifndef _WIN32
+            // The sink plays into wired headphones: a headphone jack whose port is active and not empty, or a USB headset
+            static std::optional<WiredOutput> WiredHeadphones(const pa_sink_info& info);
+#endif
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }
-            // A sink changed (volume, mute, port), with its index; fired on the PulseAudio thread like the card event
+            // A sink appeared, changed (volume, mute, port) or went away, with its index; fired on the PulseAudio thread like the card event
             Event<uint32_t>& GetSinkChangedEvent() {
                 return _onSinkChangedEvent;
             }

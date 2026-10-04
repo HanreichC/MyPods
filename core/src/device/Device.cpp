@@ -292,21 +292,21 @@ namespace MagicPodsCore {
         return ModelCorrection();
     }
 
-    // What the headphones' bluez sink name contains: "bluez_output.AA_BB_CC_DD_EE_FF"
-    static std::string SinkPart(std::string mac)
+    std::string Device::SinkPart() const
     {
+        std::string mac = GetAddress();
         std::replace(mac.begin(), mac.end(), ':', '_');
         return "bluez_output." + mac;
     }
 
     std::optional<std::string> Device::HeadphonesSink()
     {
-        return GetAudioClient()->FindSink(SinkPart(GetAddress()));
+        return GetAudioClient()->FindSink(SinkPart());
     }
 
     void Device::StopEffects()
     {
-        AudioEffects::Instance().StopFor(SinkPart(GetAddress()));
+        AudioEffects::Instance().StopFor(SinkPart());
     }
 
     double Device::ListeningVolume()
@@ -356,6 +356,8 @@ namespace MagicPodsCore {
         deviceJson["connected"] = GetConnected();
         deviceJson["model"] = GetProductId();
         deviceJson["vendor"] = GetVendorId();
+        if (auto wired = WiredConnection())
+            deviceJson["wired"] = wired;
 
         std::optional<int64_t> settingColor = LoadSettingInt("color");
         deviceJson["color"] = settingColor.has_value()? settingColor.value() : 0;

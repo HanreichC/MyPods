@@ -13,6 +13,7 @@
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
 #include "device/ZikDevice.h"
+#include "device/WiredDevice.h"
 #ifdef _WIN32
 #include "ble_ads/WinRtBleAdvertisingService.h"
 #else
@@ -85,6 +86,12 @@ namespace MagicPodsCore {
         });
 
         ClearAndFillDevicesMap();
+#ifndef _WIN32
+        RefreshWired(true);
+        // PulseAudio thread: the queries run on a worker
+        _sinkEventId = _audioClient->GetSinkChangedEvent().Subscribe([this](size_t, const uint32_t &) { RefreshWiredSoon(); });
+        _cardEventId = _audioClient->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &) { RefreshWiredSoon(); });
+#endif
 
         UpdateBleState();
 
@@ -137,6 +144,10 @@ namespace MagicPodsCore {
 
 DevicesInfoFetcher::~DevicesInfoFetcher()
 {
+#ifndef _WIN32
+    _audioClient->GetSinkChangedEvent().Unsubscribe(_sinkEventId);
+    _audioClient->GatAudioCardPropertyChangedEvent().Unsubscribe(_cardEventId);
+#endif
     if (_bleScanActive)
         _bleService->StopScan();
     _settingsService->GetOnSettingUpdateEvent().Unsubscribe(_onSettingsChangeId);
@@ -246,6 +257,54 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
             });
         return newDevice;
     }
+
+#ifndef _WIN32
+    void DevicesInfoFetcher::RefreshWiredSoon() {
+        if (_wiredPending.exchange(true))
+            return;
+        // ponytail: a detached worker that may outlive the fetcher; it lives as long as the daemon
+        std::thread([this]() {
+            // a plug switches the card profile, ports and sinks in a burst; one look at the end
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            _wiredPending = false;
+            RefreshWired(false);
+        }).detach();
+    }
+
+    void DevicesInfoFetcher::RefreshWired(bool startup) {
+        std::lock_guard guard{_wiredLock};
+        std::set<std::string> plugged;
+        for (const auto& output : _audioClient->GetWiredHeadphones()) {
+            auto address = WiredDevice::AddressFor(output.sink);
+            plugged.insert(address);
+            if (auto known = std::dynamic_pointer_cast<WiredDevice>(GetDevice(address))) {
+                known->SetPlugged(true);
+                continue;
+            }
+            Logger::Info("Wired headphones: %s (%s)", output.name.c_str(), output.sink.c_str());
+            std::shared_ptr<Device> device = WiredDevice::Create(output, startup, _audioClient, _settingsService);
+            device->GetConnectedPropertyChangedEvent().Subscribe([this, address](size_t, bool connected) {
+                // plugged in, they become the active ones, like on a Mac
+                TrySelectNewActiveDevice(connected ? address : std::string{});
+                // pulled, the sound goes back to the headphones still connected, with their effects
+                if (auto active = GetActiveDevice(); !connected && active)
+                    active->RouteAudioAsync();
+            });
+            {
+                std::lock_guard lock{_devicesLock};
+                _devicesMap.emplace(address, device);
+            }
+            _onDeviceAddEvent.FireEvent(device);
+            if (startup)
+                TrySelectNewActiveDevice(); // the Bluetooth headphones that were active stay so
+            else
+                std::static_pointer_cast<WiredDevice>(device)->SetPlugged(true);
+        }
+        for (const auto& device : GetDevices())
+            if (auto wired = std::dynamic_pointer_cast<WiredDevice>(device); wired && !plugged.contains(wired->GetAddress()))
+                wired->SetPlugged(false);
+    }
+#endif
 
     void DevicesInfoFetcher::ClearAndFillDevicesMap() {
         {

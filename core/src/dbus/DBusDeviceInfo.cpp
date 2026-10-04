@@ -141,19 +141,40 @@ namespace MagicPodsCore {
         _deviceProxy->finishRegistration();
     }
 
+    DBusDeviceInfo::DBusDeviceInfo(std::string address, std::string name, bool connected)
+        : _address{std::move(address)}, _name{std::move(name)}, _connectionStatus{connected}
+    {
+    }
+
     void DBusDeviceInfo::Connect() {
+        if (!_deviceProxy)
+            return;
         _deviceProxy->callMethod("Connect").onInterface("org.bluez.Device1").dontExpectReply();
     }
 
     void DBusDeviceInfo::ConnectAsync(BtCallback&& callback) {
+        if (!_deviceProxy) {
+            std::string error = "not a Bluetooth device";
+            if (callback)
+                callback(&error);
+            return;
+        }
         _deviceProxy->callMethodAsync("Connect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 
     void DBusDeviceInfo::Disconnect() {
+        if (!_deviceProxy)
+            return;
         _deviceProxy->callMethod("Disconnect").onInterface("org.bluez.Device1").dontExpectReply();
     }
 
     void DBusDeviceInfo::DisconnectAsync(BtCallback&& callback) {
+        if (!_deviceProxy) {
+            std::string error = "not a Bluetooth device";
+            if (callback)
+                callback(&error);
+            return;
+        }
         _deviceProxy->callMethodAsync("Disconnect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 

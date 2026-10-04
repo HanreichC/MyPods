@@ -235,6 +235,14 @@ Components.ScrollPage {
                 status: rootPage.capabilities?.battery?.case?.status ?? 0
             }
         }
+
+        // Wired headphones have no battery to show; how they are connected instead, like the Mac's Sound settings
+        MP.Label {
+            Layout.alignment: Qt.AlignHCenter
+            visible: !!rootPage.infoData?.wired
+            text: rootPage.infoData?.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack")
+            color: MP.Theme.secondaryText
+        }
     }
 
     // Like the Mac's "Moved to iPhone" banner, with the way back

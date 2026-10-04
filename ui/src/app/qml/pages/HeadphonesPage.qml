@@ -35,7 +35,8 @@ Components.ScrollPage {
             if (!json || Object.keys(json).length === 0) {
                 rootPage.headphonesData = [];
             } else if (json.headphones) {
-                rootPage.headphonesData = json.headphones;
+                // wired headphones have nothing to pair or connect; they show up on the control page
+                rootPage.headphonesData = json.headphones.filter(h => !h.wired);
             }
 
             if (!json || Object.keys(json).length === 0) {

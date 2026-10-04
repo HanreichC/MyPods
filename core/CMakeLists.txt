@@ -145,6 +145,7 @@ else()
     target_sources(magicpodscore PRIVATE
         src/tests/EmulateAirPods.cpp
         src/pulseaudio/PulseAudioClient.cpp
+        src/device/WiredDevice.cpp
         src/media/MprisClient.cpp
         src/dbus/DBusDeviceInfo.cpp
         src/dbus/DBusService.cpp

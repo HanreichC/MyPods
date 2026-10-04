@@ -6,6 +6,7 @@
 #include "Logger.h"
 
 #include <algorithm>
+#include <cctype>
 
 namespace MagicPodsCore
 {
@@ -61,7 +62,7 @@ namespace MagicPodsCore
         Lock lock{ml};
         // Runs on the loop thread with the lock held: subscribers must not call back into this client
         pa_context_set_subscribe_callback(ctx, [](pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
-            if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK && (t & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_CHANGE)
+            if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK)
                 static_cast<PulseAudioClient*>(userdata)->_onSinkChangedEvent.FireEvent(idx);
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) != PA_SUBSCRIPTION_EVENT_CARD)
                 return;
@@ -207,6 +208,48 @@ namespace MagicPodsCore
                     pa_sample_format_to_string(info->sample_spec.format), info->sample_spec.channels, codec ? codec : ""};
             }, &details));
         return details;
+    }
+
+    std::optional<WiredOutput> PulseAudioClient::WiredHeadphones(const pa_sink_info &info)
+    {
+        auto prop = [&](const char *key) { const char *v = pa_proplist_gets(info.proplist, key); return std::string(v ? v : ""); };
+        auto lower = [](std::string text) { std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return std::tolower(c); }); return text; };
+        // ALSA only: not Bluetooth, not our effect chain or another virtual sink
+        if (!info.name || prop("device.api") != "alsa")
+            return std::nullopt;
+        const auto *port = info.active_port;
+        // an empty jack: the sink plays on the speakers (or nowhere)
+        if (port && port->available == PA_PORT_AVAILABLE_NO)
+            return std::nullopt;
+        bool usb = prop("device.bus") == "usb";
+        bool jack = port && (port->type == PA_DEVICE_PORT_TYPE_HEADPHONES || port->type == PA_DEVICE_PORT_TYPE_HEADSET ||
+                             lower(port->name ? port->name : "").find("headphone") != std::string::npos);
+        auto formFactor = prop("device.form_factor");
+        auto text = lower(std::string(info.name) + " " + (info.description ? info.description : "") + " " + prop("device.product.name"));
+        // ponytail: a USB DAC that calls itself neither headphones nor headset counts as speakers; a setting to mark outputs would cover it
+        if (!jack && formFactor != "headphone" && formFactor != "headset" &&
+            !(usb && (text.find("headphone") != std::string::npos || text.find("headset") != std::string::npos)))
+            return std::nullopt;
+        // the jack by its port ("Headphones", in the system's language), USB by its product
+        std::string name = !usb && port && port->description ? port->description : prop("device.product.name");
+        if (name.empty())
+            name = info.description ? info.description : info.name;
+        return WiredOutput{info.name, name, usb};
+    }
+
+    std::vector<WiredOutput> PulseAudioClient::GetWiredHeadphones()
+    {
+        if (!Usable()) return {};
+
+        std::vector<WiredOutput> outputs;
+        Lock lock{ml};
+        Wait(pa_context_get_sink_info_list(ctx,
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                if (eol || !info) return;
+                if (auto output = WiredHeadphones(*info))
+                    static_cast<std::vector<WiredOutput>*>(userdata)->push_back(*output);
+            }, &outputs));
+        return outputs;
     }
 
     bool PulseAudioClient::SetSinkVolume(const std::string &name, double volume)

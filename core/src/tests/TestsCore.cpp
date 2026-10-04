@@ -18,6 +18,7 @@
 #include "sdk/aap/watchers/AapAncWatcher.h"
 
 #include <atomic>
+#include <map>
 #include <thread>
 #include <cmath>
 
@@ -246,6 +247,43 @@ TestsCore::TestsCore()
     catch (const sdbus::Error &e)
     {
         Logger::Info("Disconnect stop check skipped, no system bus: %s", e.getMessage().c_str());
+    }
+
+    // wired headphones: which sinks count, and what they are called
+    {
+        pa_sink_port_info headphones{}, speaker{};
+        headphones.name = "analog-output-headphones";
+        headphones.description = "Kopfhörer";
+        headphones.type = PA_DEVICE_PORT_TYPE_HEADPHONES;
+        headphones.available = PA_PORT_AVAILABLE_YES;
+        speaker.name = "analog-output-speaker";
+        speaker.type = PA_DEVICE_PORT_TYPE_SPEAKER;
+        auto sink = [](const char *name, const char *description, pa_sink_port_info *port, std::map<std::string, std::string> props) {
+            auto info = std::make_shared<pa_sink_info>();
+            info->name = name;
+            info->description = description;
+            info->active_port = port;
+            info->proplist = pa_proplist_new();
+            for (auto &[k, v] : props)
+                pa_proplist_sets(info->proplist, k.c_str(), v.c_str());
+            auto output = PulseAudioClient::WiredHeadphones(*info);
+            pa_proplist_free(info->proplist);
+            return output;
+        };
+        std::map<std::string, std::string> alsa{{"device.api", "alsa"}, {"device.bus", "pci"}};
+        auto jack = sink("alsa_output.pci.analog-stereo", "Built-in Audio", &headphones, alsa);
+        bool speakers = !sink("alsa_output.pci.analog-stereo", "Built-in Audio", &speaker, alsa);
+        headphones.available = PA_PORT_AVAILABLE_NO;
+        bool empty = !sink("alsa_output.pci.analog-stereo", "Built-in Audio", &headphones, alsa);
+        auto headset = sink("alsa_output.usb-Sennheiser.analog-stereo", "Sennheiser Headset Analog Stereo", nullptr,
+                            {{"device.api", "alsa"}, {"device.bus", "usb"}, {"device.product.name", "Sennheiser Headset"}});
+        bool usbSpeaker = !sink("alsa_output.usb-Speaker.analog-stereo", "USB Speaker", nullptr, {{"device.api", "alsa"}, {"device.bus", "usb"}});
+        bool bluetooth = !sink("bluez_output.AA_BB.1", "AirPods", nullptr, {{"device.api", "bluez5"}, {"device.form_factor", "headset"}});
+        bool chain = !sink(AudioEffects::SINK_NAME, "MyPods", nullptr, {});
+        Test("Wired headphones: jack plugged, by its port's name", jack && jack->name == "Kopfhörer" && !jack->usb);
+        Test("Wired headphones: speakers, empty jack, USB speaker", speakers && empty && usbSpeaker);
+        Test("Wired headphones: USB headset by product name", headset && headset->usb && headset->name == "Sennheiser Headset");
+        Test("Wired headphones: not Bluetooth, not the effect chain", bluetooth && chain);
     }
 #endif
 }

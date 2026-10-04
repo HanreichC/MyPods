@@ -167,7 +167,8 @@ QQC2.ApplicationWindow {
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: qsTrId("tray.popup.connected")
+                        text: !popup.infoData?.wired ? qsTrId("tray.popup.connected")
+                              : popup.infoData.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack")
                         color: MP.Theme.secondaryText
                         font.pixelSize: 12
                         elide: Text.ElideRight
