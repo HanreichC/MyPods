@@ -24,7 +24,7 @@
              user, writes its config here, and the audio engine (Local Service) reads it -->
         <Directory Id="EqualizerApoFolder" Name="EqualizerAPO">
           <Directory Id="ApoConfigFolder" Name="config">
-            <Component Id="ApoConfig">
+            <Component Id="ApoConfig" Guid="6BEA03B2-32BE-4A88-B80F-ED99049739E2">
               <CreateFolder>
                 <PermissionEx Sddl="D:AI(A;OICI;0x1301bf;;;BU)(A;OICI;FR;;;LS)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)" />
               </CreateFolder>
