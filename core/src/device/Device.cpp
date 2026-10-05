@@ -339,11 +339,23 @@ namespace MagicPodsCore {
         if (config.loudness)
             config.volume = ListeningVolume();
         auto target = AudioEffects::Instance().Apply(*sink, GetName(), config);
+#ifndef _WIN32
         // the chain's sink appears a moment after its process starts
         for (int i = 0; i < 30 && !pac->FindSink(target); i++)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         pac->SetDefaultSink(target);
+#endif
+        // Windows: the effects sit on the endpoint itself; the output only changes when the user picks one (MakeDefaultOutput)
         Logger::Info("%s: audio routed to %s", GetName().c_str(), target.c_str());
+    }
+
+    void Device::MakeDefaultOutput()
+    {
+        RouteAudio();
+#ifdef _WIN32
+        if (auto sink = HeadphonesSink(); sink && !GetAudioClient()->SetDefaultSink(*sink))
+            Logger::Error("%s: could not make %s the default output", GetName().c_str(), sink->c_str());
+#endif
     }
 
     void Device::RouteAudioAsync()

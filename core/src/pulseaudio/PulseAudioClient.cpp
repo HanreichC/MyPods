@@ -252,6 +252,24 @@ namespace MagicPodsCore
         return outputs;
     }
 
+    std::vector<WiredOutput> PulseAudioClient::GetOutputs()
+    {
+        if (!Usable()) return {};
+
+        std::vector<WiredOutput> outputs;
+        Lock lock{ml};
+        Wait(pa_context_get_sink_info_list(ctx,
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                const char *api = info && !eol ? pa_proplist_gets(info->proplist, "device.api") : nullptr;
+                if (!api || std::string(api) != "alsa" || !info->name)
+                    return;
+                const char *bus = pa_proplist_gets(info->proplist, "device.bus");
+                static_cast<std::vector<WiredOutput>*>(userdata)->push_back(
+                    {info->name, info->description ? info->description : info->name, bus && std::string(bus) == "usb"});
+            }, &outputs));
+        return outputs;
+    }
+
     bool PulseAudioClient::SetSinkVolume(const std::string &name, double volume)
     {
         if (!Usable()) return false;

@@ -185,6 +185,19 @@ void HandleSetActiveDeviceRequest(auto *ws, const nlohmann::json& json, uWS::OpC
     ws->send(response, opCode, response.length() < 16 * 1024);
 }
 
+// The outputs that aren't Bluetooth, for the user to say which are headphones (a monitor's jack tells nobody)
+void HandleGetOutputsRequest(auto *ws, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
+    auto response = nlohmann::json{{"outputs", devicesInfoFetcher.GetOutputs()}}.dump();
+    ws->send(response, opCode, response.length() < 16 * 1024);
+}
+
+// Marks an output as headphones or not, answers with the outputs; the device list follows on its own
+void HandleSetOutputHeadphonesRequest(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
+    const auto& arguments = json.at("arguments");
+    devicesInfoFetcher.SetOutputHeadphones(arguments.at("sink").template get<std::string>(), arguments.at("headphones").template get<bool>());
+    HandleGetOutputsRequest(ws, opCode, devicesInfoFetcher);
+}
+
 void HandleSetCapabilitiesRequest(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
     Logger::Info("HandleSetAncRequest");
     devicesInfoFetcher.SetCapabilities(json);
@@ -323,6 +336,10 @@ void HandleRequest(auto *ws, std::string_view message, uWS::OpCode opCode, uWS::
                 HandleGetActiveDeviceInfoRequest(ws, json, opCode, devicesInfoFetcher);
             else if (methodName == "SetActiveDevice")
                 HandleSetActiveDeviceRequest(ws, json, opCode, devicesInfoFetcher);
+            else if (methodName == "GetOutputs")
+                HandleGetOutputsRequest(ws, opCode, devicesInfoFetcher);
+            else if (methodName == "SetOutputHeadphones")
+                HandleSetOutputHeadphonesRequest(ws, json, opCode, devicesInfoFetcher);
             else if (methodName == "GetAll")
                 HandleGetAllRequest(ws, json, opCode, devicesInfoFetcher);
             else if (methodName == "GetSettingsAll")

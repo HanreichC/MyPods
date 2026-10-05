@@ -47,6 +47,8 @@ namespace MagicPodsCore {
         // Blocking PulseAudio queries, never on the PulseAudio thread. `startup`: they were plugged in before the daemon
         void RefreshWired(bool startup);
         void RefreshWiredSoon();
+        // Outputs the user marked as headphones (setting magicpods.headphoneOutputs, one sink per line)
+        std::set<std::string> MarkedOutputs();
         std::mutex _bleStateMutex{};
         void UpdateBleState();
 
@@ -73,8 +75,13 @@ namespace MagicPodsCore {
         std::set<std::shared_ptr<Device>, DeviceComparator> GetDevices() const;
         std::shared_ptr<Device> GetDevice(const std::string& deviceAddress) const;
         std::shared_ptr<Device> GetActiveDevice() const;
-        // Makes a connected device the one the UI shows and the broadcasts are about; false if it isn't connected
+        // Makes a connected device the one the UI shows and the broadcasts are about, and switches the system's
+        // output to it; false if it isn't connected
         bool SetActiveDevice(const std::string& address);
+        // The outputs that aren't Bluetooth: {"sink", "name", "headphones", "automatic"}; automatic ones are
+        // headphones by themselves (a plugged jack, a USB headset), the others as the user marks them. Blocking.
+        nlohmann::json GetOutputs();
+        void SetOutputHeadphones(const std::string& sink, bool headphones);
 
         void Connect(const std::string& deviceAddress);
         void Disconnect(const std::string& deviceAddress);

@@ -153,6 +153,8 @@ namespace MagicPodsCore {
         void RouteAudio();
         // RouteAudio on a worker thread, if this computer plays to the connected headphones
         void RouteAudioAsync();
+        // The user picked these headphones: their effects, and the system's output switched to them; blocking
+        void MakeDefaultOutput();
 #ifdef _WIN32
         // Windows: the effects follow the headphones' link, now and whenever it comes up; the endpoint appears a
         // moment after the link, so the worker waits for it

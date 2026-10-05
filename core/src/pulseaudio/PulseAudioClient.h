@@ -83,6 +83,8 @@ namespace MagicPodsCore{
             std::optional<SinkDetails> GetSinkDetails(const std::string& name);
             // Wired headphones that are plugged in and active; blocking
             std::vector<WiredOutput> GetWiredHeadphones();
+            // Every output that isn't Bluetooth (speakers, monitors, jacks, USB), for the user to say which are headphones; blocking
+            std::vector<WiredOutput> GetOutputs();
 #ifndef _WIN32
             // The sink plays into wired headphones: a headphone jack whose port is active and not empty, or a USB headset
             static std::optional<WiredOutput> WiredHeadphones(const pa_sink_info& info);

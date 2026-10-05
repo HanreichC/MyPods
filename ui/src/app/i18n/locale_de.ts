@@ -850,5 +850,20 @@
         <source></source>
         <translation>USB</translation>
     </message>
+    <message id="settings.outputs">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Kopfhörer an diesen Ausgängen</translation>
+    </message>
+    <message id="settings.outputs.description">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Steckt hier ein Kopfhörer, z. B. am Monitor? Dann bekommt der Ausgang einen eigenen Equalizer und lässt sich wie Kopfhörer auswählen</translation>
+    </message>
+    <message id="settings.outputs.automatic">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Automatisch als Kopfhörer erkannt</translation>
+    </message>
 </context>
 </TS>

@@ -12,6 +12,8 @@ Components.ScrollPage {
     id: rootPage
 
     property bool settingAnimation: true
+    // {sink, name, headphones, automatic} per output that isn't Bluetooth
+    property var outputs: []
 
     title: qsTrId("menu.settings")
 
@@ -33,6 +35,7 @@ Components.ScrollPage {
             cppBackend.getSetting("magicpods", "animation");
             cppBackend.getSetting("magicpods", "theme_tray");
             cppBackend.getSetting("magicpods", "appearance");
+            cppBackend.getOutputs();
         }
     }
 
@@ -40,6 +43,8 @@ Components.ScrollPage {
         target: cppBackend
         enabled: !!cppBackend
         function onDataReceived(json) {
+            if (json?.outputs)
+                rootPage.outputs = json.outputs;
             if (!json || Object.keys(json).length === 0) {} else if (json.settings) {
                 if (json.settings?.magicpods?.animation != null)
                     rootPage.settingAnimation = json.settings.magicpods.animation;
@@ -81,6 +86,38 @@ Components.ScrollPage {
                         if (cppBackend)
                             cppBackend.setSetting("magicpods", "animation", checked);
                     }
+                }
+            }
+        }
+    }
+
+    // Headphones that no system can see: on a monitor's jack, or a jack that shares the speakers' output.
+    // Marked, an output becomes headphones with their own equalizer, to pick like any other pair.
+    MP.Heading {
+        visible: rootPage.outputs.length > 0
+        level: 5
+        Layout.topMargin: MP.Units.mediumSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("settings.outputs")
+    }
+
+    Components.Card {
+        visible: rootPage.outputs.length > 0
+
+        Repeater {
+            model: rootPage.outputs
+
+            MP.FormRow {
+                Layout.fillWidth: true
+                iconSource: MP.Theme.asset(modelData.headphones ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
+                iconColor: "#007AFF"
+                label: modelData.name
+                tooltip: modelData.automatic ? qsTrId("settings.outputs.automatic") : qsTrId("settings.outputs.description")
+
+                Components.Toggle {
+                    checked: modelData.headphones
+                    enabled: (cppBackend?.connected ?? false) && !modelData.automatic
+                    onToggled: cppBackend.setOutputHeadphones(modelData.sink, checked)
                 }
             }
         }

@@ -136,19 +136,36 @@ namespace MagicPodsCore
             _native->enumerator->UnregisterEndpointNotificationCallback(_native.get());
     }
 
-    std::optional<WiredOutput> PulseAudioClient::WiredHeadphones(const AudioEndpoint &endpoint)
+    // Bluetooth: its own driver, or Intel's offload, which names the Bluetooth device behind it
+    static bool Bluetooth(const AudioEndpoint &endpoint)
     {
-        // ponytail: a laptop whose jack shares the speakers' endpoint (one "Speakers/Headphones" output) has no
-        // endpoint to tell the plug by; the jack's IKsJackDescription would, through the device topology
-        if (endpoint.formFactor != HEADPHONES && endpoint.formFactor != HEADSET)
-            return std::nullopt;
-        // Bluetooth: its own driver, or Intel's offload, which names the Bluetooth device behind it
-        if (Upper(endpoint.enumerator).starts_with("BTH") || Upper(endpoint.bluetooth).find("BTH") != std::string::npos)
-            return std::nullopt;
+        return Upper(endpoint.enumerator).starts_with("BTH") || Upper(endpoint.bluetooth).find("BTH") != std::string::npos;
+    }
+
+    // The jack or monitor by its endpoint ("Kopfhörer", "OMEN 27i IPS"), USB by its product
+    static WiredOutput Output(const AudioEndpoint &endpoint)
+    {
         bool usb = Upper(endpoint.enumerator) == "USB";
-        // the jack by its endpoint ("Kopfhörer"), USB by its product
         std::string name = usb && !endpoint.adapter.empty() ? endpoint.adapter : endpoint.name;
         return WiredOutput{endpoint.id, name.empty() ? endpoint.id : name, usb};
+    }
+
+    std::optional<WiredOutput> PulseAudioClient::WiredHeadphones(const AudioEndpoint &endpoint)
+    {
+        // A jack that shares the speakers' endpoint, or one on a monitor (sound over DisplayPort/HDMI), tells
+        // Windows nothing about a plug: the user marks such outputs as headphones (GetOutputs)
+        if ((endpoint.formFactor != HEADPHONES && endpoint.formFactor != HEADSET) || Bluetooth(endpoint))
+            return std::nullopt;
+        return Output(endpoint);
+    }
+
+    std::vector<WiredOutput> PulseAudioClient::GetOutputs()
+    {
+        std::vector<WiredOutput> outputs;
+        for (const auto &endpoint : _native->ActiveEndpoints())
+            if (!Bluetooth(endpoint))
+                outputs.push_back(Output(endpoint));
+        return outputs;
     }
 
     std::vector<WiredOutput> PulseAudioClient::GetWiredHeadphones()
@@ -190,10 +207,40 @@ namespace MagicPodsCore
         return level;
     }
 
+    // What Windows' own sound settings call to change the default output (EarTrumpet and SoundSwitch do the same).
+    // ponytail: undocumented COM; should a Windows release change it, switching fails and the output stays where it was
+    struct __declspec(uuid("f8679f50-850a-41cf-9c72-430f290290c8")) IPolicyConfig : IUnknown
+    {
+        virtual HRESULT STDMETHODCALLTYPE GetMixFormat(PCWSTR, void **) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetDeviceFormat(PCWSTR, INT, void **) = 0;
+        virtual HRESULT STDMETHODCALLTYPE ResetDeviceFormat(PCWSTR) = 0;
+        virtual HRESULT STDMETHODCALLTYPE SetDeviceFormat(PCWSTR, void *, void *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetProcessingPeriod(PCWSTR, INT, INT64 *, INT64 *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE SetProcessingPeriod(PCWSTR, INT64 *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetShareMode(PCWSTR, void *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE SetShareMode(PCWSTR, void *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetPropertyValue(PCWSTR, const PROPERTYKEY &, PROPVARIANT *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE SetPropertyValue(PCWSTR, const PROPERTYKEY &, PROPVARIANT *) = 0;
+        virtual HRESULT STDMETHODCALLTYPE SetDefaultEndpoint(PCWSTR, ERole) = 0;
+    };
+    static constexpr CLSID POLICY_CONFIG_CLIENT{0x870af99c, 0x171d, 0x4f9e, {0xaf, 0x0d, 0xe6, 0x3d, 0xf4, 0x0c, 0x2b, 0xc9}};
+
+    bool PulseAudioClient::SetDefaultSink(const std::string &name)
+    {
+        std::wstring id(name.begin(), name.end()); // endpoint IDs are ASCII
+        winrt::com_ptr<IPolicyConfig> policy;
+        if (FAILED(CoCreateInstance(POLICY_CONFIG_CLIENT, nullptr, CLSCTX_ALL, __uuidof(IPolicyConfig), policy.put_void())))
+            return false;
+        // all three roles, as the sound settings do: music, calls and system sounds go there together
+        for (ERole role : {eConsole, eMultimedia, eCommunications})
+            if (FAILED(policy->SetDefaultEndpoint(id.c_str(), role)))
+                return false;
+        return true;
+    }
+
     bool PulseAudioClient::SetCardProfile(const std::string &, const std::string &) { return false; }
     std::optional<CardInfo> PulseAudioClient::GetCardInfoByName(const std::string &) { return std::nullopt; }
     std::string PulseAudioClient::GetNameFromMac(const std::string &mac) { return mac; }
-    bool PulseAudioClient::SetDefaultSink(const std::string &) { return false; }
     bool PulseAudioClient::SetSinkVolume(const std::string &, double) { return false; }
     std::optional<SinkDetails> PulseAudioClient::GetSinkDetails(const std::string &) { return std::nullopt; }
 }

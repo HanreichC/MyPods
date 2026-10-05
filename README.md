@@ -332,6 +332,7 @@ L2CAP (AAP). MyPods ships no Bluetooth driver, so on Windows it does what user s
 | Battery level in the system's Bluetooth settings | No, Windows takes no levels from applications |
 | Automatic switching with the iPhone ("Move here") | No, needs AAP |
 | Equalizer, headphone correction, hearing profile, loudness, crossfeed | Yes, for Bluetooth and wired headphones, through Equalizer APO's engine, which the MSI brings along and puts on the headphone outputs. Headphones that come later ask once for administrator rights. An Equalizer APO you installed yourself is used as it is. |
+| Headphones on a monitor's jack | Yes, once marked under *Settings → Headphones on these outputs*: monitors don't tell Windows whether something is plugged in |
 | Spatial audio | No, Linux only so far |
 | Codec display and switching | No, Windows exposes neither |
 

@@ -333,7 +333,7 @@ On any property change:
 
 ### SetActiveDevice (MyPods)
 
-With several headphones connected, makes one of them the active device: the one `GetActiveDeviceInfo` and the capability broadcasts are about. Ignored for a device that isn't connected. Without it, the headphones connected last are active.
+With several headphones connected, makes one of them the active device: the one `GetActiveDeviceInfo` and the capability broadcasts are about. The system's audio output switches to it too. Ignored for a device that isn't connected. Without it, the headphones connected last are active.
 
 Request:
 
@@ -342,6 +342,23 @@ Request:
 ```
 
 Response: the same as `GetActiveDeviceInfo`. Every client also gets `OnActiveDeviceChanged`.
+
+### GetOutputs, SetOutputHeadphones (MyPods)
+
+The outputs that aren't Bluetooth (speakers, monitors, jacks, USB). `automatic` ones are wired headphones by
+themselves; the others count as headphones once marked, for a jack the system can't see into, like a monitor's.
+A marked output is in `GetDevices` like wired headphones, with its own capabilities.
+
+```json
+{ "method": "GetOutputs" }
+{ "method": "SetOutputHeadphones", "arguments": { "sink": "{0.0.0.00000000}.{d10eb956-9728-4171-8665-8d746bffc83f}", "headphones": true } }
+```
+
+Response to both:
+
+```json
+{ "outputs": [ { "sink": "{0.0.0.00000000}.{d10eb956-9728-4171-8665-8d746bffc83f}", "name": "OMEN 27i IPS", "headphones": true, "automatic": false } ] }
+```
 
 ### GetAll
 

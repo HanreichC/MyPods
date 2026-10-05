@@ -24,6 +24,7 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <sstream>
 #include <thread>
 
 namespace MagicPodsCore {
@@ -85,6 +86,8 @@ namespace MagicPodsCore {
             if ((notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "animation") ||
                 notification.GetSettingName() == "autoSwitch")
                 UpdateBleState();
+            if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "headphoneOutputs")
+                RefreshWiredSoon();
         });
 
         ClearAndFillDevicesMap();
@@ -268,10 +271,49 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         }).detach();
     }
 
+    std::set<std::string> DevicesInfoFetcher::MarkedOutputs() {
+        std::set<std::string> marked;
+        std::istringstream lines(_settingsService->GetValue<std::string>("magicpods", "headphoneOutputs").value_or(""));
+        for (std::string line; std::getline(lines, line);)
+            if (!line.empty())
+                marked.insert(line);
+        return marked;
+    }
+
+    nlohmann::json DevicesInfoFetcher::GetOutputs() {
+        auto marked = MarkedOutputs();
+        std::set<std::string> automatic;
+        for (const auto& output : _audioClient->GetWiredHeadphones())
+            automatic.insert(output.sink);
+        auto outputs = nlohmann::json::array();
+        for (const auto& output : _audioClient->GetOutputs())
+            outputs.push_back({{"sink", output.sink}, {"name", output.name}, {"automatic", automatic.contains(output.sink)},
+                               {"headphones", automatic.contains(output.sink) || marked.contains(output.sink)}});
+        return outputs;
+    }
+
+    void DevicesInfoFetcher::SetOutputHeadphones(const std::string& sink, bool headphones) {
+        auto marked = MarkedOutputs();
+        if (headphones && sink.find('\n') == std::string::npos)
+            marked.insert(sink);
+        else
+            marked.erase(sink);
+        std::string text;
+        for (const auto& m : marked)
+            text += m + "\n";
+        _settingsService->SaveSetting("magicpods", "headphoneOutputs", text); // the setting event refreshes the devices
+    }
+
     void DevicesInfoFetcher::RefreshWired(bool startup) {
         std::lock_guard guard{_wiredLock};
         std::set<std::string> plugged;
-        for (const auto& output : _audioClient->GetWiredHeadphones()) {
+        // headphones the system tells by themselves, and the outputs the user says are headphones (a monitor's jack)
+        auto outputs = _audioClient->GetWiredHeadphones();
+        auto marked = MarkedOutputs();
+        for (const auto& output : _audioClient->GetOutputs())
+            if (marked.contains(output.sink) && std::none_of(outputs.begin(), outputs.end(), [&](const WiredOutput& o) { return o.sink == output.sink; }))
+                outputs.push_back(output);
+        for (const auto& output : outputs) {
             auto address = WiredDevice::AddressFor(output.sink);
             plugged.insert(address);
             if (auto known = std::dynamic_pointer_cast<WiredDevice>(GetDevice(address))) {
@@ -329,6 +371,8 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         if (!device || !device->GetConnected())
             return false;
         TrySelectNewActiveDevice(address);
+        // the sound follows the pick; a worker, it waits for the sound server
+        std::thread([device]() { device->MakeDefaultOutput(); }).detach();
         return true;
     }
 

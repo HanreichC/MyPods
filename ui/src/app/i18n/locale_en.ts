@@ -850,5 +850,20 @@
         <source></source>
         <translation>USB</translation>
     </message>
+    <message id="settings.outputs">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Headphones on these outputs</translation>
+    </message>
+    <message id="settings.outputs.description">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Headphones plugged in here, on a monitor for example? The output then gets its own equalizer and can be picked like headphones</translation>
+    </message>
+    <message id="settings.outputs.automatic">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Detected as headphones automatically</translation>
+    </message>
 </context>
 </TS>
