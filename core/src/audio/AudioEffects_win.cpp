@@ -113,7 +113,7 @@ namespace MagicPodsCore
         TOKEN_PRIVILEGES privilege{1};
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token))
             throw std::runtime_error("no process token");
-        LookupPrivilegeValueW(nullptr, SE_TAKE_OWNERSHIP_NAME, &privilege.Privileges[0].Luid);
+        LookupPrivilegeValueW(nullptr, L"SeTakeOwnershipPrivilege", &privilege.Privileges[0].Luid); // SE_TAKE_OWNERSHIP_NAME is narrow without UNICODE
         privilege.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
         AdjustTokenPrivileges(token, FALSE, &privilege, sizeof privilege, nullptr, nullptr);
         CloseHandle(token);
