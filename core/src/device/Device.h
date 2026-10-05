@@ -153,6 +153,11 @@ namespace MagicPodsCore {
         void RouteAudio();
         // RouteAudio on a worker thread, if this computer plays to the connected headphones
         void RouteAudioAsync();
+#ifdef _WIN32
+        // Windows: the effects follow the headphones' link, now and whenever it comes up; the endpoint appears a
+        // moment after the link, so the worker waits for it
+        void RouteAudioWhileConnected();
+#endif
         // Takes the effect chain away if it plays into these headphones; another pair's chain stays
         void StopEffects();
         EffectsConfig LoadEffectsConfig();

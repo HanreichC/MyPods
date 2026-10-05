@@ -15,7 +15,9 @@ namespace MagicPodsCore
     {
         auto info = std::make_shared<DBusDeviceInfo>(AddressFor(output.sink), output.name, plugged);
         auto device = std::make_unique<WiredDevice>(info, audioClient, settingsService, output);
+#ifndef _WIN32 // spatial audio runs in PipeWire only (AudioEffects.h)
         device->capabilities.push_back(std::make_unique<CmnSpatialAudioCapability>(*device));
+#endif
         device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));
 
         // Like BhfDevice: the saved effects go in front of the headphones when they're plugged in and away when

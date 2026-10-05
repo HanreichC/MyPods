@@ -23,6 +23,8 @@
 #include <regex>
 #include <iostream>
 #include <algorithm>
+#include <set>
+#include <thread>
 
 namespace MagicPodsCore {
 
@@ -86,12 +88,10 @@ namespace MagicPodsCore {
         });
 
         ClearAndFillDevicesMap();
-#ifndef _WIN32
         RefreshWired(true);
-        // PulseAudio thread: the queries run on a worker
+        // PulseAudio thread (Windows: Core Audio's): the queries run on a worker
         _sinkEventId = _audioClient->GetSinkChangedEvent().Subscribe([this](size_t, const uint32_t &) { RefreshWiredSoon(); });
         _cardEventId = _audioClient->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &) { RefreshWiredSoon(); });
-#endif
 
         UpdateBleState();
 
@@ -144,10 +144,8 @@ namespace MagicPodsCore {
 
 DevicesInfoFetcher::~DevicesInfoFetcher()
 {
-#ifndef _WIN32
     _audioClient->GetSinkChangedEvent().Unsubscribe(_sinkEventId);
     _audioClient->GatAudioCardPropertyChangedEvent().Unsubscribe(_cardEventId);
-#endif
     if (_bleScanActive)
         _bleService->StopScan();
     _settingsService->GetOnSettingUpdateEvent().Unsubscribe(_onSettingsChangeId);
@@ -258,7 +256,6 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         return newDevice;
     }
 
-#ifndef _WIN32
     void DevicesInfoFetcher::RefreshWiredSoon() {
         if (_wiredPending.exchange(true))
             return;
@@ -304,7 +301,6 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
             if (auto wired = std::dynamic_pointer_cast<WiredDevice>(device); wired && !plugged.contains(wired->GetAddress()))
                 wired->SetPlugged(false);
     }
-#endif
 
     void DevicesInfoFetcher::ClearAndFillDevicesMap() {
         {

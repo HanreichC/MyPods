@@ -5,8 +5,10 @@
 
 #include <array>
 #include <chrono>
+#include <map>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 #ifndef _WIN32
@@ -58,8 +60,9 @@ namespace MagicPodsCore
 
     // Spatial audio and equalizer as a PipeWire filter-chain sink in front of the headphones
     // (runs `pipewire -c <generated conf>` as a child process, the documented way to host a filter-chain).
-    // Windows has no user-space equivalent (it would take an APO driver): Apply/Stop/SetYaw do nothing there
-    // and the capabilities are not offered, while the presets still serve the Parrot Zik's on-device EQ.
+    // Windows (AudioEffects_win.cpp) changes sound only in the audio engine, through an APO: Equalizer APO, which
+    // the MSI ships. Every connected pair gets its own section of its config, picked by the endpoint, so Apply
+    // there needs no default sink and Stop nothing; spatial audio is Linux only so far.
     class AudioEffects
     {
     public:
@@ -106,6 +109,14 @@ namespace MagicPodsCore
         static std::string BuildConfig(const std::string &sink, const std::string &description, const EffectsConfig &config, double yaw);
         // pw-cli line that sets every gain (and the speaker angles) of a running chain
         static std::string ControlCommand(const EffectsConfig &config, double yaw);
+        // Equalizer APO config section with the same EQ, correction, hearing profile, loudness and crossfeed for
+        // the endpoint ("{0.0.0.00000000}.{guid}"); no spatial audio
+        static std::string ApoSection(const std::string &endpoint, const std::string &description, const EffectsConfig &config);
+#ifdef _WIN32
+        // Elevated setup from the MSI and for headphones it hasn't seen: "--apo-install", "--apo-uninstall",
+        // "--apo-register <endpoint guid>". Returns the exit code.
+        static int SetupApo(const std::string &command, const std::string &endpoint);
+#endif
 
     private:
         AudioEffects();
@@ -120,5 +131,9 @@ namespace MagicPodsCore
         EffectsConfig _config;
         double _yaw = 0;
         std::chrono::steady_clock::time_point _yawSentAt{};
+#ifdef _WIN32
+        std::map<std::string, std::string> _sections; // endpoint -> its Equalizer APO section
+        std::set<std::string> _registering;           // endpoints already offered to Equalizer APO this run
+#endif
     };
 }

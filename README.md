@@ -315,7 +315,7 @@ and install it. It installs to `C:\Program Files\MyPods`, adds a Start menu entr
 hidden in the tray at login. Settings live in `%APPDATA%\mypods\config.toml`.
 
 Windows only lets kernel-mode drivers open L2CAP channels, and every AirPods setting travels over
-L2CAP (AAP). MyPods ships no driver, so on Windows it does what user space allows:
+L2CAP (AAP). MyPods ships no Bluetooth driver, so on Windows it does what user space allows:
 
 | Feature | Windows |
 |---------|---------|
@@ -331,7 +331,8 @@ L2CAP (AAP). MyPods ships no driver, so on Windows it does what user space allow
 | Loud Sound Reduction, customized transparency | No, needs an ATT channel over L2CAP |
 | Battery level in the system's Bluetooth settings | No, Windows takes no levels from applications |
 | Automatic switching with the iPhone ("Move here") | No, needs AAP |
-| Spatial audio, equalizer for AirPods | No, would need an audio driver (APO) |
+| Equalizer, headphone correction, hearing profile, loudness, crossfeed | Yes, for Bluetooth and wired headphones, through Equalizer APO's engine, which the MSI brings along and puts on the headphone outputs. Headphones that come later ask once for administrator rights. An Equalizer APO you installed yourself is used as it is. |
+| Spatial audio | No, Linux only so far |
 | Codec display and switching | No, Windows exposes neither |
 
 **Recognizing your AirPods.** On Linux MyPods fetches the AirPods' IRK and ENC keys over AAP. Without
@@ -403,8 +404,8 @@ works on X11 and Wayland alike.
 | `noise-off`, `noise-anc`, `noise-transparency`, `noise-adaptive` | That noise control mode |
 | `conversation-awareness` | Conversation Awareness on/off |
 | `move-here` | Take the AirPods over from the iPhone ("Move here") |
-| `eq-next` | Next equalizer preset (Linux) |
-| `effects-bypass` | Compare with and without effects (A/B) on/off (Linux) |
+| `eq-next` | Next equalizer preset |
+| `effects-bypass` | Compare with and without effects (A/B) on/off |
 
 It exits with status 1 and a message when the daemon isn't running or the headphones can't do it.
 

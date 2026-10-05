@@ -66,6 +66,16 @@ jobs:
           Copy-Item "$crt\*.dll" deploy\
           Copy-Item "$crt\*.dll" deploy\modules\
 
+      # Equalizer APO's engine (GPL-2.0-or-later), the effects on Windows: unpacked from its installer, which never runs.
+      # The MSI registers it (magicpodscore --apo-install), so nothing else is downloaded or installed.
+      - name: Equalizer APO
+        run: |
+          curl.exe -sSL -o eapo.exe https://sourceforge.net/projects/equalizerapo/files/1.4.2/EqualizerAPO-x64-1.4.2.exe/download
+          if ((Get-FileHash eapo.exe).Hash -ne '7403BE7427BBE1936A40DDED082829B6E217FC4F5990FEE5CBA501F0AE055AFA') { throw 'EqualizerAPO-x64-1.4.2.exe is not the one checked' }
+          $files = 'EqualizerAPO.dll', 'fftw3f.dll', 'sndfile.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll', 'vcruntime140.dll', 'vcruntime140_1.dll'
+          7z e eapo.exe -odeploy\EqualizerAPO @files | Out-Null
+          foreach ($f in $files) { if (-not (Test-Path "deploy\EqualizerAPO\$f")) { throw "$f missing from Equalizer APO" } }
+
       - name: MSI
         run: |
           dotnet tool install --global wix --version 5.0.2

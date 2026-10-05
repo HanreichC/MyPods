@@ -8,6 +8,7 @@
 #include <pulse/pulseaudio.h>
 #endif
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 #include <optional>
@@ -49,9 +50,22 @@ namespace MagicPodsCore{
         bool operator==(const WiredOutput&) const = default;
     };
 
+#ifdef _WIN32
+    // A playback endpoint as Core Audio describes it; the ID ("{0.0.0.00000000}.{guid}") is its sink name
+    struct AudioEndpoint {
+        std::string id;
+        unsigned formFactor = 0; // EndpointFormFactor: 3 headphones, 5 headset
+        std::string enumerator;  // the bus: "USB", "HDAUDIO", "SOUNDWIRE", "BTHENUM", "INTELAUDIO" (Bluetooth offload)
+        std::string instance;    // the adapter's device instance; Bluetooth carries the MAC in it ("BTHENUM\...&A0143D1F0BE1_C...")
+        std::string bluetooth;   // the Bluetooth device instance behind an offloaded endpoint, empty otherwise
+        std::string name;        // the endpoint ("Kopfhörer", "Headset Earphone")
+        std::string adapter;     // the hardware ("Jabra EVOLVE LINK MS")
+    };
+#endif
+
     // Sound server access for codec display, output switching and effects. Windows has no A2DP/HFP
-    // profiles or codecs to pick and routes to connected headphones itself, so there it's an empty
-    // stub (PulseAudioClient_win.cpp) and the capabilities that need it stay hidden.
+    // profiles or codecs to pick and routes to connected headphones itself; there it answers from
+    // Core Audio (PulseAudioClient_win.cpp) with endpoints for sinks, and the rest stays empty.
     class PulseAudioClient{
         public:
             PulseAudioClient();
@@ -72,11 +86,15 @@ namespace MagicPodsCore{
 #ifndef _WIN32
             // The sink plays into wired headphones: a headphone jack whose port is active and not empty, or a USB headset
             static std::optional<WiredOutput> WiredHeadphones(const pa_sink_info& info);
+#else
+            // The endpoint is wired headphones: a headphone or headset form factor that isn't Bluetooth
+            static std::optional<WiredOutput> WiredHeadphones(const AudioEndpoint& endpoint);
 #endif
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }
-            // A sink appeared, changed (volume, mute, port) or went away, with its index; fired on the PulseAudio thread like the card event
+            // A sink appeared, changed (volume, mute, port) or went away, with its index; fired on the PulseAudio thread like the card event.
+            // Windows: an endpoint came, went, was plugged or unplugged (index 0), on Core Audio's notification thread
             Event<uint32_t>& GetSinkChangedEvent() {
                 return _onSinkChangedEvent;
             }
@@ -92,6 +110,9 @@ namespace MagicPodsCore{
             bool Wait(pa_operation* op);
             bool RequestCardProfile(const std::string& name, const std::string& profile);
             void Free();
+#else
+            struct Native;
+            std::unique_ptr<Native> _native;
 #endif
 
     };

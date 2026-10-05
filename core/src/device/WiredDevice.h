@@ -8,8 +8,8 @@
 namespace MagicPodsCore
 {
     // Headphones on a jack or USB: no Bluetooth and no control channel, only the effects that run on this computer
-    // (equalizer, spatial audio without head tracking). One per output, keyed by its sink; "connected" while that
-    // output plays into headphones. Linux only, like the effects.
+    // (equalizer, on Linux also spatial audio without head tracking). One per output, keyed by its sink (Windows:
+    // its endpoint); "connected" while that output plays into headphones.
     class WiredDevice : public Device
     {
     private:

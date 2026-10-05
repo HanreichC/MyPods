@@ -491,6 +491,12 @@ int main(int argc, char** argv) {
         Logger::Info("Selftest: %d failure(s)", failures);
         return failures == 0 ? 0 : 1;
     }
+#ifdef _WIN32
+    // Equalizer APO on the endpoints, elevated: the MSI (--apo-install, --apo-uninstall) and the daemon for
+    // headphones that came later (--apo-register <endpoint guid>)
+    if (argc > 1 && std::string{argv[1]}.starts_with("--apo-"))
+        return AudioEffects::SetupApo(argv[1], argc > 2 ? argv[2] : "");
+#endif
 #ifndef _WIN32
     // Emulated AirPods Max through the real audio path, needs PipeWire: magicpodscore --emulate-airpods
     if (argc > 1 && std::string{argv[1]} == "--emulate-airpods")

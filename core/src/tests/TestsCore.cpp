@@ -285,7 +285,45 @@ TestsCore::TestsCore()
         Test("Wired headphones: USB headset by product name", headset && headset->usb && headset->name == "Sennheiser Headset");
         Test("Wired headphones: not Bluetooth, not the effect chain", bluetooth && chain);
     }
+#else
+    // wired headphones on Windows: endpoints as a ThinkPad with Intel's Bluetooth offload and a Cirrus jack lists them
+    {
+        auto wired = [](unsigned formFactor, const char *enumerator, const char *bluetooth, const char *name, const char *adapter) {
+            return PulseAudioClient::WiredHeadphones({"{0.0.0.00000000}.{57cec976-8ead-425d-9773-0269fea02b0a}", formFactor, enumerator, "", bluetooth, name, adapter});
+        };
+        auto usb = wired(5, "USB", "", "Kopfhörer", "Jabra EVOLVE LINK MS");
+        auto jack = wired(5, "SOUNDWIRE", "", "Headset Earphone", "Cirrus Logic XU");
+        bool a2dp = !wired(3, "BTHENUM", "", "Kopfhörer", "Parrot x Chris");
+        bool offload = !wired(3, "INTELAUDIO", "{1}.BTHENUM\\{0000110B-0000-1000-8000-00805F9B34FB}_VID&00010043_PID&A003\\7&39F1C7F&0&A0143D1F0BE1_C00000000",
+                              "Kopfhörer", "Intel® Smart Sound Technologie für Bluetooth® Audio");
+        bool speakers = !wired(1, "SOUNDWIRE", "", "Lautsprecher", "Cirrus Logic XU");
+        Test("Wired headphones (Windows): USB headset by product", usb && usb->usb && usb->name == "Jabra EVOLVE LINK MS");
+        Test("Wired headphones (Windows): jack by its endpoint", jack && !jack->usb && jack->name == "Headset Earphone");
+        Test("Wired headphones (Windows): not Bluetooth, not speakers", a2dp && offload && speakers);
+    }
 #endif
+
+    // Equalizer APO section: the endpoint's GUID, the pre-gain, crossfeed as virtual channels, no 0 dB filters
+    {
+        EffectsConfig config;
+        config.eq = *AudioEffects::Preset("Bass Booster");
+        config.crossfeed = true;
+        auto section = AudioEffects::ApoSection("{0.0.0.00000000}.{57cec976-8ead-425d-9773-0269fea02b0a}", "Jabra\nEVOLVE", config);
+        config.crossfeed = false;
+        config.hearing[1][0] = 4;
+        auto plain = AudioEffects::ApoSection("{57cec976-8ead-425d-9773-0269fea02b0a}", "Jabra", config);
+        auto right = plain.substr(plain.find("Channel: R"));
+        Test("Equalizer APO: device by GUID, pre-gain, one name line",
+             section.starts_with("# JabraEVOLVE\nDevice: {57cec976-8ead-425d-9773-0269fea02b0a}\nChannel: all\nPreamp: -"));
+        Test("Equalizer APO: EQ bands, flat ones left out",
+             section.find("Filter: ON PK Fc 32.00 Hz Gain 5.50 dB Q 1.41\n") != std::string::npos && section.find("Gain 0.00 dB") == std::string::npos);
+        Test("Equalizer APO: crossfeed only when on",
+             section.find("Copy: L=L R=R XL=L XR=R\nChannel: XL XR\nFilter: ON LPQ Fc 700.00 Hz Q 0.50\nCopy: L=L+-0.3733*XL+0.3733*XR R=R+-0.3733*XR+0.3733*XL\n") != std::string::npos &&
+             plain.find("Copy:") == std::string::npos);
+        Test("Equalizer APO: the hearing profile per ear",
+             right.find("Filter: ON PK Fc 250.00 Hz Gain 4.00 dB Q 1.41") != std::string::npos &&
+             plain.substr(0, plain.find("Channel: R")).find("Fc 250.00 Hz Gain 4.00") == std::string::npos);
+    }
 }
 
 void TestsCore::Test(const char *name, bool ok)

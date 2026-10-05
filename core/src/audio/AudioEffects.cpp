@@ -638,22 +638,47 @@ namespace MagicPodsCore
         return std::string("s ") + SINK_NAME + " Props { params = [" + params + " ] }\n";
     }
 
-#ifdef _WIN32
-    AudioEffects &AudioEffects::Instance()
+    std::string AudioEffects::ApoSection(const std::string &endpoint, const std::string &description, const EffectsConfig &config)
     {
-        static AudioEffects instance;
-        return instance;
+        // same signal flow as the chain: pre-gain, crossfeed, the filters per ear
+        static const char *TYPES[] = {"PK", "LSC", "HSC", "LPQ", "HPQ"};
+        auto factor = [](double v) { char buf[32]; std::snprintf(buf, sizeof buf, "%.4f", v); return std::string(buf); };
+        std::string name;
+        for (char ch : description)
+            if (ch != '\n' && ch != '\r')
+                name += ch;
+        // "Device:" matches the endpoint by its GUID, the last braces of the ID
+        auto brace = endpoint.rfind('{');
+        std::ostringstream out;
+        out << "# " << name << "\n"
+            << "Device: " << (brace == std::string::npos ? endpoint : endpoint.substr(brace)) << "\n"
+            << "Channel: all\n"
+            << "Preamp: " << Num(-HeadroomDb(config)) << " dB\n";
+        double g = config.crossfeed && !config.bypass ? CROSSFEED_GAIN : 0;
+        if (g)
+            out << "Copy: L=L R=R XL=L XR=R\n"
+                << "Channel: XL XR\n"
+                << "Filter: ON LPQ Fc " << Num(CROSSFEED_LOWPASS.freq) << " Hz Q " << Num(CROSSFEED_LOWPASS.q) << "\n"
+                << "Copy: L=L+" << factor(-g) << "*XL+" << factor(g) << "*XR R=R+" << factor(-g) << "*XR+" << factor(g) << "*XL\n";
+        for (int ear : {0, 1})
+        {
+            out << "Channel: " << EARS[ear] << "\n";
+            for (auto &[filter, bq] : Filters(config, ear))
+            {
+                bool pass = bq.type == Biquad::LowPass || bq.type == Biquad::HighPass;
+                if (!pass && bq.gain == 0)
+                    continue; // transparent
+                out << "Filter: ON " << TYPES[bq.type] << " Fc " << Num(bq.freq) << " Hz";
+                if (!pass)
+                    out << " Gain " << Num(bq.gain) << " dB";
+                out << " Q " << Num(bq.q) << "\n";
+            }
+        }
+        out << "Channel: all\n";
+        return out.str();
     }
 
-    AudioEffects::AudioEffects() = default;
-    AudioEffects::~AudioEffects() = default;
-    std::string AudioEffects::Apply(const std::string &sink, const std::string &, EffectsConfig) { return sink; }
-    void AudioEffects::Stop() {}
-    void AudioEffects::StopFor(const std::string &) {}
-    void AudioEffects::StopLocked() {}
-    void AudioEffects::SetYaw(double) {}
-    void AudioEffects::SetVolume(double) {}
-#else
+#ifndef _WIN32
     static pid_t Spawn(const std::vector<const char *> &argv, int *stdinFd)
     {
         int fds[2] = {-1, -1};

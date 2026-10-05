@@ -146,7 +146,13 @@ namespace MagicPodsCore {
         });
     }
 
+    DBusDeviceInfo::DBusDeviceInfo(std::string address, std::string name, bool connected)
+        : _address{std::move(address)}, _name{std::move(name)}, _connectionStatus{connected} {
+    }
+
     DBusDeviceInfo::~DBusDeviceInfo() {
+        if (!_native)
+            return;
         if (_native->batteryWatcher && _native->batteryWatcher.Status() == DeviceWatcherStatus::Started)
             _native->batteryWatcher.Stop();
         _native->device.ConnectionStatusChanged(_native->connectionToken);
@@ -235,6 +241,8 @@ namespace MagicPodsCore {
     }
 
     void DBusDeviceInfo::Connect() {
+        if (!_native)
+            return;
         if (auto error = OneShot(_address, _native->container, KSPROPERTY_ONESHOT_RECONNECT))
             throw std::runtime_error(*error);
     }
@@ -242,6 +250,12 @@ namespace MagicPodsCore {
     // ponytail: the worker holds a raw this, like the D-Bus reply handler does; a device unpaired during
     // the up to 10 s wait would be gone under it. A weak_ptr handle would close that gap.
     void DBusDeviceInfo::ConnectAsync(BtCallback&& callback) {
+        if (!_native) {
+            std::string error = "not a Bluetooth device";
+            if (callback)
+                callback(&error);
+            return;
+        }
         std::thread([this, callback = std::move(callback)] {
             auto error = OneShot(_address, _native->container, KSPROPERTY_ONESHOT_RECONNECT);
             // the reconnect request returns at once; give the link time like BlueZ's Connect reply does
@@ -270,11 +284,19 @@ namespace MagicPodsCore {
     }
 
     void DBusDeviceInfo::Disconnect() {
+        if (!_native)
+            return;
         if (auto error = DisconnectLink(_native->device.BluetoothAddress()))
             throw std::runtime_error(*error);
     }
 
     void DBusDeviceInfo::DisconnectAsync(BtCallback&& callback) {
+        if (!_native) {
+            std::string error = "not a Bluetooth device";
+            if (callback)
+                callback(&error);
+            return;
+        }
         std::thread([this, callback = std::move(callback)] {
             auto error = DisconnectLink(_native->device.BluetoothAddress());
             for (int i = 0; !error && i < 100 && _connectionStatus.GetValue(); i++)

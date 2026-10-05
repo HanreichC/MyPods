@@ -21,6 +21,7 @@ Mitgelieferte Bibliotheken (unveraendert, damit der Build ohne Netz laeuft; Lize
 | [uSockets](https://github.com/uNetworking/uSockets) | 0.8.7 | Apache-2.0 | `core/dependencies/uSockets/vendor/` |
 | [uWebSockets](https://github.com/uNetworking/uWebSockets) | 20.58.0 | Apache-2.0 | `core/dependencies/uWebSockets/vendor/` |
 | [Inter](https://github.com/rsms/inter) (Schrift) | 4.1 | SIL OFL 1.1 | `ui/src/app/fonts/` |
+| [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) (Jonas Thedering) | 1.4.2 | GPL-2.0-or-later | nur im Windows-MSI: `EqualizerAPO\`, unveraendert aus dem offiziellen Installer ([Quellcode](https://sourceforge.net/p/equalizerapo/code/HEAD/tree/)); die Geraeteanmeldung in `core/src/audio/AudioEffects_win.cpp` folgt seinem Device Selector |
 
 Protokollwissen ausserdem aus:
 

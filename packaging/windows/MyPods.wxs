@@ -7,7 +7,9 @@
   <!-- The UpgradeCode never changes: it is how a newer MSI finds and replaces an older install -->
   <Package Name="MyPods" Manufacturer="MyPods" Version="$(Version)" Scope="perMachine"
            UpgradeCode="4C040DE7-72B0-401B-B2A2-71364E7ED02D">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of MyPods is already installed." />
+    <!-- After the new files are in: the audio engine holds EqualizerAPO.dll, and an unchanged one is then kept instead
+         of removed and copied again, which would wait for a reboot -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MyPods is already installed." Schedule="afterInstallExecute" />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="MyPodsIcon" SourceFile="ui\src\app\magicpods.ico" />
@@ -17,6 +19,19 @@
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="MyPods">
         <Files Include="$(DeployDir)\**" />
+
+        <!-- Equalizer APO's engine for the effects (EqualizerAPO\, from the deploy folder). The daemon, running as the
+             user, writes its config here, and the audio engine (Local Service) reads it -->
+        <Directory Id="EqualizerApoFolder" Name="EqualizerAPO">
+          <Directory Id="ApoConfigFolder" Name="config">
+            <Component Id="ApoConfig">
+              <CreateFolder>
+                <PermissionEx Sddl="D:AI(A;OICI;0x1301bf;;;BU)(A;OICI;FR;;;LS)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)" />
+              </CreateFolder>
+              <RemoveFile Id="ApoConfigFiles" Name="*.txt" On="uninstall" />
+            </Component>
+          </Directory>
+        </Directory>
 
         <!-- Starts hidden in the tray at login, like the autostart entry install.sh writes on Linux -->
         <Component Id="Autostart">
@@ -33,5 +48,16 @@
         <RegistryValue Root="HKLM" Key="Software\MyPods" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>
+
+    <!-- Equalizer APO on the headphone endpoints, and off them again (AudioEffects_win.cpp). Without it MyPods
+         still works, only without effects, so a failure doesn't stop the install. An upgrade keeps it on. -->
+    <CustomAction Id="ApoInstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
+                  ExeCommand="&quot;[INSTALLFOLDER]modules\magicpodscore.exe&quot; --apo-install" />
+    <CustomAction Id="ApoUninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
+                  ExeCommand="&quot;[INSTALLFOLDER]modules\magicpodscore.exe&quot; --apo-uninstall" />
+    <InstallExecuteSequence>
+      <Custom Action="ApoInstall" Before="InstallFinalize" Condition="NOT REMOVE" />
+      <Custom Action="ApoUninstall" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
   </Package>
 </Wix>

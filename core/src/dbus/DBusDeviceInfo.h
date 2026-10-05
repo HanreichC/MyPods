@@ -60,9 +60,9 @@ namespace MagicPodsCore {
         ~DBusDeviceInfo();
 #else
         explicit DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces);
+#endif
         // No Bluetooth behind it (wired headphones): Connect and Disconnect do nothing, the owner sets the connection
         DBusDeviceInfo(std::string address, std::string name, bool connected);
-#endif
 
         DBusDeviceInfo(const DBusDeviceInfo& info) = delete;
         DBusDeviceInfo(DBusDeviceInfo&& info) noexcept = delete;

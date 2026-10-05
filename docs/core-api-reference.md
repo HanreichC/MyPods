@@ -135,9 +135,10 @@ Response:
 }
 ```
 
-Wired headphones (Linux) are in the list too, with `"wired": "jack"` or `"wired": "usb"`, an address like
-`"wired:<sink name>"` and `connected` while the output plays into them. They have no battery and can't be
-connected or disconnected; their capabilities are `equalizer` and `spatialAudio` (without head tracking).
+Wired headphones are in the list too, with `"wired": "jack"` or `"wired": "usb"`, an address like
+`"wired:<sink name>"` (Windows: `"wired:<endpoint id>"`) and `connected` while the output plays into them. They
+have no battery and can't be connected or disconnected; their capabilities are `equalizer` and, on Linux,
+`spatialAudio` (without head tracking).
 
 Returns empty `headphones` if no supported headphones are found or if no headphones are paired with the system:
 

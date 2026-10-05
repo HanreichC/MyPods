@@ -295,8 +295,14 @@ namespace MagicPodsCore {
     std::string Device::SinkPart() const
     {
         std::string mac = GetAddress();
+#ifdef _WIN32
+        // the MAC as the endpoint's Bluetooth device instance carries it: "A0143D1F0BE1"
+        mac.erase(std::remove(mac.begin(), mac.end(), ':'), mac.end());
+        return mac;
+#else
         std::replace(mac.begin(), mac.end(), ':', '_');
         return "bluez_output." + mac;
+#endif
     }
 
     std::optional<std::string> Device::HeadphonesSink()
@@ -345,6 +351,27 @@ namespace MagicPodsCore {
         if (ownsAudio && GetConnected())
             std::thread([this, keep = KeepAlive()]() { RouteAudio(); }).detach();
     }
+
+#ifdef _WIN32
+    void Device::RouteAudioWhileConnected()
+    {
+        GetConnectedPropertyChangedEvent().Subscribe([this](size_t, bool connected)
+        {
+            if (!connected)
+                return;
+            std::thread([this, keep = KeepAlive()]()
+            {
+                for (int i = 0; i < 50 && GetConnected() && !HeadphonesSink(); i++)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (GetConnected() && !LoadEffectsConfig().IsNeutral())
+                    RouteAudio();
+            }).detach();
+        });
+        // the daemon starts next to connected headphones: their endpoint is there already
+        if (GetConnected() && !LoadEffectsConfig().IsNeutral())
+            RouteAudio();
+    }
+#endif
 
     nlohmann::json Device::GetAsJson()
     {

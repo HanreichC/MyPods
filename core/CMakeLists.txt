@@ -107,6 +107,7 @@ add_executable(magicpodscore
     src/device/DeviceBattery.cpp
     src/dbus/BatteryProvider.cpp
     src/device/Device.cpp
+    src/device/WiredDevice.cpp
 
     src/DevicesInfoFetcher.cpp
 
@@ -128,24 +129,24 @@ target_link_libraries(magicpodscore PRIVATE
 
 # The platform layer: Bluetooth, sound server and media players. Everything above it is shared.
 if(WIN32)
-    # WinRT (Bluetooth, radios, media sessions), Winsock RFCOMM, Core Audio
+    # WinRT (Bluetooth, radios, media sessions), Winsock RFCOMM, Core Audio, Equalizer APO's setup (registry, services, UAC)
     target_sources(magicpodscore PRIVATE
         src/client/Client_win.cpp
         src/dbus/DBusDeviceInfo_win.cpp
         src/dbus/DBusService_win.cpp
         src/ble_ads/WinRtBleAdvertisingService.cpp
         src/pulseaudio/PulseAudioClient_win.cpp
+        src/audio/AudioEffects_win.cpp
         src/media/MprisClient_win.cpp
     )
     target_compile_definitions(magicpodscore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
     target_compile_options(magicpodscore PRIVATE /utf-8 /bigobj)
-    target_link_libraries(magicpodscore PRIVATE windowsapp ws2_32 ole32 bthprops)
+    target_link_libraries(magicpodscore PRIVATE windowsapp ws2_32 ole32 bthprops advapi32 shell32)
 else()
     # BlueZ (D-Bus, L2CAP/RFCOMM sockets), PulseAudio/PipeWire, MPRIS
     target_sources(magicpodscore PRIVATE
         src/tests/EmulateAirPods.cpp
         src/pulseaudio/PulseAudioClient.cpp
-        src/device/WiredDevice.cpp
         src/media/MprisClient.cpp
         src/dbus/DBusDeviceInfo.cpp
         src/dbus/DBusService.cpp

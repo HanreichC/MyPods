@@ -50,12 +50,16 @@ namespace MagicPodsCore
             if (!connected)
                 raw->StopEffects();
         });
+#else // effects in Equalizer APO, no spatial audio
+        device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));
 #endif
         device->Init();
 #ifndef _WIN32
         // the daemon starts next to connected headphones: no card change will come
         if (device->GetConnected() && !device->LoadEffectsConfig().IsNeutral())
             device->RouteAudio();
+#else
+        device->RouteAudioWhileConnected();
 #endif
         return device;
     }
