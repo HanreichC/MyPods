@@ -345,11 +345,6 @@
         <source></source>
         <translation>Add shortcut to menu:</translation>
     </message>
-    <message id="settings.add_shortcut_to_menu.description">
-        <location filename="../qml/pages/SettingsPage.qml" line="174"/>
-        <source></source>
-        <translation>Adds the application to the application menu under "Utilities".</translation>
-    </message>
     <message id="settings.appearance">
         <location filename="../qml/pages/SettingsPage.qml" line="1"/>
         <source></source>
@@ -384,11 +379,6 @@
         <location filename="../qml/pages/SettingsPage.qml" line="81"/>
         <source></source>
         <translation>Headphones animation:</translation>
-    </message>
-    <message id="settings.headphones_animation.description">
-        <location filename="../qml/pages/SettingsPage.qml" line="103"/>
-        <source></source>
-        <translation>Shows the AirPods and Beats animation, similar to iPhone, when you open the headphones case. Connect the headphones once for initial setup.</translation>
     </message>
     <message id="tray.socket_error_tooltip">
         <location filename="../cpp/TrayIconManager.cpp" line="206"/>
@@ -744,10 +734,6 @@
         <source></source>
         <translation>Hearing Aid</translation>
     </message>
-    <message id="battery.hearing_aid.tooltip">
-        <source></source>
-        <translation>Uses the hearing test set up on an iPhone.</translation>
-    </message>
     <message id="battery.transparency_tuning.header">
         <source></source>
         <translation>Transparency Mode</translation>
@@ -855,11 +841,6 @@
         <source></source>
         <translation>Headphones on these outputs</translation>
     </message>
-    <message id="settings.outputs.description">
-        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
-        <source></source>
-        <translation>Headphones plugged in here, on a monitor for example? The output then gets its own equalizer and can be picked like headphones</translation>
-    </message>
     <message id="settings.outputs.automatic">
         <location filename="../qml/pages/SettingsPage.qml" line="0"/>
         <source></source>
@@ -869,11 +850,6 @@
         <location filename="../qml/pages/SettingsPage.qml" line="0"/>
         <source></source>
         <translation>Hi-Res playback:</translation>
-    </message>
-    <message id="settings.hi_res.description">
-        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
-        <source></source>
-        <translation>The output follows the source's sample rate (up to 192 kHz) instead of converting everything to 48 kHz, and what is still converted gets the best resampler. Helps with wired headphones and USB DACs; Bluetooth sets its own rate. The sound system restarts for a moment.</translation>
     </message>
     <message id="battery.signal_path">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
@@ -930,10 +906,370 @@
         <source></source>
         <translation>Highest Bluetooth quality:</translation>
     </message>
-    <message id="battery.bluetooth_high_quality.tooltip">
+    <message id="info.about">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
         <source></source>
-        <translation>AAC at its best variable bitrate and LDAC at 990 kbit/s, for headphones that can. The sound system's Bluetooth connection restarts for a moment.</translation>
+        <translation>About %1</translation>
+    </message>
+    <message id="battery.active_device.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>With several headphones connected, pick the ones this page, the tray icon and the popup show. They also become the system's sound output, and their effects (equalizer, spatial audio) come along.
+
+Headphones that just connected are picked automatically, as on a Mac.</translation>
+    </message>
+    <message id="battery.noise_control.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Off: no noise control.
+Transparency: the microphones let your surroundings in, you hear conversations, announcements and traffic.
+Adaptive: blends transparency and noise cancellation as your surroundings change (how much, under “Adaptive mode”).
+Noise cancellation: blocks steady noise such as engines, fans and chatter.
+
+Which modes there are depends on the model. If the headphones don't take a mode, the selection goes back to the real one after two seconds.</translation>
+    </message>
+    <message id="battery.bluetooth_codec.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The Bluetooth profile and codec the sound takes to the headphones. For music, the A2DP profile with the best codec both the headphones and the computer know (AAC, LDAC, aptX, for example). The “(calls)” profiles also carry the microphone but sound much worse (mono, narrow band). “Off” only stops the sound; the connection for the settings stays.
+
+Switching takes a few seconds.</translation>
+    </message>
+    <message id="battery.codec_details.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>What the Bluetooth link actually carries right now: codec, sample rate, bit depth, and for aptX its fixed bitrate. AAC, LDAC and SBC keep adapting their bitrate to the radio link, so none is shown for them.</translation>
+    </message>
+    <message id="battery.bluetooth_high_quality.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Sets these headphones to their codec's highest quality: AAC at its best variable bitrate (only headphones that offer variable bitrate take it) and LDAC fixed at 990 kbit/s instead of automatic. SBC and aptX don't change.
+
+LDAC at 990 kbit/s needs a good radio link; if the sound drops out, switch it off again. Bluetooth always stays lossy.
+
+MyPods adds a WirePlumber rule for it (~/.config/wireplumber/wireplumber.conf.d/60-mypods-bluetooth.conf) and removes it again. The sound system's Bluetooth connection restarts for a moment.</translation>
+    </message>
+    <message id="battery.signal_path.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Shows what is playing (the source) and what reaches the output. “Bit-perfect” means the samples arrive unchanged from the app at the headphones. Otherwise it says what changes them: effects, the Bluetooth codec (always lossy), a converted sample rate, fewer bits than the source, or an app below 100 % volume.
+
+Bit-perfect takes wired headphones or a USB DAC, no effects, and Hi-Res playback (Settings).</translation>
+    </message>
+    <message id="battery.spatial_audio.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Plays stereo through virtual speakers in front of you, as if you sat in front of loudspeakers, instead of the sound in the middle of your head.
+
+Fixed: the speakers move with your head.
+Head tracked (AirPods with motion sensors): the speakers stay put when you turn your head. Look elsewhere for a while, at a second screen for example, and they re-center there.
+
+Runs on this computer (PipeWire with a generic head-related transfer function), so it works with any headphones.</translation>
+    </message>
+    <message id="battery.surround.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Takes 5.1 and 7.1 sound from films and games and places seven virtual speakers around you: front left and right, center, sides and rear; the subwoofer channel goes to both ears. PipeWire upmixes stereo apps to 7.1 for it.
+
+Only with spatial audio on.</translation>
+    </message>
+    <message id="battery.equalizer.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Tone shaping in front of the headphones with Apple Music's presets. “Manual” opens ten sliders from 32 Hz to 16 kHz (±12 dB). The curve below shows what all the effects together do to the sound.
+
+So nothing clips, MyPods lowers the overall level by the largest boost. Runs on this computer (Linux: PipeWire, Windows: Equalizer APO), so it works with any headphones.</translation>
+    </message>
+    <message id="battery.tilt.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Tilts the whole sound: warmer raises the bass and lowers the treble, brighter the other way round, each by up to 6 dB; around 1 kHz nothing changes. Headphones then sound darker or crisper overall without touching single bands.
+
+Because boosts lower the overall level, the raised side hardly gets louder; the other one gets quieter.</translation>
+    </message>
+    <message id="battery.headphone_correction.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Brings this headphone model's frequency response to a neutral target (Harman), with measurements from the AutoEQ project. Only for measured models.
+
+With the “eqFile” setting in config.toml your own ParametricEQ.txt (AutoEQ, Equalizer APO) replaces the built-in correction.</translation>
+    </message>
+    <message id="battery.crossfeed.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Each ear also hears a little of the other channel's bass, as with loudspeakers. Recordings with instruments panned hard left and right (many early stereo records) tire you less. Mono stays unchanged.
+
+Only without spatial audio, which mixes the channels itself.</translation>
+    </message>
+    <message id="battery.loudness.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>At low volume the ear loses bass faster than mids (equal-loudness contours, ISO 226). Loudness compensation gives the bass back the quieter you listen, following the volume. At full volume it does nothing.
+
+On Windows it follows the volume only when a setting changes.</translation>
+    </message>
+    <message id="battery.hearing_profile.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Compensates for hearing loss: enter the thresholds of your audiogram for each ear below. MyPods raises each frequency by half the hearing loss, at most 20 dB (half-gain rule), separately for each ear.
+
+No substitute for a hearing aid or an audiologist.</translation>
+    </message>
+    <message id="battery.bypass.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Switches all effects off for a moment to compare with and without. The level stays the same, so “louder” doesn't pass for “better”. Not saved.</translation>
+    </message>
+    <message id="battery.audiogram.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>This ear's hearing thresholds in dB HL at 250, 500, 1000, 2000, 4000 and 8000 Hz, separated by spaces, e.g. “10 15 20 35 50 60”, from a hearing test at an audiologist or a hearing test app. Leave it empty if the ear needs nothing.</translation>
+    </message>
+    <message id="battery.auto_switch.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Automatically: when something starts playing on this computer and you wear the AirPods, MyPods takes them over from the iPhone (connects them, takes over the audio source and makes them the sound output). When the iPhone plays again, the computer pauses and hands them back. Calls on the iPhone are never interrupted.
+
+When last connected: no automatic switch, only “Move here”.
+
+The iPhone only talks to the computer if BlueZ announces itself as an Apple device (see the README).</translation>
+    </message>
+    <message id="battery.ear_detection.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Take an earbud out (AirPods Max: take them off) and playback on this computer pauses; put it back in and it continues. On AirPods the setting is stored in the headphones and applies on the iPhone too.</translation>
+    </message>
+    <message id="battery.noise_level.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How strongly the Parrot Zik's noise control works: normal or maximum. While it is off this can't be changed.</translation>
+    </message>
+    <message id="battery.concert_hall.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Parrot's room sound: simulates loudspeakers in a room. Set the room and the speaker angle below.</translation>
+    </message>
+    <message id="battery.smart_audio_tune.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Parrot's sound optimization, which keeps adapting the sound to the volume.</translation>
+    </message>
+    <message id="battery.anc_phone_mode.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Noise control stays on during calls too.</translation>
+    </message>
+    <message id="battery.voice_prompts.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The Zik's voice prompts, for example when switching on, connecting and on low battery.</translation>
+    </message>
+    <message id="battery.auto_connection_zik.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>After switching on, the Zik connects to the last connected device by itself.</translation>
+    </message>
+    <message id="battery.concert_hall_room.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Size of the simulated room, from a silent room (little reverb) to a concert hall (lots of it).</translation>
+    </message>
+    <message id="battery.concert_hall_angle.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How far apart the virtual speakers are, from 30° (close in front of you) to 180° (fully to the sides).</translation>
+    </message>
+    <message id="battery.auto_power_off.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>After how many minutes without use the Zik switches off, or never.</translation>
+    </message>
+    <message id="battery.conversation_awareness.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>When you start speaking, the AirPods lower the media volume and bring out voices in front of you. MyPods also lowers the volume on this computer (see “Volume while speaking”). When you stop speaking, everything comes back.</translation>
+    </message>
+    <message id="battery.conversation_awareness_volume.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>To what percentage of its volume MyPods lowers playback on this computer while you speak (default 30 %).</translation>
+    </message>
+    <message id="battery.personalized_volume.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The AirPods adapt the media volume to your surroundings and habits, learning over time.</translation>
+    </message>
+    <message id="battery.adaptive_audio_noise.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How much of your surroundings adaptive mode lets in: more noise (closer to transparency), default, or less noise (closer to noise cancellation).</translation>
+    </message>
+    <message id="battery.anc_one_airpod.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Allows noise cancellation with only one AirPod in your ear.</translation>
+    </message>
+    <message id="battery.press_and_hold_duration.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How long you have to hold the stem until press and hold triggers.</translation>
+    </message>
+    <message id="battery.press_speed.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How quickly the presses of a double or triple press have to follow each other. “Slower” helps if multiple presses aren't recognized.</translation>
+    </message>
+    <message id="battery.allow_off.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Adds “Off” to the modes a long press on the stem cycles through.</translation>
+    </message>
+    <message id="battery.listening_modes.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Which modes a long press on the stem cycles through. At least two have to be selected. “Off” only appears with “Off in Press and Hold” on.</translation>
+    </message>
+    <message id="battery.crown_reversed.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Sets which way turning the Digital Crown on the AirPods Max raises the volume.</translation>
+    </message>
+    <message id="battery.sleep_detection.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Pauses playback when the AirPods notice you've fallen asleep.</translation>
+    </message>
+    <message id="battery.auto_connect.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The AirPods connect by themselves as soon as you put them in.</translation>
+    </message>
+    <message id="battery.mic_mode.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Which AirPod provides the microphone for calls: automatically the one you wear, or always the right or the left one.</translation>
+    </message>
+    <message id="battery.loud_sound_reduction.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The AirPods dampen loud surrounding noise such as sirens or construction while you listen in transparency or adaptive mode.</translation>
+    </message>
+    <message id="battery.hearing_aid.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Switches on the AirPods Pro hearing aid feature, together with hearing assistance. It uses the hearing test set up on an iPhone; without it, it can't be switched on.</translation>
+    </message>
+    <message id="battery.tone_volume.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How loud the AirPods' sounds are, for example when the noise control changes.</translation>
+    </message>
+    <message id="battery.volume_swipe.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Changes the volume when you swipe along the stem (on AirPods that can).</translation>
+    </message>
+    <message id="battery.volume_swipe_length.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How far you have to swipe along the stem until the volume changes.</translation>
+    </message>
+    <message id="battery.end_call.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How you end a call on the stem: press once or twice. The other one mutes the microphone.</translation>
+    </message>
+    <message id="battery.mute_unmute.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Follows from “End call”: the other one mutes and unmutes the microphone.</translation>
+    </message>
+    <message id="battery.transparency_tuning.enabled.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Tailors transparency mode to your hearing: amplification, balance, tone and noise reduction below. The values are stored in the AirPods and apply on the iPhone too.</translation>
+    </message>
+    <message id="battery.transparency_tuning.amplification.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How loud your surroundings are played in transparency mode.</translation>
+    </message>
+    <message id="battery.transparency_tuning.balance.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Shifts the amplification between the left and the right ear.</translation>
+    </message>
+    <message id="battery.transparency_tuning.tone.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Makes your surroundings sound darker or brighter.</translation>
+    </message>
+    <message id="battery.transparency_tuning.ambient_noise_reduction.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>How much steady background noise is dampened in transparency mode.</translation>
+    </message>
+    <message id="battery.transparency_tuning.conversation_boost.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Brings out the voices of people in front of you.</translation>
+    </message>
+    <message id="battery.device_info.name.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The headphones' name as every device shows it. It is stored in the AirPods; BlueZ takes it on the next connection. At most 32 bytes (non-ASCII letters count double).</translation>
+    </message>
+    <message id="headphones.item.bluetooth.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Switches this computer's Bluetooth adapter on or off.</translation>
+    </message>
+    <message id="headphones.connect.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Connects or disconnects these paired headphones. Pair new headphones in the system's Bluetooth settings; they then show up here.</translation>
+    </message>
+    <message id="settings.headphones_animation.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Shows a window with an animation and the battery of your AirPods or Beats when you open the case, as on an iPhone. MyPods recognizes them by their Bluetooth signals; connect them once so it knows yours, which stores their keys.</translation>
+    </message>
+    <message id="settings.outputs.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>This computer's outputs that aren't Bluetooth. An output marked as headphones shows up as a device of its own with its own equalizer and can be picked like other headphones. Useful for headphones on a monitor (sound over DisplayPort/HDMI) or on a jack the system doesn't report as headphones.</translation>
+    </message>
+    <message id="settings.hi_res.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The output follows the source's sample rate up to 192 kHz instead of converting everything to 48 kHz, and what is still converted gets PipeWire's best resampler. Worth it for music at 88.2, 96 or 192 kHz (hi-res FLAC, for example) on wired headphones or a USB DAC. Bluetooth sets its own rate. When several apps play at different rates, the one started later is converted.
+
+MyPods adds files under ~/.config/pipewire for it (…/60-mypods-hires.conf) and removes them when switched off. The sound system restarts for a moment.</translation>
+    </message>
+    <message id="settings.appearance.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Light, dark, or as the system is set.</translation>
+    </message>
+    <message id="settings.language.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The app's language. “System” follows the system's language.</translation>
+    </message>
+    <message id="settings.add_shortcut_to_menu.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Adds an entry to the application menu (under “Utilities”) to start the app from; switched off, it is removed again.</translation>
+    </message>
+    <message id="settings.tray_icon_theme.info">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>The color of the icon in the system tray. Auto follows the panel's theme. If the icon is hard to see, pick one: Light is a light icon for dark panels, Dark a dark one for light panels.</translation>
+    </message>
+    <message id="battery.noise_control">
+        <location filename="../qml/components/NoiseControl.qml" line="0"/>
+        <source></source>
+        <translation>Noise control</translation>
     </message>
 </context>
 </TS>

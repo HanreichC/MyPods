@@ -66,6 +66,7 @@ Components.ScrollPage {
 
         MP.FormRow {
             label: qsTrId("headphones.item.bluetooth")
+            info: qsTrId("headphones.item.bluetooth.info")
             iconSource: MP.Theme.asset("icons/icon-bluetooth.svg")
 
             Components.Toggle {
@@ -105,6 +106,7 @@ Components.ScrollPage {
             delegate: MP.FormRow {
                 enabled: bt.checked
                 label: modelData.name
+                info: qsTrId("headphones.connect.info")
                 iconSource: MP.Theme.asset("icons/icon-headphones.svg")
                 iconColor: modelData.connected ? MP.Theme.accent : MP.Theme.gray
 

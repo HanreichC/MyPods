@@ -14,7 +14,8 @@ Item {
     id: root
 
     property string label: ""
-    property string tooltip: ""
+    // What the setting does, opened from the (i) beside the label
+    property string info: ""
     property url iconSource: ""
     property color iconColor: MP.Theme.accent
     default property alias content: contentHolder.data
@@ -69,20 +70,10 @@ Item {
             opacity: root.enabled ? 1 : 0.4
         }
 
-        ToolButton {
-            visible: root.tooltip !== ""
-            implicitWidth: 28
-            implicitHeight: 28
-            padding: 4
-            icon.source: MP.Theme.asset("icons/icon-info.svg")
-            icon.color: MP.Theme.accent
-            icon.width: 20
-            icon.height: 20
-
-            ToolTip.visible: hovered
-            ToolTip.delay: 250
-            ToolTip.timeout: 10000
-            ToolTip.text: root.tooltip
+        InfoButton {
+            visible: root.info !== ""
+            title: root.label
+            info: root.info
         }
 
         Item {

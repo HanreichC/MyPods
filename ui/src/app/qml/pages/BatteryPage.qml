@@ -80,18 +80,18 @@ Components.ScrollPage {
     // Parrot Zik: plain switches and lists. The core sends selected as bool (switch) or index (list);
     // a row with dependsOn is only editable while that switch is on.
     readonly property var zikSwitches: [
-        { key: "concertHall", label: qsTrId("battery.concert_hall") },
-        { key: "smartAudioTune", label: qsTrId("battery.smart_audio_tune") },
-        { key: "ancPhoneMode", label: qsTrId("battery.anc_phone_mode") },
-        { key: "voicePrompts", label: qsTrId("battery.voice_prompts") },
-        { key: "autoConnection", label: qsTrId("battery.auto_connection_zik") }
+        { key: "concertHall", label: qsTrId("battery.concert_hall"), info: qsTrId("battery.concert_hall.info") },
+        { key: "smartAudioTune", label: qsTrId("battery.smart_audio_tune"), info: qsTrId("battery.smart_audio_tune.info") },
+        { key: "ancPhoneMode", label: qsTrId("battery.anc_phone_mode"), info: qsTrId("battery.anc_phone_mode.info") },
+        { key: "voicePrompts", label: qsTrId("battery.voice_prompts"), info: qsTrId("battery.voice_prompts.info") },
+        { key: "autoConnection", label: qsTrId("battery.auto_connection_zik"), info: qsTrId("battery.auto_connection_zik.info") }
     ]
     readonly property var zikLists: [
-        { key: "concertHallRoom", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_room"),
+        { key: "concertHallRoom", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_room"), info: qsTrId("battery.concert_hall_room.info"),
           options: [qsTrId("battery.concert_hall_room.silent"), qsTrId("battery.concert_hall_room.living"), qsTrId("battery.concert_hall_room.jazz"), qsTrId("battery.concert_hall_room.concert")] },
-        { key: "concertHallAngle", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_angle"),
+        { key: "concertHallAngle", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_angle"), info: qsTrId("battery.concert_hall_angle.info"),
           options: ["30°", "60°", "90°", "120°", "150°", "180°"] },
-        { key: "autoPowerOff", label: qsTrId("battery.auto_power_off"),
+        { key: "autoPowerOff", label: qsTrId("battery.auto_power_off"), info: qsTrId("battery.auto_power_off.info"),
           options: [qsTrId("battery.auto_power_off.never"), "5 min", "10 min", "15 min", "30 min", "60 min"] }
     ]
 
@@ -220,6 +220,7 @@ Components.ScrollPage {
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.active_device")
+            info: qsTrId("battery.active_device.info")
 
             Components.Picker {
                 model: rootPage.connectedHeadphones.map(h => h.name)
@@ -328,12 +329,12 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.bluetoothCodec !== null
             label: qsTrId("battery.bluetooth_codec")
-            tooltip: {
-                var options = rootPage.bluetoothCodec?.options || [];
-                var lines = [];
-                options.forEach(function (option) {
-                    if (!option || option.length < 2) return;
-                    lines.push(rootPage.codecLabel(option) + " — " + String(option[1]));
+            // the explanation, then what each option is (PipeWire's own description)
+            info: {
+                var lines = [qsTrId("battery.bluetooth_codec.info")];
+                (rootPage.bluetoothCodec?.options || []).forEach(function (option) {
+                    if (option && option.length >= 2)
+                        lines.push(rootPage.codecLabel(option) + " — " + String(option[1]));
                 });
                 return lines.join("\n\n");
             }
@@ -366,6 +367,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.codecDetails(rootPage.bluetoothCodec?.details) !== ""
             label: qsTrId("battery.codec_details")
+            info: qsTrId("battery.codec_details.info")
 
             MP.Label {
                 width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
@@ -380,7 +382,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.bluetoothCodec?.highQuality !== undefined
             label: qsTrId("battery.bluetooth_high_quality")
-            tooltip: qsTrId("battery.bluetooth_high_quality.tooltip")
+            info: qsTrId("battery.bluetooth_high_quality.info")
 
             Components.Toggle {
                 checked: rootPage.bluetoothCodec?.highQuality ?? false
@@ -390,12 +392,12 @@ Components.ScrollPage {
             }
         }
 
-        // Bit-perfect, or what changes the sound on its way (the tooltip says why)
+        // Bit-perfect, or what changes the sound on its way (the info says why, right now)
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.signalPathData !== null
             label: qsTrId("battery.signal_path")
-            tooltip: rootPage.signalPathReasons(rootPage.signalPathData)
+            info: qsTrId("battery.signal_path.info") + (rootPage.signalPathData?.playing ? "\n\n" + rootPage.signalPathReasons(rootPage.signalPathData) : "")
 
             MP.Label {
                 width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
@@ -410,6 +412,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.spatialAudioData !== null
             label: qsTrId("battery.spatial_audio")
+            info: qsTrId("battery.spatial_audio.info")
 
             Components.Picker {
                 model: [qsTrId("battery.spatial_audio.off"), qsTrId("battery.spatial_audio.fixed")].concat((rootPage.spatialAudioData?.headTracking ?? true) ? [qsTrId("battery.spatial_audio.head_tracked")] : [])
@@ -429,6 +432,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.spatialAudioData?.surround !== undefined
             label: qsTrId("battery.surround")
+            info: qsTrId("battery.surround.info")
 
             Components.Toggle {
                 checked: rootPage.spatialAudioData?.surround ?? false
@@ -446,6 +450,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData !== null
             label: qsTrId("battery.equalizer")
+            info: qsTrId("battery.equalizer.info")
 
             Components.Picker {
                 model: (rootPage.equalizerData?.options ?? []).map(o => o === "Custom" ? qsTrId("battery.equalizer.custom") : o)
@@ -564,7 +569,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.tilt !== undefined
             label: qsTrId("battery.tilt")
-            tooltip: qsTrId("battery.tilt.warm") + " ← → " + qsTrId("battery.tilt.bright")
+            info: qsTrId("battery.tilt.info")
 
             QQC2.Slider {
                 implicitWidth: rootPage.mWidth
@@ -586,6 +591,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.correction !== undefined
             label: qsTrId("battery.headphone_correction")
+            info: qsTrId("battery.headphone_correction.info")
 
             Components.Toggle {
                 checked: rootPage.equalizerData?.correction ?? false
@@ -603,6 +609,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.crossfeed !== undefined
             label: qsTrId("battery.crossfeed")
+            info: qsTrId("battery.crossfeed.info")
 
             // spatial audio already lets each ear hear both channels
             Components.Toggle {
@@ -620,15 +627,16 @@ Components.ScrollPage {
         // Toggles of the equalizer capability that are just on/off
         Repeater {
             model: [
-                { field: "loudness", label: qsTrId("battery.loudness") },
-                { field: "hearing", label: qsTrId("battery.hearing_profile") },
-                { field: "bypass", label: qsTrId("battery.bypass") }
+                { field: "loudness", label: qsTrId("battery.loudness"), info: qsTrId("battery.loudness.info") },
+                { field: "hearing", label: qsTrId("battery.hearing_profile"), info: qsTrId("battery.hearing_profile.info") },
+                { field: "bypass", label: qsTrId("battery.bypass"), info: qsTrId("battery.bypass.info") }
             ]
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: rootPage.equalizerData?.[modelData.field] !== undefined
                 label: modelData.label
+                info: modelData.info ?? ""
 
                 Components.Toggle {
                     checked: rootPage.equalizerData?.[modelData.field] ?? false
@@ -646,14 +654,15 @@ Components.ScrollPage {
         // Hearing thresholds per ear from an audiogram, six values from 250 Hz to 8 kHz
         Repeater {
             model: [
-                { field: "audiogramLeft", label: qsTrId("battery.audiogram_left") },
-                { field: "audiogramRight", label: qsTrId("battery.audiogram_right") }
+                { field: "audiogramLeft", label: qsTrId("battery.audiogram_left"), info: qsTrId("battery.audiogram.info") },
+                { field: "audiogramRight", label: qsTrId("battery.audiogram_right"), info: qsTrId("battery.audiogram.info") }
             ]
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: (rootPage.equalizerData?.hearing ?? false) && rootPage.equalizerData?.[modelData.field] !== undefined
                 label: modelData.label
+                info: modelData.info ?? ""
 
                 QQC2.TextField {
                     implicitWidth: rootPage.mWidth
@@ -676,6 +685,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.autoSwitchData !== null
             label: qsTrId("battery.auto_switch")
+            info: qsTrId("battery.auto_switch.info")
 
             Components.Picker {
                 model: [qsTrId("battery.auto_switch.automatically"), qsTrId("battery.auto_switch.last_connected")]
@@ -694,6 +704,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.earDetectionData !== null
             label: qsTrId("battery.ear_detection")
+            info: qsTrId("battery.ear_detection.info")
 
             Components.Toggle {
                 checked: rootPage.earDetectionData?.selected ?? true
@@ -711,6 +722,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.ancData?.level !== undefined
             label: qsTrId("battery.noise_level")
+            info: qsTrId("battery.noise_level.info")
 
             Components.Picker {
                 model: [qsTrId("battery.noise_level.normal"), qsTrId("battery.noise_level.max")]
@@ -729,6 +741,7 @@ Components.ScrollPage {
                 Layout.fillWidth: true
                 visible: cap !== null
                 label: modelData.label
+                info: modelData.info ?? ""
 
                 Components.Toggle {
                     checked: row.cap?.selected ?? false
@@ -750,6 +763,7 @@ Components.ScrollPage {
                 Layout.fillWidth: true
                 visible: cap !== null
                 label: modelData.label
+                info: modelData.info ?? ""
 
                 Components.Picker {
                     model: row.modelData.options
@@ -768,6 +782,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.conversationAwarenessData !== null
             label: qsTrId("battery.conversation_awareness")
+            info: qsTrId("battery.conversation_awareness.info")
 
             Components.Toggle {
                 checked: rootPage.conversationAwarenessData?.selected ?? false
@@ -786,6 +801,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.conversationAwarenessData?.duckVolume !== undefined
             label: qsTrId("battery.conversation_awareness_volume")
+            info: qsTrId("battery.conversation_awareness_volume.info")
 
             RowLayout {
                 spacing: MP.Units.smallSpacing
@@ -818,6 +834,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.personalizedVolumeData !== null
             label: qsTrId("battery.personalized_volume")
+            info: qsTrId("battery.personalized_volume.info")
 
             Components.Toggle {
                 checked: rootPage.personalizedVolumeData?.selected ?? false
@@ -835,6 +852,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.adaptiveAudioNoiseData !== null
             label: qsTrId("battery.adaptive_audio_noise")
+            info: qsTrId("battery.adaptive_audio_noise.info")
 
             Components.Picker {
                 model: [qsTrId("battery.adaptive_audio_noise.more"), qsTrId("battery.adaptive_audio_noise.default"), qsTrId("battery.adaptive_audio_noise.less")]
@@ -865,6 +883,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.ancOneAirPodData !== null
             label: qsTrId("battery.anc_one_airpod")
+            info: qsTrId("battery.anc_one_airpod.info")
 
             Components.Toggle {                        
                 checked: rootPage.ancOneAirPodData?.selected ?? false
@@ -882,6 +901,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.pressAndHoldDurationData !== null
             label: qsTrId("battery.press_and_hold_duration")
+            info: qsTrId("battery.press_and_hold_duration.info")
 
             Components.Picker {
                 model: [qsTrId("battery.press_and_hold_duration.default"), qsTrId("battery.press_and_hold_duration.shorter"), qsTrId("battery.press_and_hold_duration.shortest")]
@@ -900,6 +920,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.pressSpeedData !== null
             label: qsTrId("battery.press_speed")
+            info: qsTrId("battery.press_speed.info")
 
             Components.Picker {
                 model: [qsTrId("battery.press_speed.default"), qsTrId("battery.press_speed.slower"), qsTrId("battery.press_speed.slowest")]
@@ -918,6 +939,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.allowOffData !== null
             label: qsTrId("battery.allow_off")
+            info: qsTrId("battery.allow_off.info")
 
             Components.Toggle {
                 checked: rootPage.allowOffData?.selected ?? false
@@ -931,6 +953,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.listeningModesData !== null
             label: qsTrId("battery.listening_modes")
+            info: qsTrId("battery.listening_modes.info")
 
             RowLayout {
                 spacing: MP.Units.smallSpacing
@@ -964,15 +987,16 @@ Components.ScrollPage {
         Repeater {
             // plain switches the AirPods report (core: AapControlCapability Toggle)
             model: [
-                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed") },
-                { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection") },
-                { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect") }
+                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
+                { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
+                { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
             ]
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: modelData.data !== null
                 label: modelData.label
+                info: modelData.info ?? ""
 
                 Components.Toggle {
                     checked: modelData.data?.selected ?? false
@@ -986,6 +1010,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.micModeData !== null
             label: qsTrId("battery.mic_mode")
+            info: qsTrId("battery.mic_mode.info")
 
             Components.Picker {
                 model: [qsTrId("battery.mic_mode.automatic"), qsTrId("battery.mic_mode.right"), qsTrId("battery.mic_mode.left")]
@@ -999,6 +1024,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.loudSoundReductionData !== null
             label: qsTrId("battery.loud_sound_reduction")
+            info: qsTrId("battery.loud_sound_reduction.info")
 
             Components.Toggle {
                 checked: rootPage.loudSoundReductionData?.selected ?? false
@@ -1011,7 +1037,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.hearingAidData !== null
             label: qsTrId("battery.hearing_aid")
-            tooltip: qsTrId("battery.hearing_aid.tooltip")
+            info: qsTrId("battery.hearing_aid.info")
 
             Components.Toggle {
                 checked: rootPage.hearingAidData?.selected ?? false
@@ -1024,6 +1050,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.toneVolumeData !== null
             label: qsTrId("battery.tone_volume")
+            info: qsTrId("battery.tone_volume.info")
 
             RowLayout {
                 spacing: MP.Units.smallSpacing
@@ -1060,6 +1087,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.volumeSwipeData !== null
             label: qsTrId("battery.volume_swipe")
+            info: qsTrId("battery.volume_swipe.info")
 
             Components.Toggle {
                 id: volumeSwipe
@@ -1078,6 +1106,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.volumeSwipeLengthData !== null
             label: qsTrId("battery.volume_swipe_length")
+            info: qsTrId("battery.volume_swipe_length.info")
 
             Components.Picker {
                 model: [qsTrId("battery.volume_swipe_length.default"), qsTrId("battery.volume_swipe_length.longer"), qsTrId("battery.volume_swipe_length.longest")]
@@ -1096,6 +1125,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.endCallData !== null
             label: qsTrId("battery.end_call")
+            info: qsTrId("battery.end_call.info")
 
             Components.Picker {
                 model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
@@ -1114,6 +1144,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.endCallData !== null
             label: qsTrId("battery.mute_unmute")
+            info: qsTrId("battery.mute_unmute.info")
 
             Components.Picker {
                 model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
@@ -1138,19 +1169,21 @@ Components.ScrollPage {
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.transparency_tuning.enabled")
+            info: qsTrId("battery.transparency_tuning.enabled.info")
 
             Components.Toggle {
                 checked: rootPage.transparencyTuningData?.enabled ?? false
                 onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "enabled")
             }
         }
-        TuningSlider { field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification") }
-        TuningSlider { field: "balance"; label: qsTrId("battery.transparency_tuning.balance") }
-        TuningSlider { field: "tone"; label: qsTrId("battery.transparency_tuning.tone") }
-        TuningSlider { field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction") }
+        TuningSlider { field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification"); info: qsTrId("battery.transparency_tuning.amplification.info") }
+        TuningSlider { field: "balance"; label: qsTrId("battery.transparency_tuning.balance"); info: qsTrId("battery.transparency_tuning.balance.info") }
+        TuningSlider { field: "tone"; label: qsTrId("battery.transparency_tuning.tone"); info: qsTrId("battery.transparency_tuning.tone.info") }
+        TuningSlider { field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction"); info: qsTrId("battery.transparency_tuning.ambient_noise_reduction.info") }
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.transparency_tuning.conversation_boost")
+            info: qsTrId("battery.transparency_tuning.conversation_boost.info")
 
             Components.Toggle {
                 checked: rootPage.transparencyTuningData?.conversationBoost ?? false
@@ -1175,6 +1208,7 @@ Components.ScrollPage {
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.device_info.name")
+            info: qsTrId("battery.device_info.name.info")
 
             QQC2.TextField {
                 implicitWidth: rootPage.mWidth
@@ -1202,6 +1236,7 @@ Components.ScrollPage {
                 Layout.fillWidth: true
                 visible: modelData.value !== ""
                 label: modelData.label
+                info: modelData.info ?? ""
 
                 MP.Label {
                     color: MP.Theme.secondaryText

@@ -202,12 +202,19 @@ ColumnLayout {
         }
     }
 
-    MP.Label {
-        Layout.fillWidth: true
-        horizontalAlignment: Text.AlignHCenter
-        color: MP.Theme.secondaryText
-        font.pixelSize: 13
-        font.weight: Font.Medium
-        text: root.buttons.find(b => b.mode === root.selectedAnc)?.text ?? ""
+    RowLayout {
+        Layout.alignment: Qt.AlignHCenter
+        spacing: 2
+
+        MP.Label {
+            color: MP.Theme.secondaryText
+            font.pixelSize: 13
+            font.weight: Font.Medium
+            text: root.buttons.find(b => b.mode === root.selectedAnc)?.text ?? ""
+        }
+        InfoButton {
+            title: qsTrId("battery.noise_control")
+            info: qsTrId("battery.noise_control.info")
+        }
     }
 }

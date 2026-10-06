@@ -68,6 +68,7 @@ qt_add_qml_module(magicpods
         src/app/qml/components/Animations.qml
         src/app/qml/components/BatteryRing.qml
         src/app/qml/components/FormRow.qml
+        src/app/qml/components/InfoButton.qml
         src/app/qml/components/Card.qml
         src/app/qml/components/DeviceImage.qml
         src/app/qml/components/Heading.qml

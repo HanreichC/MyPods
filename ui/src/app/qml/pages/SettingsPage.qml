@@ -79,7 +79,7 @@ Components.ScrollPage {
             iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
             iconColor: "#AF52DE"
             label: qsTrId("settings.headphones_animation")
-            tooltip: qsTrId("settings.headphones_animation.description")
+            info: qsTrId("settings.headphones_animation.info")
 
             Components.Toggle {
                 checked: settingAnimation
@@ -116,7 +116,7 @@ Components.ScrollPage {
                 iconSource: MP.Theme.asset(modelData.headphones ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
                 iconColor: "#007AFF"
                 label: modelData.name
-                tooltip: modelData.automatic ? qsTrId("settings.outputs.automatic") : qsTrId("settings.outputs.description")
+                info: qsTrId("settings.outputs.info") + (modelData.automatic ? "\n\n" + qsTrId("settings.outputs.automatic") : "")
 
                 Components.Toggle {
                     checked: modelData.headphones
@@ -142,7 +142,7 @@ Components.ScrollPage {
             iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
             iconColor: MP.Theme.purple
             label: qsTrId("settings.hi_res")
-            tooltip: qsTrId("settings.hi_res.description")
+            info: qsTrId("settings.hi_res.info")
 
             Components.Toggle {
                 checked: rootPage.settingHiRes
@@ -159,6 +159,7 @@ Components.ScrollPage {
             iconSource: MP.Theme.asset("icons/icon-theme.svg")
             iconColor: MP.Theme.indigo
             label: qsTrId("settings.appearance")
+            info: qsTrId("settings.appearance.info")
 
             Components.Picker {
                 enabled: cppBackend?.connected ?? false
@@ -180,6 +181,7 @@ Components.ScrollPage {
             iconSource: MP.Theme.asset("icons/icon-globe.svg")
             iconColor: MP.Theme.accent
             label: qsTrId("settings.language")
+            info: qsTrId("settings.language.info")
 
             // Index 0 follows the system; each language is named in itself (HIG)
             Components.Picker {
@@ -196,7 +198,7 @@ Components.ScrollPage {
             iconSource: MP.Theme.asset("icons/icon-apps.svg")
             iconColor: MP.Theme.accent
             label: qsTrId("settings.add_shortcut_to_menu")
-            tooltip: qsTrId("settings.add_shortcut_to_menu.description")
+            info: qsTrId("settings.add_shortcut_to_menu.info")
             // a .desktop entry; on Windows the installer creates the Start menu shortcut
             visible: Qt.platform.os !== "windows"
 
@@ -234,6 +236,7 @@ Components.ScrollPage {
             iconSource: MP.Theme.asset("icons/icon-battery-fill.svg")
             iconColor: MP.Theme.gray
             label: qsTrId("settings.tray_icon_theme")
+            info: qsTrId("settings.tray_icon_theme.info")
 
             Components.Picker {
                 enabled: cppBackend?.connected ?? false

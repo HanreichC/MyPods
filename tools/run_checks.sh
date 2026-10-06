@@ -49,5 +49,6 @@ sed /^prefer/d "$BUILD/qml/magicpods/qmldir" > "$OUT/qml/magicpods/qmldir"
 ln -s "$PWD/ui/src" "$OUT/qml/magicpods/src"
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_picker.qml
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_popup.qml
+QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_info.qml
 
 echo "All checks passed"
