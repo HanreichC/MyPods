@@ -70,7 +70,9 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 | Battery in the menu bar and in Bluetooth settings | The exact level is handed to BlueZ, so the desktop's Bluetooth applet and UPower show it too. |
 | "When Last Connected to This Mac" | Same option; switching then happens only manually. |
 | Spatial Audio: Off / Fixed / Head Tracked | PipeWire filter chain with an HRTF (libmysofa), equalized so centered sound stays neutral (within 0.75 dB from 31 Hz to 8 kHz, measured). Head orientation streams from the AirPods. |
-| Equalizer (Music app) | The Apple Music presets (Acoustic, Bass Booster, Classical, Rock, Vocal Booster …), applied in front of the AirPods without clipping. |
+| Equalizer (Music app) | The Apple Music presets (Acoustic, Bass Booster, Classical, Rock, Vocal Booster …), applied in front of the AirPods without clipping, or ten bands set by hand ("Manual"). |
+| — | Tone: one slider makes the whole sound warmer or brighter, the bass down and the treble up (or the other way round) by up to 6 dB each, 1 kHz stays. |
+| Lossless and Hi-Res (Apple Music) | Over Bluetooth there is none: AirPods speak AAC only, which is lossy. What MyPods has: **Signal path** on the device page says whether what plays arrives bit-perfect, and if not, why; **Hi-Res playback** lets wired headphones and USB DACs play at the source's rate up to 192 kHz; **Highest Bluetooth quality** sets AAC to its best VBR and LDAC to 990 kbit/s (see [Bluetooth sound quality](#bluetooth-sound-quality)). |
 | Apple tunes the sound for each model | Headphone correction: measured [AutoEQ](https://github.com/jaakkopasanen/AutoEq) filters that bring the model to the Harman target, for AirPods 1–4, Pro, Pro 2, Max and most Beats (not Pro 3 or Max 2, nobody measured them yet). |
 | — | Crossfeed (bs2b style) for stereo music without spatial audio: each ear also hears a bit of the other channel's bass, as with speakers. Mono stays untouched. |
 | Spatial Audio for films (Dolby Atmos) | "Surround (7.1)": the chain takes 5.1/7.1 and places seven virtual speakers (ITU layout, sides at 90°, rears at 135°), all of them head tracked; the LFE goes to both ears. Stereo players are then upmixed by PipeWire. |
@@ -89,7 +91,8 @@ forth between your iPhone and your computer, just like "Connect to This Mac: Aut
 Also available: Bluetooth codec display, a tray icon that shows the battery as a ring (red when low) and
 whether music plays here or on the iPhone, autostart,
 [keyboard shortcuts](#keyboard-shortcuts) for noise control and handoff, a Steam Deck / gamescope
-mode inherited from MagicPods, and an English and German UI (Qt Linguist).
+mode inherited from MagicPods, and an English and German UI (Qt Linguist). Every setting has an
+(i) beside it that explains what it does.
 
 ### Parrot Zik 2.0
 
@@ -113,8 +116,11 @@ out pauses, putting it back resumes (switchable, stored locally; not on the Buds
 
 ### Any other headset
 
-Any paired device with the Hands-Free profile shows its battery level (as reported through HFP)
-and the active Bluetooth codec.
+Any paired device with the Hands-Free profile (or A2DP only) shows its battery level when it reports
+one through HFP and the active Bluetooth codec, and gets the effects that run on this computer:
+equalizer, tone, crossfeed, loudness, hearing profile, a headphone correction from your own
+`ParametricEQ.txt` (`eqFile`) and, on Linux, spatial audio without head tracking and the signal path. So do wired headphones on a jack or
+USB, and outputs marked as headphones (a monitor's jack).
 
 ---
 
@@ -128,7 +134,7 @@ and the active Bluetooth codec.
 | Beats | Powerbeats Pro / Pro 2 / 3 / 4 / Fit, Beats Fit Pro, Studio Buds / Buds+, Studio Pro, Studio 3, Solo 3 / Pro / 4 / Buds, Flex, BeatsX | Recognized by the inherited AAP stack, not tested by this project |
 | Parrot | Zik 2.0 | **Tested** |
 | Samsung | Galaxy Buds series (see above) | Inherited from MagicPodsCore, not tested by this project |
-| Generic | Any Hands-Free (HFP) headset | Battery and codec only |
+| Generic | Any Hands-Free (HFP) or A2DP headset, wired headphones | Battery (when reported), codec, effects on this computer |
 
 Linux gets every feature. Windows gets the subset that works without a kernel driver, see [Windows](#windows).
 
@@ -186,7 +192,9 @@ MyPods uses both.
    input channel, then spatial audio or crossfeed, then the filters per ear, then the limiter. The
    pre-gain takes off exactly as much as the chain can boost (computed from the summed filter
    curves), so nothing clips. Head tracking and the volume (for the loudness compensation) update the
-   running chain via `pw-cli`.
+   running chain via `pw-cli`. The chain runs at the graph's rate, so with Hi-Res playback at the
+   source's. When PipeWire restarts, the daemon reconnects and puts a new chain in front of the
+   headphones playing then.
 6. **The iPhone's now playing.** The UI talks to a paired iPhone directly, over the Apple Media
    Service (AMS), the BLE GATT service an Apple Watch uses for the same thing. The iPhone pushes
    title, artist, playback state and volume, and takes play/pause, skip and volume steps. On Linux
@@ -334,6 +342,7 @@ L2CAP (AAP). MyPods ships no Bluetooth driver, so on Windows it does what user s
 | Equalizer, headphone correction, hearing profile, loudness, crossfeed | Yes, for Bluetooth and wired headphones, through Equalizer APO's engine, which the MSI brings along and puts on the headphone outputs. Headphones that come later ask once for administrator rights. An Equalizer APO you installed yourself is used as it is. |
 | Headphones on a monitor's jack | Yes, once marked under *Settings → Headphones on these outputs*: monitors don't tell Windows whether something is plugged in |
 | Spatial audio | No, Linux only so far |
+| Signal path, Hi-Res playback, highest Bluetooth quality | No, Windows' audio engine picks the format itself |
 | Codec display and switching | No, Windows exposes neither |
 
 **Recognizing your AirPods.** On Linux MyPods fetches the AirPods' IRK and ENC keys over AAP. Without
@@ -379,7 +388,8 @@ Then reconnect the AirPods once. `install.sh` reminds you if the line is missing
    iPhone's volume.
 5. **Double-click the tray icon** (or choose **MyPods Settings…** in the popup) for the full
    window: ear detection, automatic switching, spatial audio, equalizer and all device-specific
-   settings. Right-click opens the context menu with connect/disconnect and Exit.
+   settings. Right-click opens the context menu with connect/disconnect and Exit. The (i) beside a
+   setting explains what it does.
 
 Command-line options:
 
@@ -426,6 +436,8 @@ Most options are set through the UI. Global options live in the `[magicpods]` ta
 |-----|---------|---------|
 | `animation` | `true` | Shows the lid-open popup. The BLE scan behind it runs only while AirPods are paired and none is connected (on Windows also while connected, the advertisements are all it has). Automatic switching uses the same scan to tell whether you wear the AirPods, so with "Automatically" selected it keeps running when the popup is off — see [Troubleshooting](#troubleshooting). |
 | `logLevel` | Info | Daemon log verbosity (debug builds always log at debug level). |
+| `hiRes` | `false` | Hi-Res playback (Settings): the PipeWire drop-ins described under [Bluetooth sound quality](#bluetooth-sound-quality). Linux only. |
+| `headphoneOutputs` | empty | Outputs marked as headphones (Settings), one sink per line. |
 
 Per-device settings (for example the stored `irk`/`enc` keys, switching mode, spatial audio and
 equalizer choice) are saved in a table named after the device. Deleting the keys forces MyPods to
@@ -531,12 +543,14 @@ framework required. All but two run without hardware.
 sh tools/run_checks.sh build
 
 # Daemon: AAP battery/ANC parsing, BLE advertisement decoding, smart routing packets, control
-# commands, ATT settings, audio effect chain, settings file, Galaxy Buds and Parrot Zik protocol
+# commands, ATT settings, audio effect chain, signal path, settings file, events across threads,
+# Galaxy Buds and Parrot Zik protocol. Also worth running in a build with -fsanitize=address,undefined.
 ./build/modules/magicpodscore --selftest
 
-# Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, limiter,
-# loudness, hearing profile, A/B, 7.1, routing). Needs PipeWire, no Bluetooth; briefly switches the
-# default sink to a fake headphones sink.
+# Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, tone, limiter,
+# loudness, hearing profile, A/B, 7.1, routing, a sound server restart, Hi-Res with a 96 kHz source
+# and the signal path). Needs PipeWire, no Bluetooth; briefly switches the default sink to a fake
+# headphones sink. Best in the container: it restarts PipeWire and writes the Hi-Res drop-ins.
 ./build/modules/magicpodscore --emulate-airpods
 # The same in the dev container, against its own PipeWire (leaves the host's audio alone)
 podman run --rm -v "$PWD:/workspace" -w /workspace <dev image> sh tools/emulate_in_container.sh build
@@ -549,13 +563,17 @@ python3 tools/check_translations.py
 ```
 
 `run_checks.sh` also compiles and runs the standalone checks for the ANC and battery wire paths,
-the low battery warning, the keyboard shortcut actions, the iPhone's now playing values and the picker
+the low battery warning, the keyboard shortcut actions, the iPhone's now playing values, the menu
+entry's Exec line, the picker, the lid popup and the (i) explanations
 ([core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp),
 [core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp),
 [ui/tests/LowBatteryCheck.cpp](ui/tests/LowBatteryCheck.cpp),
 [ui/tests/ActionsCheck.cpp](ui/tests/ActionsCheck.cpp),
 [ui/tests/AmsCheck.cpp](ui/tests/AmsCheck.cpp),
-[ui/tests/tst_picker.qml](ui/tests/tst_picker.qml)); each file also names its own compile command.
+[ui/tests/DesktopCheck.cpp](ui/tests/DesktopCheck.cpp),
+[ui/tests/tst_picker.qml](ui/tests/tst_picker.qml),
+[ui/tests/tst_popup.qml](ui/tests/tst_popup.qml),
+[ui/tests/tst_info.qml](ui/tests/tst_info.qml)); each file also names its own compile command.
 
 Two checks do need hardware, because the behavior they guard only exists on a real adapter:
 
@@ -720,6 +738,13 @@ there is enough.
 **Spatial audio has no effect.**
 Check that `/usr/share/libmysofa/default.sofa` exists (package `libmysofa`) and that applications
 play to the `mypods_fx` sink.
+
+**The signal path says "resampled" although Hi-Res playback is on.**
+The graph takes the rate of the first stream that starts while nothing plays; a second application
+at another rate is converted. Bluetooth always runs at the codec's rate. Check that
+`~/.config/pipewire/pipewire.conf.d/60-mypods-hires.conf` exists, and restart PipeWire if MyPods
+couldn't (`systemctl --user restart pipewire pipewire-pulse wireplumber`); without systemd the files
+wait for the next start.
 
 ---
 
