@@ -121,10 +121,23 @@ public:
     // Only when the player lists it: the star is no use to one that ignores it
     bool offers(Command command) const { return m_commands.contains(char(command)); }
 
-    void send(Command command)
+    // `done` learns whether the iPhone took it: a command it can't do right now comes back as an ATT error
+    // (AMS: 0xA0 invalid state, 0xA1 invalid command, 0xA2 absent attribute)
+    void send(Command command, std::function<void(bool)> done = {})
     {
-        if (!m_remote.isEmpty())
-            write(m_remote, {command});
+        if (m_remote.isEmpty()) {
+            if (done)
+                done(false);
+            return;
+        }
+        auto *watcher = new QDBusPendingCallWatcher(write(m_remote, {command}), this);
+        connect(watcher, &QDBusPendingCallWatcher::finished, this, [watcher, command, done] {
+            watcher->deleteLater();
+            if (watcher->isError())
+                qWarning("iPhone: command %d refused: %s", int(command), qPrintable(watcher->error().message()));
+            if (done)
+                done(!watcher->isError());
+        });
     }
 
     // Louder (> 0) or quieter (< 0) by that many iOS steps, one after another, so dragging the slider
@@ -671,14 +684,25 @@ void MediaController::toggleLike()
 {
     if (m_service != IphoneService)
         return;
-    AppleMedia::instance().send(LikeTrack);
-    const bool liked = !m_liked.contains(m_artKey);
+    const QString key = m_artKey;
+    const bool liked = !m_liked.contains(key);
+    // shown at once; refused by the iPhone, the star goes back to what it was
     if (liked)
-        m_liked.insert(m_artKey);
+        m_liked.insert(key);
     else
-        m_liked.remove(m_artKey);
+        m_liked.remove(key);
     m_player[QStringLiteral("liked")] = liked;
     emit playerChanged();
+    AppleMedia::instance().send(LikeTrack, [this, key, liked](bool ok) {
+        if (ok || key != m_artKey)
+            return;
+        if (liked)
+            m_liked.remove(key);
+        else
+            m_liked.insert(key);
+        m_player[QStringLiteral("liked")] = !liked;
+        emit playerChanged();
+    });
 }
 
 void MediaController::next()

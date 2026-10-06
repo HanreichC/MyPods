@@ -18,6 +18,9 @@
 #include "Ams.h"
 #include "MediaController.h"
 
+#include <QCoreApplication>
+#include <QMetaObject>
+
 
 #include <algorithm>
 #include <chrono>
@@ -144,20 +147,32 @@ public:
         return snapshot;
     }
 
-    void send(Command command)
+    // `done` (on the GUI thread) learns whether the iPhone took it. A command it can't do right now comes back as
+    // an ATT error (AMS: 0xA0 invalid state, 0xA1 invalid command, 0xA2 absent attribute), not as an exception.
+    void send(Command command, std::function<void(bool)> done = {})
     {
-        onWorker([this, command] {
+        onWorker([this, command, done] {
             gatt::GattCharacteristic remote{nullptr};
             {
                 std::lock_guard lock{m_lock};
                 remote = m_remote;
             }
+            bool ok = false;
             try {
-                if (remote)
-                    remote.WriteValueAsync(bytes({command}), gatt::GattWriteOption::WriteWithResponse).get();
+                if (remote) {
+                    const auto result = remote.WriteValueWithResultAsync(bytes({command}), gatt::GattWriteOption::WriteWithResponse).get();
+                    ok = result.Status() == gatt::GattCommunicationStatus::Success;
+                    if (!ok) {
+                        const auto error = result.ProtocolError();
+                        qWarning("iPhone: command %d refused (status %d, ATT error 0x%02x)", int(command), int(result.Status()),
+                                 error ? int(error.Value()) : 0);
+                    }
+                }
             } catch (const winrt::hresult_error &) {
                 // out of range: the next poll shows the player gone
             }
+            if (done)
+                QMetaObject::invokeMethod(QCoreApplication::instance(), [done, ok] { done(ok); }, Qt::QueuedConnection);
         });
     }
 
@@ -710,14 +725,25 @@ void MediaController::toggleLike()
 {
     if (m_service != IphoneService)
         return;
-    AppleMedia::instance().send(LikeTrack);
-    const bool liked = !m_liked.contains(m_artKey);
+    const QString key = m_artKey;
+    const bool liked = !m_liked.contains(key);
+    // shown at once; refused by the iPhone, the star goes back to what it was
     if (liked)
-        m_liked.insert(m_artKey);
+        m_liked.insert(key);
     else
-        m_liked.remove(m_artKey);
+        m_liked.remove(key);
     m_player[QStringLiteral("liked")] = liked;
     emit playerChanged();
+    AppleMedia::instance().send(LikeTrack, [this, key, liked](bool ok) {
+        if (ok || key != m_artKey)
+            return;
+        if (liked)
+            m_liked.remove(key);
+        else
+            m_liked.insert(key);
+        m_player[QStringLiteral("liked")] = !liked;
+        emit playerChanged();
+    });
 }
 
 void MediaController::next()
