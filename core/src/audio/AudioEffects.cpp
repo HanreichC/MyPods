@@ -134,9 +134,11 @@ namespace MagicPodsCore
         std::vector<std::pair<std::string, Biquad>> filters;
         for (size_t b = 0; b < EQ_FREQS.size(); b++)
             filters.push_back({"eq" + std::to_string(b), {Biquad::Peaking, static_cast<double>(EQ_FREQS[b]), config.eq[b], 1.41}});
-        // tilt: half down in the bass, half up in the treble, so 1 kHz stays where it is
-        filters.push_back({"tl0", {Biquad::LowShelf, 1000, -config.tilt / 2, 0.4}});
-        filters.push_back({"tl1", {Biquad::HighShelf, 1000, config.tilt / 2, 0.4}});
+        // tilt: the bass down and the treble up by as much, so 1 kHz stays where it is. Each side gets the whole
+        // value: with half of it a gentle 6 dB across the spectrum went unnoticed, the more so as the pre-gain takes
+        // the boost off again
+        filters.push_back({"tl0", {Biquad::LowShelf, 1000, -config.tilt, 0.4}});
+        filters.push_back({"tl1", {Biquad::HighShelf, 1000, config.tilt, 0.4}});
         for (size_t i = 0; i < config.correction.size(); i++)
         {
             Biquad bq = config.correction[i];

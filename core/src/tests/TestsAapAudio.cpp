@@ -209,8 +209,8 @@ TestsAapAudio::TestsAapAudio()
     EffectsConfig tilted;
     tilted.tilt = 6;
     auto tiltDb = AudioEffects::ResponseDb(tilted, 0, {30, 1000, 15000});
-    Test("Tilt: bass down, treble up, 1 kHz stays", !tilted.IsNeutral() && tiltDb[0] < -2.5 && tiltDb[2] > 2.5 && std::abs(tiltDb[1]) < 0.5 &&
-                                                    AudioEffects::ControlCommand(tilted, 0).find("\"tlR1:Gain\" 3.00") != std::string::npos);
+    Test("Tilt: bass down, treble up by the whole value, 1 kHz stays", !tilted.IsNeutral() && tiltDb[0] < -5.5 && tiltDb[2] > 5.5 && std::abs(tiltDb[1]) < 0.5 &&
+                                                    AudioEffects::ControlCommand(tilted, 0).find("\"tlR1:Gain\" 6.00") != std::string::npos);
     auto flat = AudioEffects::ResponseDb(EffectsConfig{}, 1, {20, 1000, 20000});
     Test("Curve: flat when nothing is on", std::all_of(flat.begin(), flat.end(), [](double d) { return std::abs(d) < 0.01; }));
     EffectsConfig boosted;

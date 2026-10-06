@@ -42,7 +42,7 @@ namespace MagicPodsCore
         SpatialMode spatial = SpatialMode::Off;
         bool surround = false;       // spatial audio takes 7.1 (films, games); PipeWire upmixes stereo players into it
         std::array<double, 10> eq{}; // dB at 32, 64, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz
-        double tilt = 0;             // dB from the bass to the treble around 1 kHz, + is brighter
+        double tilt = 0;             // dB the treble goes up and the bass down around 1 kHz (-6..6), + is brighter
         std::vector<Biquad> correction; // headphone correction: the user's ParametricEQ.txt or the model's AutoEQ one, empty if there is none
         bool corrected = false;         // correction on; its nodes stay in the chain either way, so toggling is a live update
         bool crossfeed = false;         // only without spatial audio, which mixes the channels itself
