@@ -23,6 +23,34 @@ QQC2.ApplicationWindow {
     property bool useOpacity: animationMode === 0
     property bool isClosing: false
     property int showRetryCount: 0
+    // Closed by hand or timed out while the lid stays open: like a Mac, not again for that pair until the lid was
+    // closed (battery and charging updates keep coming meanwhile)
+    property string dismissed: ""
+
+    function dismiss() {
+        dismissed = animationData?.address ?? "";
+        requestClose();
+    }
+
+    // The core's "animation" broadcast: show when a lid opens, hide when it closes
+    function handleAnimation(animation) {
+        if (!animation || typeof animation.show === "undefined") {
+            return;
+        }
+        // another pair's lid while one is shown: neither its data nor its closing count
+        if (animationShown && animation.address !== animationData?.address) {
+            return;
+        }
+        if (animation.show === false) {
+            hideOsd();
+            dismissed = ""; // the lid is closed: opening it shows the popup again
+            return;
+        }
+        animationData = animation;
+        if (!animationShown && dismissed !== animation.address) {
+            showOsd();
+        }
+    }
     readonly property int margin: 0
     flags: gameScopeMode
         ? (Qt.Popup | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
@@ -171,33 +199,7 @@ QQC2.ApplicationWindow {
         enabled: !!cppBackend
 
         function onDataReceived(json) {
-            if (!json || Object.keys(json).length === 0) {
-                return;
-            }
-
-            if (!json.animation) {
-                return;
-            }
-
-            if (Object.keys(osdDialog.animationData).length > 0) {
-                if (json.animation.address === osdDialog.animationData.address) {
-                    osdDialog.animationData = json.animation;
-                }
-            } else {
-                osdDialog.animationData = json.animation;
-            }
-
-            if (typeof json.animation.show === "undefined") {
-                return;
-            }
-
-            if (json.animation.show === true && !osdDialog.animationShown) {
-                osdDialog.showOsd();
-                return;
-            }
-            if (json.animation.show === false && osdDialog.animationShown) {
-                osdDialog.hideOsd();
-            }
+            osdDialog.handleAnimation(json?.animation);
         }
     }
 
@@ -205,7 +207,7 @@ QQC2.ApplicationWindow {
         id: osdHide
         interval: 30000
         repeat: false
-        onTriggered: osdDialog.requestClose()
+        onTriggered: osdDialog.dismiss()
     }
 
     QQC2.Pane {
@@ -288,7 +290,7 @@ QQC2.ApplicationWindow {
                 icon.height: 16
                 icon.color: MP.Theme.secondaryText
                 background: Rectangle { radius: 14; color: MP.Theme.tertiaryFill }
-                onClicked: osdDialog.hideOsd()
+                onClicked: osdDialog.dismiss()
             }
 
             ColumnLayout {

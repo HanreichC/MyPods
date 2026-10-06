@@ -90,7 +90,7 @@ namespace MagicPodsCore
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 volumePending = false;
-                AudioEffects::Instance().SetVolume(this->device.ListeningVolume());
+                AudioEffects::Instance().SetVolume(this->device.SinkPart(), this->device.ListeningVolume());
             }).detach();
         });
     }

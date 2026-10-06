@@ -8,6 +8,7 @@
 #include "ObservableVariable.h"
 
 #include <memory>
+#include <mutex>
 #include <map>
 #include <set>
 #include <vector>
@@ -28,6 +29,9 @@ namespace MagicPodsCore {
         std::unique_ptr<sdbus::IProxy> _defaultBluetoothAdapterProxy{};
         std::unique_ptr<sdbus::IProxy> _busProxy{}; // watches bluetoothd leaving the bus
 
+        // Every sdbus proxy runs its own event thread: the root proxy's adds and removes devices, each device's
+        // reports its pairing. Both maps are only touched under _devicesLock; events fire after it is released.
+        std::mutex _devicesLock{};
         std::map<sdbus::ObjectPath, std::shared_ptr<DBusDeviceInfo>> _knownDevices{};
 #endif
         std::set<std::shared_ptr<DBusDeviceInfo>> _pairedDevices{};

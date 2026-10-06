@@ -3,6 +3,7 @@
 
 #include "AudioEffects.h"
 #include "Logger.h"
+#include "pulseaudio/PulseAudioClient.h"
 
 #include <algorithm>
 #include <cmath>
@@ -774,11 +775,12 @@ namespace MagicPodsCore
         bool alive = _chain > 0 && waitpid(_chain, nullptr, WNOHANG) == 0;
         if (!alive)
             _chain = -1; // exited (and now reaped), so it must not be signalled again
-        // Same graph (spatial on/off, 7.1, the HRTF, the limiter and the correction's filter count change it): update
-        // the running chain, a restart would drop the stream and pause the player.
+        // Same graph (spatial on/off, 7.1, the HRTF, the limiter and the correction's filters change it): update the
+        // running chain, a restart would drop the stream and pause the player. The live update sets gains only, so
+        // another correction with as many filters (a new eqFile) is a new graph too.
         // ponytail: EQ "Off" then leaves a flat chain running until the headphones go away; costs a few biquads, keeps playback going
         auto graph = [](const EffectsConfig &c)
-        { return std::tuple(c.spatial != SpatialMode::Off, c.surround, c.correction.size(), DefaultSofa(c) ? "" : c.sofa, c.limiter); };
+        { return std::tuple(c.spatial != SpatialMode::Off, c.surround, c.correction, DefaultSofa(c) ? "" : c.sofa, c.limiter); };
         if (alive && _ctlFd >= 0 && sink == _sink && graph(config) == graph(_config))
         {
             std::string cmd = ControlCommand(config, 0);
@@ -826,7 +828,7 @@ namespace MagicPodsCore
     void AudioEffects::StopFor(const std::string &sinkPart)
     {
         std::lock_guard lock{_lock};
-        if (!_sink.empty() && _sink.find(sinkPart) != std::string::npos)
+        if (!_sink.empty() && PulseAudioClient::SinkOf(_sink, sinkPart))
             StopLocked();
     }
 
@@ -857,10 +859,10 @@ namespace MagicPodsCore
             Logger::Debug("AudioEffects: pw-cli not accepting commands");
     }
 
-    void AudioEffects::SetVolume(double volume)
+    void AudioEffects::SetVolume(const std::string &sinkPart, double volume)
     {
         std::lock_guard lock{_lock};
-        if (_ctlFd < 0 || !_config.loudness || std::abs(volume - _config.volume) < 0.005)
+        if (_ctlFd < 0 || !_config.loudness || !PulseAudioClient::SinkOf(_sink, sinkPart) || std::abs(volume - _config.volume) < 0.005)
             return;
         _config.volume = volume;
         // the shelf and the pre-gain move together, so a louder bass never clips

@@ -85,6 +85,7 @@ namespace MagicPodsCore {
     }
 
     std::set<std::shared_ptr<DBusDeviceInfo>> DBusService::GetAllDevices() {
+        std::lock_guard lock{_devicesLock};
         std::set<std::shared_ptr<DBusDeviceInfo>> devices;
         for (const auto& [path, device] : _knownDevices) {
             devices.emplace(device);
@@ -93,6 +94,7 @@ namespace MagicPodsCore {
     }
 
     std::set<std::shared_ptr<DBusDeviceInfo>> DBusService::GetPairedDevices() {
+        std::lock_guard lock{_devicesLock};
         return _pairedDevices;
     }
 
@@ -158,31 +160,43 @@ namespace MagicPodsCore {
         if (IsDevicePath(objectPath)) {
             if (interfaces.contains("org.bluez.Device1")) {
                 auto deviceInfo = std::make_shared<DBusDeviceInfo>(objectPath, interfaces);
-                    
-                if (_knownDevices.contains(objectPath)) {
-                    _knownDevices.erase(objectPath);
+                bool paired = deviceInfo->GetPairedStatus().GetValue();
+                {
+                    std::lock_guard lock{_devicesLock};
+                    if (auto old = _knownDevices.find(objectPath); old != _knownDevices.end()) {
+                        _pairedDevices.erase(old->second);
+                        _knownDevices.erase(old);
+                    }
+                    _knownDevices.emplace(objectPath, deviceInfo);
+                    if (paired)
+                        _pairedDevices.emplace(deviceInfo);
                 }
-                _knownDevices.emplace(objectPath, deviceInfo);
                 _onAnyDeviceAddedEvent.FireEvent(deviceInfo);
 
-                if (deviceInfo->GetPairedStatus().GetValue()) {
-                    _pairedDevices.emplace(deviceInfo);
+                if (paired) {
                     _onDeviceAddedEvent.FireEvent(deviceInfo);
                 }
                 else {
                     // BlueZ reports Paired before SDP has delivered the UUIDs and Modalias the
                     // device type is derived from, so wait until the services are resolved too.
+                    // On the device's own proxy thread, so the check and the insert happen under the lock.
                     auto tryAddPaired = [this, objectPath](size_t listenerId, bool newValue) {
-                        if (!_knownDevices.contains(objectPath))
-                            return;
-                        auto device = _knownDevices.at(objectPath);
-                        if (device->GetPairedStatus().GetValue() && device->GetServicesResolved().GetValue() && !_pairedDevices.contains(device)) {
-                            _pairedDevices.emplace(device);
-                            _onDeviceAddedEvent.FireEvent(device);
+                        std::shared_ptr<DBusDeviceInfo> added;
+                        {
+                            std::lock_guard lock{_devicesLock};
+                            auto it = _knownDevices.find(objectPath);
+                            if (it == _knownDevices.end())
+                                return;
+                            auto device = it->second;
+                            if (device->GetPairedStatus().GetValue() && device->GetServicesResolved().GetValue() && _pairedDevices.emplace(device).second)
+                                added = device;
                         }
+                        if (added)
+                            _onDeviceAddedEvent.FireEvent(added);
                     };
                     deviceInfo->GetPairedStatus().GetEvent().Subscribe(tryAddPaired);
                     deviceInfo->GetServicesResolved().GetEvent().Subscribe(tryAddPaired);
+                    tryAddPaired(0, false); // paired and resolved before the listeners were there
                 }
 
                 return deviceInfo;
@@ -192,31 +206,37 @@ namespace MagicPodsCore {
     }
 
     bool DBusService::TryRemoveDevice(sdbus::ObjectPath objectPath) {
-        if (_knownDevices.contains(objectPath)) {
-            const auto& deviceInfo = _knownDevices.at(objectPath);
-
-            _onDeviceRemovedEvent.FireEvent(deviceInfo);
-
-            if (_pairedDevices.contains(deviceInfo)) {
-                _pairedDevices.erase(deviceInfo);
-            }
-            _knownDevices.erase(objectPath);
-
-            return true;
+        std::shared_ptr<DBusDeviceInfo> deviceInfo;
+        {
+            std::lock_guard lock{_devicesLock};
+            auto it = _knownDevices.find(objectPath);
+            if (it == _knownDevices.end())
+                return false;
+            deviceInfo = it->second;
         }
-        return false;
+        _onDeviceRemovedEvent.FireEvent(deviceInfo); // listeners may still ask for the list with it in
+
+        std::lock_guard lock{_devicesLock};
+        _pairedDevices.erase(deviceInfo);
+        if (auto it = _knownDevices.find(objectPath); it != _knownDevices.end() && it->second == deviceInfo)
+            _knownDevices.erase(it);
+        return true;
     }
 
     bool DBusService::TryUpdateInterfaceAddedForDevice(sdbus::ObjectPath objectPath, std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces)
     {
-        if (IsDevicePath(objectPath)) {
-            if (_knownDevices.contains(objectPath)) {
-                auto device = _knownDevices.at(objectPath);
-                device->InterfaceAdded(interfaces);
-                return true;
-            }
+        if (!IsDevicePath(objectPath))
+            return false;
+        std::shared_ptr<DBusDeviceInfo> device;
+        {
+            std::lock_guard lock{_devicesLock};
+            auto it = _knownDevices.find(objectPath);
+            if (it == _knownDevices.end())
+                return false;
+            device = it->second;
         }
-        return false;
+        device->InterfaceAdded(interfaces);
+        return true;
     }
     
     bool DBusService::TryUpdateInterfaceRemovedForDevice(sdbus::ObjectPath objectPath)

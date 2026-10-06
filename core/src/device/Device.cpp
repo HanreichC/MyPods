@@ -24,18 +24,6 @@ namespace MagicPodsCore {
         }
     }
 
-    void Device::UnsubscribeCapabilitiesChanges()
-    {
-        if (capabilityEventIds.size() != capabilities.size())
-            throw std::runtime_error("Size of capabilityEventIds and capabilities different");
-
-        for (size_t i=0; i<capabilities.size(); i++){
-            auto& c = capabilities[i];
-            c->GetChangedEvent().Unsubscribe(capabilityEventIds[i]);
-        }
-        capabilityEventIds.clear();
-    }
-
     std::string Device::GetContainerName()
     {
         std::string name = GetAddress();
@@ -176,13 +164,16 @@ namespace MagicPodsCore {
             _client->GetOnReceivedDataEvent().Unsubscribe(clientReceivedDataEventId);
             _client->GetOnClosedEvent().Unsubscribe(clientClosedEventId);
         }
+
+        // Here and not in ~Device: capabilities unsubscribe from the derived class's events (AapDevice's BLE,
+        // ATT and AAP data), which are gone once ~Device runs. Their own changed events go with them.
+        capabilities.clear();
+        capabilityEventIds.clear();
     }
 
     Device::~Device()
     {
         Shutdown(); // idempotent; derived classes with a reading thread already called it
-        UnsubscribeCapabilitiesChanges();
-        capabilities.clear();
         Logger::Debug("Device::~Device");
     }
 
@@ -329,7 +320,8 @@ namespace MagicPodsCore {
         std::lock_guard lock{routing};
 
         auto pac = GetAudioClient();
-        auto sink = HeadphonesSink();
+        // a worker started by a settings change may only get here after the headphones went: no chain for them then
+        auto sink = GetConnected() ? HeadphonesSink() : std::nullopt;
         if (!sink)
         {
             StopEffects();

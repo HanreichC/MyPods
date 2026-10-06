@@ -37,44 +37,87 @@ namespace MagicPodsCore
     PulseAudioClient::PulseAudioClient()
     {
         ml = pa_threaded_mainloop_new();
-        ctx = pa_context_new(pa_threaded_mainloop_get_api(ml), "MagicPodsCore");
-        pa_context_connect(ctx, nullptr, PA_CONTEXT_NOAUTOSPAWN, nullptr);
+        auto *api = pa_threaded_mainloop_get_api(ml);
+        // armed whenever the connection fails or drops: the sound server may start after the daemon or restart
+        retry = api->time_new(api, nullptr, [](pa_mainloop_api *, pa_time_event *, const struct timeval *, void *userdata) {
+            static_cast<PulseAudioClient*>(userdata)->Connect();
+        }, this);
+        Connect();
         pa_threaded_mainloop_start(ml);
 
-        auto state = PA_CONTEXT_UNCONNECTED;
-        for (int i = 0; i < 300; i++) // 3 s
-        {
-            {
-                Lock lock{ml};
-                state = pa_context_get_state(ctx);
-            }
-            if (state == PA_CONTEXT_READY || !PA_CONTEXT_IS_GOOD(state))
-                break;
+        // the first answers are wanted right away (wired headphones at startup), so wait for the first attempt
+        for (int i = 0; i < 300 && !ready && !attempted; i++) // 3 s
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        if (state != PA_CONTEXT_READY)
-        {
-            Logger::Error("PulseAudioClient: no connection to the sound server");
-            Free();
-            return;
-        }
+        if (!ready)
+            Logger::Error("PulseAudioClient: no connection to the sound server yet, retrying in the background");
+    }
 
-        Lock lock{ml};
+    void PulseAudioClient::Connect()
+    {
+        // on the loop thread (timer) or before it runs: the old context's callbacks are not on the stack here
+        if (ctx)
+        {
+            pa_context_set_state_callback(ctx, nullptr, nullptr);
+            pa_context_disconnect(ctx);
+            pa_context_unref(ctx);
+        }
+        ctx = pa_context_new(pa_threaded_mainloop_get_api(ml), "MagicPodsCore");
+        pa_context_set_state_callback(ctx, [](pa_context *c, void *userdata) {
+            auto *self = static_cast<PulseAudioClient*>(userdata);
+            auto state = pa_context_get_state(c);
+            if (state == PA_CONTEXT_READY)
+                return self->OnReady();
+            if (PA_CONTEXT_IS_GOOD(state))
+                return;
+            if (self->ready.exchange(false))
+                Logger::Error("PulseAudioClient: lost the sound server, reconnecting");
+            self->attempted = true;
+            self->RetrySoon();
+        }, this);
+        if (pa_context_connect(ctx, nullptr, PA_CONTEXT_NOAUTOSPAWN, nullptr) < 0)
+        {
+            attempted = true;
+            RetrySoon();
+        }
+    }
+
+    void PulseAudioClient::RetrySoon()
+    {
+        struct timeval tv;
+        pa_gettimeofday(&tv);
+        pa_timeval_add(&tv, 2 * PA_USEC_PER_SEC);
+        auto *api = pa_threaded_mainloop_get_api(ml);
+        api->time_restart(retry, &tv);
+    }
+
+    void PulseAudioClient::OnCardInfo(pa_context *, const pa_card_info *info, int eol, void *userdata)
+    {
+        if (!eol && info)
+            static_cast<PulseAudioClient*>(userdata)->_onAudioCardPropertyChangedEvent.FireEvent(ToCardInfo(info));
+    }
+
+    void PulseAudioClient::OnReady()
+    {
         // Runs on the loop thread with the lock held: subscribers must not call back into this client
         pa_context_set_subscribe_callback(ctx, [](pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK)
                 static_cast<PulseAudioClient*>(userdata)->_onSinkChangedEvent.FireEvent(idx);
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) != PA_SUBSCRIPTION_EVENT_CARD)
                 return;
-            if (auto op = pa_context_get_card_info_by_index(c, idx, [](pa_context*, const pa_card_info* info, int eol, void* userdata) {
-                    if (!eol && info)
-                        static_cast<PulseAudioClient*>(userdata)->_onAudioCardPropertyChangedEvent.FireEvent(ToCardInfo(info));
-                }, userdata))
+            if (auto op = pa_context_get_card_info_by_index(c, idx, OnCardInfo, userdata))
                 pa_operation_unref(op);
         }, this);
         if (auto op = pa_context_subscribe(ctx, static_cast<pa_subscription_mask_t>(PA_SUBSCRIPTION_MASK_CARD | PA_SUBSCRIPTION_MASK_SINK), nullptr, nullptr))
             pa_operation_unref(op);
-        ready.store(true);
+        ready = true;
+        if (!connectedBefore.exchange(true))
+            return;
+        // back after a restart: what changed meanwhile was never reported. The sink event refreshes wired
+        // headphones, the cards route Bluetooth headphones and their effect chain again.
+        Logger::Info("PulseAudioClient: sound server back");
+        _onSinkChangedEvent.FireEvent(PA_INVALID_INDEX);
+        if (auto op = pa_context_get_card_info_list(ctx, OnCardInfo, this))
+            pa_operation_unref(op);
     }
 
     PulseAudioClient::~PulseAudioClient()
@@ -163,7 +206,7 @@ namespace MagicPodsCore
             [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
                 auto* q = static_cast<std::pair<std::string, std::optional<std::string>>*>(userdata);
                 if (eol || !info || !info->name || q->second) return;
-                if (std::string(info->name).find(q->first) != std::string::npos)
+                if (SinkOf(info->name, q->first))
                     q->second = info->name;
             }, &query));
         return query.second;
@@ -307,6 +350,7 @@ namespace MagicPodsCore
             pa_threaded_mainloop_stop(ml);
         if (ctx)
         {
+            pa_context_set_state_callback(ctx, nullptr, nullptr);
             pa_context_disconnect(ctx);
             pa_context_unref(ctx);
             ctx = nullptr;

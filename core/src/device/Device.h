@@ -39,7 +39,6 @@ namespace MagicPodsCore {
         size_t _deviceHandsFreeBatteryStatusChangedEvent{};
         virtual void OnResponseDataReceived(const std::vector<unsigned char> &data) = 0;
         void SubscribeCapabilitiesChanges();
-        void UnsubscribeCapabilitiesChanges();
         std::string GetContainerName();
 
         // Opening the control channel blocks (connect attempts, spaced init packets), so it runs here
@@ -68,13 +67,11 @@ namespace MagicPodsCore {
         // After the control channel opened (worker thread) and after it was stopped
         virtual void OnClientStarted() {}
         virtual void OnClientStopped() {}
-        // Stops the worker and the channel. Derived classes call it first in their destructor: the reading
-        // thread calls OnResponseDataReceived, which uses members that are gone once ~Device runs.
+        // Stops the worker and the channel and releases the capabilities. Derived classes call it first in their
+        // destructor: the reading thread and the capabilities use members that are gone once ~Device runs.
         void Shutdown();
         // The model's measured headphone correction, empty if nobody measured it
         virtual std::vector<Biquad> ModelCorrection() const { return {}; }
-        // What the headphones' sink name contains: "bluez_output.AA_BB_CC_DD_EE_FF"
-        virtual std::string SinkPart() const;
 
     public:
         Device(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
@@ -162,6 +159,8 @@ namespace MagicPodsCore {
 #endif
         // Takes the effect chain away if it plays into these headphones; another pair's chain stays
         void StopEffects();
+        // What names the headphones' sink (PulseAudioClient::SinkOf): "bluez_output.AA_BB_CC_DD_EE_FF"
+        virtual std::string SinkPart() const;
         EffectsConfig LoadEffectsConfig();
         // The user's ParametricEQ.txt (setting `eqFile`) if it reads, else ModelCorrection()
         std::vector<Biquad> Correction();

@@ -74,14 +74,15 @@ namespace MagicPodsCore
         // Returns the sink applications should play to.
         std::string Apply(const std::string &sink, const std::string &description, EffectsConfig config);
         void Stop();
-        // Stop() if the chain plays into a sink whose name contains `sinkPart`: there is one chain for all
+        // Stop() if the chain plays into a sink `sinkPart` names (PulseAudioClient::SinkOf): there is one chain for all
         // headphones, and one pair going away must not take it from another
         void StopFor(const std::string &sinkPart);
 
         // Head tracking: rotates the virtual speakers against the head so the sound stays anchored to the screen.
         void SetYaw(double degrees);
-        // Listening volume changed: moves the loudness compensation along, a live update like SetYaw
-        void SetVolume(double volume);
+        // Listening volume of the headphones `sinkPart` names changed: moves the loudness compensation along, a live
+        // update like SetYaw. Ignored unless the chain plays into them: every connected pair reports its volume.
+        void SetVolume(const std::string &sinkPart, double volume);
 
         static std::vector<std::string> PresetNames();
         static std::optional<std::array<double, 10>> Preset(const std::string &name);

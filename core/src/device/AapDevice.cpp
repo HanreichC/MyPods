@@ -56,9 +56,10 @@ namespace MagicPodsCore
     
     AapDevice::~AapDevice()
     {
-        Shutdown();
+        // no advertisements into capabilities that Shutdown releases
         if (_bleService && _getOnAdReceivedEventId != 0)
             _bleService->GetOnAdReceivedEvent().Unsubscribe(_getOnAdReceivedEventId);
+        Shutdown();
     }
 
     void AapDevice::SendData(const AapRequest &setter) //TODO: MAKE COMMON CLASS FOR SETTERS

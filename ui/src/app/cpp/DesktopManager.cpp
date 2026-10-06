@@ -71,7 +71,7 @@ Terminal=false
 Categories=Utility;
 StartupWMClass=MyPods
 )")
-    .arg(exePath, iconInstallPath());
+    .arg(desktopExecArgument(exePath), iconInstallPath());
     return true;
 }
 

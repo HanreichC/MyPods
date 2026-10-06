@@ -53,12 +53,13 @@ DBusBasedBleAdvertisingService::~DBusBasedBleAdvertisingService()
     } catch (const sdbus::Error& e) {}
 }
 
-void DBusBasedBleAdvertisingService::OnDeviceAdded(std::shared_ptr<DBusDeviceInfo> deviceInfo)
+void DBusBasedBleAdvertisingService::OnDeviceAdded(std::shared_ptr<DBusDeviceInfo> deviceInfo, bool emitNow)
 {
     std::string address = deviceInfo->GetAddress();
     RemoveDeviceSubscriptions(address);
 
-    EmitAd(deviceInfo, deviceInfo->GetManufacturerData().GetValue());
+    if (emitNow)
+        EmitAd(deviceInfo, deviceInfo->GetManufacturerData().GetValue());
 
     DeviceSubscriptions subs{};
     subs.device = deviceInfo;
@@ -182,6 +183,10 @@ void DBusBasedBleAdvertisingService::StartListening()
         [this](size_t, std::shared_ptr<DBusDeviceInfo> dev) {
             RemoveDeviceSubscriptions(dev->GetAddress());
         });
+    // StopScan dropped every subscription, but BlueZ keeps the devices it saw for a while (the AirPods' rotating
+    // address among them) and sends no InterfacesAdded for them again. What they advertised before is stale.
+    for (const auto& device : _dbusService.GetAllDevices())
+        OnDeviceAdded(device, false);
 }
 
 void DBusBasedBleAdvertisingService::EmitAd(

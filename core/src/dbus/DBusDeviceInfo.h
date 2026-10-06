@@ -49,12 +49,14 @@ namespace MagicPodsCore {
         ObservableVariable<bool> _connectionStatus{false};
         ObservableVariable<bool> _pairedStatus{false};
         ObservableVariable<bool> _servicesResolved{false};
-        ObservableVariable<uint8_t> _handsFreeBatteryStatus{100};
+        ObservableVariable<uint8_t> _handsFreeBatteryStatus{NO_BATTERY};
         ObservableVariable<std::map<uint16_t, std::vector<uint8_t>>> _manufacturerData{{}};
         ObservableVariable<std::map<std::string, std::vector<uint8_t>>> _serviceData{{}};
         ObservableVariable<int16_t> _rssi{0};
 
     public:
+        // The hands-free battery level until the headphones report one; plenty never do
+        static constexpr uint8_t NO_BATTERY = 0xFF;
 #ifdef _WIN32
         explicit DBusDeviceInfo(uint64_t address);
         ~DBusDeviceInfo();

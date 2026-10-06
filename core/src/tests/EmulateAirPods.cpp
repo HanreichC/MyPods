@@ -12,6 +12,7 @@
 #include "audio/AudioEffects.h"
 #include "Logger.h"
 
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
@@ -166,6 +167,9 @@ int EmulateAirPods()
         Check("Loudness: the bass comes up when the volume goes down", WaitFor([] { return Param("ldL0:Gain") > 5; }, 3000), std::to_string(Param("ldL0:Gain")));
         Sh("pactl set-sink-volume " + BLUEZ_SINK + " 100%");
         Check("Loudness: flat at full volume", WaitFor([] { return Param("ldL0:Gain") == 0; }, 3000), std::to_string(Param("ldL0:Gain")));
+        AudioEffects::Instance().SetVolume("bluez_output.11_22_33_44_55_66", 0.1); // a second pair, turned down, without the chain
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        Check("Loudness: another pair's volume leaves the chain alone", Param("ldL0:Gain") == 0, std::to_string(Param("ldL0:Gain")));
         equalizer.SetFromJson({{"equalizer", {{"loudness", false}}}});
 
         equalizer.SetFromJson({{"equalizer", {{"audiogramRight", "0 0 0 0 0 40"}}}});
@@ -189,6 +193,11 @@ int EmulateAirPods()
         equalizer.SetFromJson({{"equalizer", {{"correction", true}}}});
         Check("ParametricEQ.txt: its filters in the chain", WaitFor([] { return Param("coL0:Gain") == 4 && Param("coR1:Gain") == -2 && std::isnan(Param("coL2:Gain")); }, 3000),
               std::to_string(Param("coL0:Gain")));
+        // another file with as many filters: the live update would only set the gains, the frequencies must follow too
+        std::ofstream(eqFile) << "Filter 1: ON LSC Fc 105 Hz Gain 4.0 dB Q 0.70\nFilter 2: ON PK Fc 6000 Hz Gain -2.0 dB Q 2.00\n";
+        equalizer.SetFromJson({{"equalizer", {{"correction", true}}}});
+        Check("ParametricEQ.txt swapped, same filter count: new frequencies", WaitFor([] { return Param("coR1:Freq") == 6000; }, 3000),
+              std::to_string(Param("coR1:Freq")));
         std::filesystem::remove(eqFile);
         pods.SaveSettingString("eqFile", "");
 
@@ -302,6 +311,19 @@ int EmulateAirPods()
     if (!previousDefault.empty())
         Sh("pactl set-default-sink " + previousDefault);
     Sh("pactl unload-module " + module);
+
+    // The sound server restarts (an update, `systemctl --user restart pipewire-pulse`): the client comes back on
+    // its own and says so, so wired headphones and the effect chain are looked at again
+    {
+        PulseAudioClient pac;
+        std::atomic<bool> told{false};
+        pac.GetSinkChangedEvent().Subscribe([&](size_t, const uint32_t &) { told = true; });
+        Sh("pkill -x pipewire-pulse; sleep 1; (pipewire-pulse >/dev/null 2>&1 &); sleep 1");
+        bool back = WaitFor([] { return !Sh("pactl info 2>/dev/null").empty(); });
+        Sh("pactl load-module module-null-sink sink_name=mypods_reconnect >/dev/null");
+        Check("Sound server restarted: client reconnects", back && WaitFor([&] { return pac.FindSink("mypods_reconnect").has_value(); }, 5000));
+        Check("Sound server restarted: listeners told", told.load());
+    }
     std::filesystem::remove(settingsPath);
     Logger::Info("Emulator: %d failure(s)", failures);
     return failures == 0 ? 0 : 1;

@@ -39,11 +39,15 @@ $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/ActionsCheck.cpp $QTCORE -o "$OU
 # shellcheck disable=SC2086
 $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/AmsCheck.cpp $QTCORE -o "$OUT/ams"
 "$OUT/ams"
+# shellcheck disable=SC2086
+$CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/DesktopCheck.cpp $QTCORE -o "$OUT/desktop"
+"$OUT/desktop"
 
 # QML: the picker against the sources, with the qmldir the build generated
 mkdir -p "$OUT/qml/magicpods"
 sed /^prefer/d "$BUILD/qml/magicpods/qmldir" > "$OUT/qml/magicpods/qmldir"
 ln -s "$PWD/ui/src" "$OUT/qml/magicpods/src"
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_picker.qml
+QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_popup.qml
 
 echo "All checks passed"

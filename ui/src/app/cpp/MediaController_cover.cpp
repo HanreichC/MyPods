@@ -16,6 +16,7 @@
 #include <QLocale>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QStandardPaths>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -28,7 +29,12 @@ QString MediaController::saveArt(const QString &key, const QByteArray &art)
 {
     if (art.isEmpty())
         return {};
-    const QString path = QDir::temp().filePath(kPrefix
+    // the user's own cache, not /tmp: there another user could put a link under the predictable name and have it
+    // overwrite one of this user's files
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (dir.isEmpty() || !QDir().mkpath(dir))
+        return {};
+    const QString path = QDir(dir).filePath(kPrefix
         + QString::fromLatin1(QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Md5).toHex()));
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write(art) != art.size())

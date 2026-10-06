@@ -334,10 +334,20 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
                 _devicesMap.emplace(address, device);
             }
             _onDeviceAddEvent.FireEvent(device);
-            if (startup)
-                TrySelectNewActiveDevice(); // the Bluetooth headphones that were active stay so
-            else
+            if (!startup)
+            {
                 std::static_pointer_cast<WiredDevice>(device)->SetPlugged(true);
+                continue;
+            }
+            TrySelectNewActiveDevice(); // the Bluetooth headphones that were active stay so
+#ifndef _WIN32
+            // one effect chain, made the default output: only the active headphones get it, the others keep theirs
+            // for when they are picked (Windows: every endpoint has its own Equalizer APO section)
+            if (GetActiveDevice() != device)
+                continue;
+#endif
+            if (!device->LoadEffectsConfig().IsNeutral())
+                device->RouteAudio();
         }
         for (const auto& device : GetDevices())
             if (auto wired = std::dynamic_pointer_cast<WiredDevice>(device); wired && !plugged.contains(wired->GetAddress()))

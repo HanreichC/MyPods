@@ -34,9 +34,7 @@ namespace MagicPodsCore
                     raw->RouteAudio();
             }).detach();
         });
-        device->Init();
-        if (plugged && !device->LoadEffectsConfig().IsNeutral())
-            device->RouteAudio();
+        device->Init(); // plugged before the daemon: DevicesInfoFetcher::RefreshWired applies the effects
         return device;
     }
 }

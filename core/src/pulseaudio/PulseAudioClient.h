@@ -74,8 +74,13 @@ namespace MagicPodsCore{
             bool SetCardProfile(const std::string& name, const std::string& profile);
             std::optional<CardInfo> GetCardInfoByName(const std::string& name);
             std::string GetNameFromMac(const std::string& mac);
-            // First sink whose name contains `part`, e.g. the MAC with underscores for a bluez sink
+            // First sink that `part` names (SinkOf), e.g. "bluez_output.AA_BB_CC_DD_EE_FF" for a bluez sink
             std::optional<std::string> FindSink(const std::string& part);
+            // `part` names `sink`: the whole name, or it plus a "." suffix ("bluez_output.AA_BB_CC_DD_EE_FF" names
+            // "bluez_output.AA_BB_CC_DD_EE_FF.1"); "…hdmi-stereo" doesn't name "…hdmi-stereo-extra1"
+            static bool SinkOf(const std::string& sink, const std::string& part) {
+                return sink == part || (sink.size() > part.size() && sink.starts_with(part) && sink[part.size()] == '.');
+            }
             bool SetDefaultSink(const std::string& name);
             // Sink volume averaged over its channels, 1.0 = 100 %
             std::optional<double> GetSinkVolume(const std::string& name);
@@ -105,8 +110,16 @@ namespace MagicPodsCore{
             Event<uint32_t> _onSinkChangedEvent{};
 #ifndef _WIN32
             std::atomic<bool> ready{false};
+            std::atomic<bool> attempted{false};       // the first connection attempt failed
+            std::atomic<bool> connectedBefore{false}; // ready once already: the next ready is a reconnect
             pa_threaded_mainloop* ml {nullptr};
-            pa_context* ctx {nullptr};
+            pa_context* ctx {nullptr};               // replaced on the loop thread when reconnecting; used under the loop lock
+            pa_time_event* retry {nullptr};
+            // A new context and its connection attempt; failures and drops arm `retry` (RetrySoon). Loop thread or before it starts.
+            void Connect();
+            void RetrySoon();
+            void OnReady();
+            static void OnCardInfo(pa_context*, const pa_card_info* info, int eol, void* userdata);
             bool Usable();
             // Waits with the loop lock held until the operation finishes, false if it could not start
             bool Wait(pa_operation* op);

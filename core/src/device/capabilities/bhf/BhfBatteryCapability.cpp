@@ -22,6 +22,8 @@ namespace MagicPodsCore
 
     void BhfBatteryCapability::UpdateSingleBattery(uint8_t level)
     {
+        if (level > 100)
+            return; // DBusDeviceInfo::NO_BATTERY: the headphones never said, so no battery is shown
         std::vector<DeviceBatteryData> deviceBattery;
         DeviceBatteryData single(
             DeviceBatteryType::Single,

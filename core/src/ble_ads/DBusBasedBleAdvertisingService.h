@@ -31,7 +31,8 @@ private:
     std::map<std::string, DeviceSubscriptions> _deviceSubscriptions{};
     std::mutex _deviceSubscriptionsMutex{};
 
-    void OnDeviceAdded(std::shared_ptr<DBusDeviceInfo> deviceInfo);
+    // Follows the device's advertisements; `emitNow` also passes on the data it has already
+    void OnDeviceAdded(std::shared_ptr<DBusDeviceInfo> deviceInfo, bool emitNow = true);
     void OnAdapterPowerChanged(size_t listenerId, bool isPowered);
     void EmitAd(const std::shared_ptr<DBusDeviceInfo>& deviceInfo,
                 const std::map<uint16_t, std::vector<uint8_t>>& manufacturerData);

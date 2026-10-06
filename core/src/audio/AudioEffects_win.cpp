@@ -460,5 +460,5 @@ namespace MagicPodsCore
     void AudioEffects::StopLocked() {}
     void AudioEffects::SetYaw(double) {}
     // ponytail: the loudness compensation follows the volume at the last Apply; a per-endpoint IAudioEndpointVolumeCallback would make it live
-    void AudioEffects::SetVolume(double) {}
+    void AudioEffects::SetVolume(const std::string &, double) {}
 }

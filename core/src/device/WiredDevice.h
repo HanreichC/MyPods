@@ -18,10 +18,8 @@ namespace MagicPodsCore
         bool usb;
         void OnResponseDataReceived(const std::vector<unsigned char> &) override {}
 
-    protected:
-        std::string SinkPart() const override { return sink; }
-
     public:
+        std::string SinkPart() const override { return sink; }
         WiredDevice(std::shared_ptr<DBusDeviceInfo> info, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, const WiredOutput &output);
         // `plugged`: already playing into them, as when the daemon starts next to them
         static std::unique_ptr<WiredDevice> Create(const WiredOutput &output, bool plugged, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);

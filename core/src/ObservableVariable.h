@@ -6,12 +6,16 @@
 
 #include "Event.h"
 
+#include <mutex>
+
 namespace MagicPodsCore {
 
+    // Set on a D-Bus (or WinRT) thread, read from any other: values are handed out as copies
     template<typename DataType>
     class ObservableVariable {
     private:
         Event<DataType> _event{};
+        mutable std::mutex _lock{};
         DataType _value{};
 
     public:
@@ -22,13 +26,17 @@ namespace MagicPodsCore {
             return _event;
         }
 
-        const DataType& GetValue() const {
+        DataType GetValue() const {
+            std::lock_guard lock{_lock};
             return _value;
         }
 
         void SetValue(const DataType& newValue) {
-            _value = std::move(newValue);
-            _event.FireEvent(_value);
+            {
+                std::lock_guard lock{_lock};
+                _value = newValue;
+            }
+            _event.FireEvent(newValue);
         }
     };
 

@@ -9,6 +9,8 @@
 #include "StringUtils.h"
 #include "Logger.h"
 #include "DevicesInfoFetcher.h"
+#include "device/AapDevice.h"
+#include "device/BhfDevice.h"
 #include "dbus/BatteryProvider.h"
 #include "device/capabilities/aap/AapControlCapability.h"
 #include "device/capabilities/aap/AapAttCapabilities.h"
@@ -227,6 +229,49 @@ TestsCore::TestsCore()
         Test("ANC unknown mode ignored", !fired);
     }
 
+    // Events: once Unsubscribe returns, a call on another thread has finished and none follows, so an owner
+    // unsubscribing in its destructor is never called afterwards (before, a firing thread's snapshot could)
+    {
+        Event<int> event;
+        std::atomic<bool> stop{false};
+        std::atomic<int> lateCalls{0};
+        std::thread firing([&]() { while (!stop) event.FireEvent(1); });
+        // one flag per owner, kept: "gone" stays visible to a call that comes too late
+        std::vector<std::atomic<bool>> gone(500);
+        for (auto &owner : gone)
+        {
+            auto id = event.Subscribe([&owner, &lateCalls](size_t, const int &) {
+                std::this_thread::sleep_for(std::chrono::microseconds(200)); // still inside when the owner goes
+                if (owner)
+                    lateCalls++;
+            });
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+            event.Unsubscribe(id);
+            owner = true; // the owner's destructor has run
+        }
+        stop = true;
+        firing.join();
+        int calls = 0;
+        event.Subscribe([&](size_t id, const int &) { calls++; event.Unsubscribe(id); });
+        event.FireEvent(1);
+        event.FireEvent(1);
+        Test("Events: no call after Unsubscribe, a listener may unsubscribe itself", lateCalls == 0 && calls == 1);
+    }
+
+    // log lines longer than the old 512 byte buffer: whole, not read past the buffer
+    {
+        std::string longLine(2000, 'x');
+        Test("Log line over 512 bytes kept whole", StringUtils::Format("%s!", longLine.c_str()) == longLine + "!");
+    }
+
+    // sinks by name: a bluez part names its sink, one monitor's output never another's
+    {
+        Test("Sink names: bluez part names its sink", PulseAudioClient::SinkOf("bluez_output.AA_BB_CC_DD_EE_FF.1", "bluez_output.AA_BB_CC_DD_EE_FF") &&
+                                                      PulseAudioClient::SinkOf("alsa_output.pci.hdmi-stereo", "alsa_output.pci.hdmi-stereo"));
+        Test("Sink names: hdmi-stereo is not hdmi-stereo-extra1", !PulseAudioClient::SinkOf("alsa_output.pci.hdmi-stereo-extra1", "alsa_output.pci.hdmi-stereo") &&
+                                                                  !PulseAudioClient::SinkOf("bluez_output.AA_BB_CC_DD_EE_FF0.1", "bluez_output.AA_BB_CC_DD_EE_FF"));
+    }
+
 #ifndef _WIN32
     // BlueZ reports the disconnect on the D-Bus thread; stopping there waited for a Start() still connecting
     try
@@ -284,6 +329,32 @@ TestsCore::TestsCore()
         Test("Wired headphones: speakers, empty jack, USB speaker", speakers && empty && usbSpeaker);
         Test("Wired headphones: USB headset by product name", headset && headset->usb && headset->name == "Sennheiser Headset");
         Test("Wired headphones: not Bluetooth, not the effect chain", bluetooth && chain);
+    }
+
+    // AirPods unpaired while the daemon runs: their capabilities unsubscribe from AapDevice's events, which must
+    // still be there (a use-after-free before; an ASan build reports it, a plain one may crash or not)
+    {
+        auto path = std::filesystem::temp_directory_path() / "mypods-selftest-unpair.toml";
+        {
+            auto info = std::make_shared<DBusDeviceInfo>("00:00:00:00:00:02", "AirPods", false);
+            std::shared_ptr<Device> pods = AapDevice::Create(info, std::make_shared<PulseAudioClient>(), std::make_shared<SettingsService>(path.string()), nullptr);
+        }
+        Test("AirPods unpaired: device released cleanly", true);
+        std::filesystem::remove(path);
+    }
+
+    // Headphones that never report a battery level show none, not a made-up 100 %
+    {
+        auto path = std::filesystem::temp_directory_path() / "mypods-selftest-battery.toml";
+        {
+            auto info = std::make_shared<DBusDeviceInfo>("00:00:00:00:00:03", "Headphones", true);
+            auto headphones = BhfDevice::Create(info, std::make_shared<PulseAudioClient>(), std::make_shared<SettingsService>(path.string()));
+            bool none = !headphones->GetAsJson()["capabilities"].contains("battery");
+            info->GetHandsFreeBatteryStatus().SetValue(40); // what BlueZ's Battery1 reports
+            auto battery = headphones->GetAsJson()["capabilities"]["battery"];
+            Test("Battery: none until the headphones report one, then theirs", none && battery["single"]["battery"] == 40);
+        }
+        std::filesystem::remove(path);
     }
 #else
     // wired headphones on Windows: endpoints as a ThinkPad with Intel's Bluetooth offload and a Cirrus jack lists them

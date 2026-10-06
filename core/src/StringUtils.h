@@ -35,17 +35,20 @@ namespace MagicPodsCore {
         // unsafety to use with user input
         template<typename ... Args>
         static std::string Format(const std::string& format, const Args&... args) {
-            const size_t bufferLength = 512;
-            char buffer[bufferLength];
             #ifdef __GNUC__
             #pragma GCC diagnostic push // for suppressing warnings related with passing string literals
             #pragma GCC diagnostic ignored "-Wformat-security"
             #endif
-            int stringLength = std::snprintf(buffer, bufferLength, format.c_str(), args...);
+            // measured first: log lines carry WebSocket messages, paths and hex dumps of any length
+            int stringLength = std::snprintf(nullptr, 0, format.c_str(), args...);
+            if (stringLength <= 0)
+                return {};
+            std::string result(stringLength, '\0');
+            std::snprintf(result.data(), result.size() + 1, format.c_str(), args...);
             #ifdef __GNUC__
             #pragma GCC diagnostic pop
             #endif
-            return std::string(buffer, stringLength);
+            return result;
         }
 
         // 327 -> 0147
