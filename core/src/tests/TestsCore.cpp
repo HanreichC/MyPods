@@ -11,6 +11,7 @@
 #include "DevicesInfoFetcher.h"
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
+#include "device/capabilities/cmn/CmnAudioEffectsCapabilities.h"
 #include "dbus/BatteryProvider.h"
 #include "device/capabilities/aap/AapControlCapability.h"
 #include "device/capabilities/aap/AapAttCapabilities.h"
@@ -256,6 +257,34 @@ TestsCore::TestsCore()
         event.FireEvent(1);
         event.FireEvent(1);
         Test("Events: no call after Unsubscribe, a listener may unsubscribe itself", lateCalls == 0 && calls == 1);
+    }
+
+    // Signal path: why what plays isn't bit-perfect, from the streams and the output
+    {
+        using Path = CmnSignalPathCapability;
+        SinkDetails dac{96000, "s32le", 2, "", 7}, aac{48000, "s16le", 2, "aac", 8};
+        StreamInfo flac96{7, 96000, "s24le", 2, 1.0, false}, browser{7, 48000, "float32le", 2, 1.0, false};
+        auto reasons = [](const nlohmann::json &path) { return path["reasons"].get<std::vector<std::string>>(); };
+        auto perfect = Path::Describe({flac96}, dac, false);
+        Test("Signal path: 96/24 into a 96/32 DAC is bit-perfect", perfect["bitPerfect"] == true && reasons(perfect).empty() &&
+                                                                    perfect["source"]["rate"] == 96000 && perfect["source"]["bits"] == 24);
+        auto quiet = flac96;
+        quiet.volume = 0.5;
+        Test("Signal path: resampled, reduced, volume, chain, Bluetooth",
+             reasons(Path::Describe({flac96}, aac, false)) == std::vector<std::string>{"encoded", "resampled", "reduced"} &&
+             reasons(Path::Describe({quiet}, dac, true)) == std::vector<std::string>{"processed", "volume"} &&
+             reasons(Path::Describe({browser}, SinkDetails{48000, "s24le", 2, "", 7}, false)).empty());
+        auto both = Path::Describe({browser, flac96}, dac, false);
+        Test("Signal path: the richest stream is the source, nothing playing is not bit-perfect",
+             both["source"]["rate"] == 96000 && reasons(both) == std::vector<std::string>{"resampled"} &&
+             Path::Describe({}, dac, false)["bitPerfect"] == false && Path::Describe({}, dac, false)["playing"] == false);
+        Test("Signal path: bits of a format", Path::Bits("s16le") == 16 && Path::Bits("s24-32le") == 24 && Path::Bits("float32le") == 32 &&
+                                              Path::Bits("u8") == 8 && Path::Bits("alaw") == 0);
+        auto rule = AudioEffects::BluetoothQualityConfig({"bluez_card.AA_BB_CC_DD_EE_FF", "bluez_card.11_22_33_44_55_66"});
+        Test("Bluetooth quality: one WirePlumber rule for the chosen headphones, none without",
+             rule.find("{ device.name = \"bluez_card.AA_BB_CC_DD_EE_FF\" }") != std::string::npos &&
+             rule.find("bluez_card.11_22_33_44_55_66") != std::string::npos && rule.find("bluez5.a2dp.aac.bitratemode = 5") != std::string::npos &&
+             rule.find("bluez5.a2dp.ldac.quality = \"hq\"") != std::string::npos && AudioEffects::BluetoothQualityConfig({}).empty());
     }
 
     // log lines longer than the old 512 byte buffer: whole, not read past the buffer

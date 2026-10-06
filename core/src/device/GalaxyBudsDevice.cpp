@@ -10,6 +10,7 @@
 #include "capabilities/sgb/GalaxyBudsEarDetectionCapability.h"
 #include "capabilities/sgb/GalaxyBudsBatteryCapability.h"
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
+#include "capabilities/cmn/CmnAudioEffectsCapabilities.h"
 
 namespace MagicPodsCore
 {
@@ -36,6 +37,9 @@ namespace MagicPodsCore
         auto device = std::make_unique<GalaxyBudsDevice>(deviceInfo, audioClient, settingsService, model);  
 
         device->capabilities.push_back(std::make_unique<CmnBluetoothCodecCapability>(*device));
+#ifndef _WIN32 // Windows shows no streams
+        device->capabilities.push_back(std::make_unique<CmnSignalPathCapability>(*device));
+#endif
         device->capabilities.push_back(std::make_unique<GalaxyBudsBatteryCapability>(*device));
         device->capabilities.push_back(std::make_unique<GalaxyBudsAncCapability>(*device));
         device->capabilities.push_back(std::make_unique<GalaxyBudsEarDetectionCapability>(*device));

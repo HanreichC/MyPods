@@ -23,6 +23,8 @@ namespace MagicPodsCore
             options.push_back({profile.first, profile.second});
         }        
         bodyJson["options"] = options;
+        // AAC at its best VBR, LDAC at 990 kbit/s (WirePlumber drop-in, DevicesInfoFetcher::ApplySoundServerOptions)
+        bodyJson["highQuality"] = device.LoadSettingInt("btHighQuality").value_or(0) != 0;
         if (details)
         {
             bodyJson["details"] = {{"rate", details->rate}, {"format", details->format}, {"channels", details->channels}, {"codec", details->codec}};
@@ -130,6 +132,14 @@ void CmnBluetoothCodecCapability::SetFromJson(const nlohmann::json &json)
             return;
 
         const auto& capability = json.at(name);
+
+        if (capability.contains("highQuality") && capability["highQuality"].is_boolean())
+        {
+            // the settings event writes the WirePlumber rule and restarts it; the headphones come back with it
+            device.SaveSettingInt("btHighQuality", capability["highQuality"].get<bool>());
+            _onChanged.FireEvent(*this);
+            return;
+        }
 
         if (capability.contains("selected") && capability["selected"].is_string())
         {

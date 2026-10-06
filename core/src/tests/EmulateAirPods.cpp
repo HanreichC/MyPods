@@ -324,6 +324,63 @@ int EmulateAirPods()
         Check("Sound server restarted: client reconnects", back && WaitFor([&] { return pac.FindSink("mypods_reconnect").has_value(); }, 5000));
         Check("Sound server restarted: listeners told", told.load());
     }
+
+    // Hi-Res: the drop-ins, then a 96 kHz source through the effect chain and straight into the headphones
+    {
+        AudioEffects::ApplySoundServerOptions(true, {"bluez_card.AA_BB_CC_DD_EE_FF"});
+        auto config = std::string(std::getenv("XDG_CONFIG_HOME") ? std::getenv("XDG_CONFIG_HOME") : std::string(std::getenv("HOME")) + "/.config");
+        auto read = [&](const std::string &file) { std::ifstream in(config + "/" + file); return std::string((std::istreambuf_iterator<char>(in)), {}); };
+        Check("Hi-Res: rates, resampler and Bluetooth drop-ins written",
+              read("pipewire/pipewire.conf.d/60-mypods-hires.conf").find("96000 176400 192000") != std::string::npos &&
+              read("pipewire/pipewire-pulse.conf.d/60-mypods-hires.conf").find("resample.quality = 10") != std::string::npos &&
+              read("wireplumber/wireplumber.conf.d/60-mypods-bluetooth.conf").find("bluez_card.AA_BB_CC_DD_EE_FF") != std::string::npos);
+
+        // no systemd in the container: the restart the daemon asks systemctl for, by hand
+        Sh("pkill -x wireplumber; pkill -x pipewire-pulse; pkill -x pipewire; sleep 1; (pipewire >/dev/null 2>&1 &); sleep 1;"
+           "(wireplumber >/dev/null 2>&1 &); (pipewire-pulse >/dev/null 2>&1 &); sleep 2");
+        WaitFor([] { return !Sh("pactl info 2>/dev/null").empty(); });
+        std::string hiResModule = Sh("pactl load-module module-null-sink sink_name=" + BLUEZ_SINK);
+
+        auto settings = std::make_shared<SettingsService>(settingsPath.string());
+        settings->SaveSetting("AA_BB_CC_DD_EE_FF", "equalizer", std::string("Bass Booster"));
+        auto info = std::make_shared<DBusDeviceInfo>(MAC, "HW-BT (emuliert)", true);
+        std::shared_ptr<Device> headphones = BhfDevice::Create(info, std::make_shared<PulseAudioClient>(), settings);
+        auto play96k = [] { Sh("(head -c 30000000 /dev/zero | pw-cat -p --raw --rate 96000 --format s24 --channels 2 - >/dev/null 2>&1 &)"); };
+        nlohmann::json path;
+        // an empty object until the first look is done
+        auto signal = [&] { path = headphones->GetAsJson()["capabilities"]["signalPath"]; return path.is_object() ? path : nlohmann::json::object(); };
+        auto rate = [](const nlohmann::json &spec) { return spec.is_object() ? spec.value("rate", 0) : 0; }; // null while nothing plays
+
+        Check("Hi-Res: chain in front of the headphones", WaitFor([] { return Sh("pactl get-default-sink") == AudioEffects::SINK_NAME; }));
+        play96k();
+        Check("Hi-Res: 96 kHz through the chain, the headphones at 96 kHz too",
+              WaitFor([] { return Sh("pactl list short sinks | grep " + BLUEZ_SINK).find("96000Hz") != std::string::npos; }),
+              Sh("pactl list short sinks"));
+        Check("Signal path: processed, not resampled", WaitFor([&] {
+                  auto s = signal();
+                  return s.value("playing", false) && rate(s["source"]) == 96000 && rate(s["output"]) == 96000 &&
+                         s["reasons"] == nlohmann::json({"processed"});
+              }), path.dump());
+        Sh("pkill -x pw-cat");
+
+        headphones->SetCapabilities({{"equalizer", {{"selected", "Off"}}}});
+        AudioEffects::Instance().Stop();
+        headphones->RouteAudio();
+        WaitFor([] { return Sh("pactl get-default-sink") == BLUEZ_SINK; });
+        play96k();
+        Check("Signal path: straight into the headphones, bit-perfect", WaitFor([&] {
+                  auto s = signal();
+                  return s.value("bitPerfect", false) && rate(s["source"]) == 96000;
+              }), path.dump());
+        Sh("pkill -x pw-cat");
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
+        headphones.reset();
+
+        AudioEffects::ApplySoundServerOptions(false, {});
+        Check("Hi-Res off: the drop-ins are gone", read("pipewire/pipewire.conf.d/60-mypods-hires.conf").empty() &&
+                                                    read("wireplumber/wireplumber.conf.d/60-mypods-bluetooth.conf").empty());
+        Sh("pactl unload-module " + hiResModule);
+    }
     std::filesystem::remove(settingsPath);
     Logger::Info("Emulator: %d failure(s)", failures);
     return failures == 0 ? 0 : 1;

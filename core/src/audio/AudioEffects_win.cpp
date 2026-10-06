@@ -457,6 +457,8 @@ namespace MagicPodsCore
     // endpoint, and the next Apply for it rewrites it. Head tracking needs spatial audio, which Windows hasn't got.
     void AudioEffects::Stop() {}
     void AudioEffects::StopFor(const std::string &) {}
+    bool AudioEffects::PlaysInto(const std::string &) { return false; }
+    void AudioEffects::ApplySoundServerOptions(bool, const std::vector<std::string> &) {} // the Windows audio engine picks its own format
     void AudioEffects::StopLocked() {}
     void AudioEffects::SetYaw(double) {}
     // ponytail: the loudness compensation follows the volume at the last Apply; a per-endpoint IAudioEndpointVolumeCallback would make it live

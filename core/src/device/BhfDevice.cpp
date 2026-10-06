@@ -17,6 +17,7 @@ namespace MagicPodsCore
 
     BhfDevice::~BhfDevice()
     {
+        Shutdown(); // the capabilities' workers stop while this class is still whole
         GetAudioClient()->GatAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
     }
 
@@ -29,6 +30,7 @@ namespace MagicPodsCore
 #ifndef _WIN32 // effects run in PipeWire (AudioEffects.h)
         device->capabilities.push_back(std::make_unique<CmnSpatialAudioCapability>(*device));
         device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));
+        device->capabilities.push_back(std::make_unique<CmnSignalPathCapability>(*device));
 
         // No audio handover like AirPods have, so the saved effects follow the headphones' A2DP sink from here:
         // put in front of it when it (re)appears, taken away when the headphones go.

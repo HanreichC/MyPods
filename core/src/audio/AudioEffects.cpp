@@ -679,6 +679,42 @@ namespace MagicPodsCore
         return out.str();
     }
 
+    static constexpr const char *WRITTEN_BY = "# Written by MyPods, which removes it again when the option is switched off\n";
+
+    std::string AudioEffects::HiResRatesConfig()
+    {
+        // the graph switches to the source's rate when nothing else plays at another one; an output that can't take
+        // it still gets the source resampled
+        return std::string(WRITTEN_BY) + "context.properties = {\n"
+                                         "    default.clock.allowed-rates = [ 44100 48000 88200 96000 176400 192000 ]\n"
+                                         "}\n";
+    }
+
+    std::string AudioEffects::HiResStreamConfig()
+    {
+        // ponytail: 10 is PipeWire's best (and costliest) resampler; 14 would be the maximum at even more CPU
+        return std::string(WRITTEN_BY) + "stream.properties = {\n"
+                                         "    resample.quality = 10\n"
+                                         "}\n";
+    }
+
+    std::string AudioEffects::BluetoothQualityConfig(const std::vector<std::string> &cards)
+    {
+        if (cards.empty())
+            return {};
+        std::string matches;
+        for (const auto &card : cards)
+            if (card.find('"') == std::string::npos && card.find('\n') == std::string::npos)
+                matches += "      { device.name = \"" + card + "\" }\n";
+        // AAC at its highest variable bitrate (only headphones that offer VBR take it), LDAC always at 990 kbit/s
+        return std::string(WRITTEN_BY) + "monitor.bluez.rules = [\n"
+                                         "  {\n"
+                                         "    matches = [\n" + matches + "    ]\n"
+                                         "    actions = { update-props = { bluez5.a2dp.aac.bitratemode = 5 bluez5.a2dp.ldac.quality = \"hq\" } }\n"
+                                         "  }\n"
+                                         "]\n";
+    }
+
 #ifndef _WIN32
     static pid_t Spawn(const std::vector<const char *> &argv, int *stdinFd)
     {
@@ -830,6 +866,65 @@ namespace MagicPodsCore
         std::lock_guard lock{_lock};
         if (!_sink.empty() && PulseAudioClient::SinkOf(_sink, sinkPart))
             StopLocked();
+    }
+
+    bool AudioEffects::PlaysInto(const std::string &sinkPart)
+    {
+        std::lock_guard lock{_lock};
+        return _chain > 0 && !_sink.empty() && PulseAudioClient::SinkOf(_sink, sinkPart);
+    }
+
+    static std::string ConfigPath(const std::string &relative)
+    {
+        const char *config = std::getenv("XDG_CONFIG_HOME");
+        const char *home = std::getenv("HOME");
+        if (config && *config)
+            return std::string(config) + "/" + relative;
+        return home ? std::string(home) + "/.config/" + relative : "";
+    }
+
+    // Writes `content` to the drop-in (empty: removes it); true if the file changed
+    static bool WriteDropIn(const std::string &relative, const std::string &content)
+    {
+        auto path = ConfigPath(relative);
+        if (path.empty())
+            return false;
+        std::ifstream in(path);
+        std::string current((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        if (current == content)
+            return false;
+        std::error_code ec;
+        if (content.empty())
+            return std::filesystem::remove(path, ec);
+        std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
+        std::ofstream(path) << content;
+        return true;
+    }
+
+    static void RestartServices(const std::vector<const char *> &services)
+    {
+        // try-restart: only what runs; without systemd (or in a container) nothing happens and the files wait
+        std::vector<const char *> argv{"systemctl", "--user", "try-restart"};
+        argv.insert(argv.end(), services.begin(), services.end());
+        argv.push_back(nullptr);
+        Logger::Info("Sound server options changed, restarting %s", services.front());
+        if (pid_t pid = Spawn(argv, nullptr); pid > 0)
+            waitpid(pid, nullptr, 0);
+    }
+
+    void AudioEffects::ApplySoundServerOptions(bool hiRes, const std::vector<std::string> &cards)
+    {
+        static std::mutex applying; // from the settings event and the startup check
+        std::lock_guard lock{applying};
+        bool rates = WriteDropIn("pipewire/pipewire.conf.d/60-mypods-hires.conf", hiRes ? HiResRatesConfig() : "");
+        bool streams = WriteDropIn("pipewire/pipewire-pulse.conf.d/60-mypods-hires.conf", hiRes ? HiResStreamConfig() : "");
+        streams = WriteDropIn("pipewire/client.conf.d/60-mypods-hires.conf", hiRes ? HiResStreamConfig() : "") || streams;
+        bool bluetooth = WriteDropIn("wireplumber/wireplumber.conf.d/60-mypods-bluetooth.conf", BluetoothQualityConfig(cards));
+        // the sound stops for a moment; the daemon reconnects and puts the effect chain back
+        if (rates || streams)
+            RestartServices({"pipewire.service", "pipewire-pulse.service", "wireplumber.service"});
+        else if (bluetooth)
+            RestartServices({"wireplumber.service"}); // the Bluetooth devices come back with the new codec settings
     }
 
     void AudioEffects::StopLocked()

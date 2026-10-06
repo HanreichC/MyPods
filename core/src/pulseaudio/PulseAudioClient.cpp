@@ -102,12 +102,15 @@ namespace MagicPodsCore
         pa_context_set_subscribe_callback(ctx, [](pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK)
                 static_cast<PulseAudioClient*>(userdata)->_onSinkChangedEvent.FireEvent(idx);
+            if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK_INPUT)
+                static_cast<PulseAudioClient*>(userdata)->_onStreamChangedEvent.FireEvent(idx);
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) != PA_SUBSCRIPTION_EVENT_CARD)
                 return;
             if (auto op = pa_context_get_card_info_by_index(c, idx, OnCardInfo, userdata))
                 pa_operation_unref(op);
         }, this);
-        if (auto op = pa_context_subscribe(ctx, static_cast<pa_subscription_mask_t>(PA_SUBSCRIPTION_MASK_CARD | PA_SUBSCRIPTION_MASK_SINK), nullptr, nullptr))
+        auto mask = PA_SUBSCRIPTION_MASK_CARD | PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT;
+        if (auto op = pa_context_subscribe(ctx, static_cast<pa_subscription_mask_t>(mask), nullptr, nullptr))
             pa_operation_unref(op);
         ready = true;
         if (!connectedBefore.exchange(true))
@@ -115,6 +118,7 @@ namespace MagicPodsCore
         // back after a restart: what changed meanwhile was never reported. The sink event refreshes wired
         // headphones, the cards route Bluetooth headphones and their effect chain again.
         Logger::Info("PulseAudioClient: sound server back");
+        _onReconnectedEvent.FireEvent(true);
         _onSinkChangedEvent.FireEvent(PA_INVALID_INDEX);
         if (auto op = pa_context_get_card_info_list(ctx, OnCardInfo, this))
             pa_operation_unref(op);
@@ -248,9 +252,26 @@ namespace MagicPodsCore
                     return;
                 const char *codec = pa_proplist_gets(info->proplist, "api.bluez5.codec");
                 *static_cast<std::optional<SinkDetails>*>(userdata) = SinkDetails{info->sample_spec.rate,
-                    pa_sample_format_to_string(info->sample_spec.format), info->sample_spec.channels, codec ? codec : ""};
+                    pa_sample_format_to_string(info->sample_spec.format), info->sample_spec.channels, codec ? codec : "", info->index};
             }, &details));
         return details;
+    }
+
+    std::vector<StreamInfo> PulseAudioClient::GetStreams()
+    {
+        if (!Usable()) return {};
+
+        std::vector<StreamInfo> streams;
+        Lock lock{ml};
+        Wait(pa_context_get_sink_input_info_list(ctx,
+            [](pa_context*, const pa_sink_input_info* info, int eol, void* userdata) {
+                if (eol || !info)
+                    return;
+                static_cast<std::vector<StreamInfo>*>(userdata)->push_back({info->sink, info->sample_spec.rate,
+                    pa_sample_format_to_string(info->sample_spec.format), info->sample_spec.channels,
+                    static_cast<double>(pa_cvolume_avg(&info->volume)) / PA_VOLUME_NORM, info->corked != 0});
+            }, &streams));
+        return streams;
     }
 
     std::optional<WiredOutput> PulseAudioClient::WiredHeadphones(const pa_sink_info &info)

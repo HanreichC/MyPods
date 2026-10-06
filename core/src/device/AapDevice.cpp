@@ -264,8 +264,9 @@ namespace MagicPodsCore
         // Handing the audio over is AAP smart routing; without it there is nothing to negotiate with
         if (Client::SupportsL2CAP())
             device->capabilities.push_back(std::make_unique<AapAudioSwitchCapability>(*device));
-#ifndef _WIN32 // spatial audio runs in PipeWire only (AudioEffects.h)
+#ifndef _WIN32 // spatial audio runs in PipeWire only (AudioEffects.h); Windows shows no streams
         device->capabilities.push_back(std::make_unique<AapSpatialAudioCapability>(*device));
+        device->capabilities.push_back(std::make_unique<CmnSignalPathCapability>(*device));
 #endif
         device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));
 

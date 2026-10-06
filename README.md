@@ -440,22 +440,27 @@ request them again on the next connection. These are only set by hand:
 ### Bluetooth sound quality
 
 AirPods and Beats speak SBC and AAC only, so AAC is the best there is (LDAC and aptX aren't
-supported by the headphones). PipeWire's AAC encoder runs at a constant bitrate by default; its
-highest variable-bitrate quality is one WirePlumber setting away. It takes effect only for
-headphones that offer VBR, the rest stay on constant bitrate. MyPods leaves the system's PipeWire
-configuration alone, so this one is up to you:
+supported by the headphones), and Bluetooth audio is always lossy. PipeWire's AAC encoder runs at a
+constant bitrate by default and LDAC adapts its bitrate to the link. **Highest Bluetooth quality**
+on the device page switches these headphones to AAC's best variable bitrate (only headphones that
+offer VBR take it) and LDAC's 990 kbit/s.
 
-```
-# ~/.config/wireplumber/wireplumber.conf.d/51-aac-vbr.conf
-monitor.bluez.rules = [
-  {
-    matches = [ { device.name = "~bluez_card.*" } ]
-    actions = { update-props = { bluez5.a2dp.aac.bitratemode = 5 } }
-  }
-]
-```
+**Hi-Res playback** (Settings) lets the output follow the source's sample rate up to 192 kHz
+instead of converting everything to 48 kHz, and gives what is still converted PipeWire's best
+resampler. It helps wired headphones and USB DACs; Bluetooth sets its own rate. The effect chain
+runs at the source's rate too. **Signal path** on the device page shows whether what plays arrives
+bit-perfect, and if not, why (effects, the Bluetooth codec, resampling, fewer bits, an app's volume).
 
-Restart with `systemctl --user restart wireplumber` and reconnect the headphones.
+MyPods otherwise leaves the system's PipeWire configuration alone. These two options are drop-in
+files it writes when they are switched on and removes when they are switched off; it then restarts
+the services they belong to, so the sound stops for a moment:
+
+| Option | Files under `~/.config` |
+|--------|-------------------------|
+| Hi-Res playback | `pipewire/pipewire.conf.d/60-mypods-hires.conf`, `pipewire/pipewire-pulse.conf.d/60-mypods-hires.conf`, `pipewire/client.conf.d/60-mypods-hires.conf` |
+| Highest Bluetooth quality | `wireplumber/wireplumber.conf.d/60-mypods-bluetooth.conf` (WirePlumber 0.5) |
+
+Uninstalling MyPods leaves them in place; delete them by hand if you switched the options on.
 
 ---
 

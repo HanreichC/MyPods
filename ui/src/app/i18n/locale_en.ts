@@ -865,5 +865,75 @@
         <source></source>
         <translation>Detected as headphones automatically</translation>
     </message>
+    <message id="settings.hi_res">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Hi-Res playback:</translation>
+    </message>
+    <message id="settings.hi_res.description">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>The output follows the source's sample rate (up to 192 kHz) instead of converting everything to 48 kHz, and what is still converted gets the best resampler. Helps with wired headphones and USB DACs; Bluetooth sets its own rate. The sound system restarts for a moment.</translation>
+    </message>
+    <message id="battery.signal_path">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Signal path:</translation>
+    </message>
+    <message id="battery.signal_path.bit_perfect">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Bit-perfect · %1</translation>
+    </message>
+    <message id="battery.signal_path.idle">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Output %1</translation>
+    </message>
+    <message id="battery.signal_path.float">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>float</translation>
+    </message>
+    <message id="battery.signal_path.unchanged">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Unchanged from the app to the output</translation>
+    </message>
+    <message id="battery.signal_path.processed">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Effects (equalizer, spatial audio) process the signal</translation>
+    </message>
+    <message id="battery.signal_path.encoded">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Bluetooth only carries it lossy (%1)</translation>
+    </message>
+    <message id="battery.signal_path.resampled">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Sample rate converted; with Hi-Res playback in Settings the output follows the source</translation>
+    </message>
+    <message id="battery.signal_path.reduced">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Fewer bits than the source</translation>
+    </message>
+    <message id="battery.signal_path.volume">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>An app plays below 100 %, which changes the signal</translation>
+    </message>
+    <message id="battery.bluetooth_high_quality">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Highest Bluetooth quality:</translation>
+    </message>
+    <message id="battery.bluetooth_high_quality.tooltip">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>AAC at its best variable bitrate and LDAC at 990 kbit/s, for headphones that can. The sound system's Bluetooth connection restarts for a moment.</translation>
+    </message>
 </context>
 </TS>

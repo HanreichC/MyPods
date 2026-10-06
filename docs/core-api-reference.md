@@ -528,6 +528,37 @@ Supported Bluetooth profiles/codecs
 | `[0]`         | Profile identifier                 |
 | `[1]`         | Human-readable profile description |
 
+MyPods adds `details` (what the headphones' sink plays: `rate`, `format`, `channels`, `codec`, for aptX also
+`kbps`) and `highQuality` (bool): AAC at its best variable bitrate and LDAC at 990 kbit/s, as a WirePlumber
+rule the daemon writes for these headphones. Set it with `{"bluetoothCodec": {"highQuality": true}}`;
+WirePlumber restarts and the headphones' audio comes back with it.
+
+##### Signal path (MyPods, read-only, Linux)
+
+What happens to the sound on its way to the headphones, for every kind of headphones. Updated as streams start,
+stop or change.
+
+```json
+{
+  "signalPath": {
+    "playing": true,
+    "bitPerfect": false,
+    "reasons": ["encoded", "resampled"],
+    "source": {"rate": 96000, "bits": 24, "float": false, "channels": 2},
+    "output": {"rate": 48000, "bits": 16, "float": false, "channels": 2, "codec": "aac"},
+    "readonly": true
+  }
+}
+```
+
+| Field        |                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------- |
+| `playing`    | an application plays into the headphones (or the effect chain in front of them)     |
+| `bitPerfect` | playing, and nothing in `reasons`                                                   |
+| `reasons`    | `processed` (effect chain), `encoded` (Bluetooth codec, always lossy), `resampled`, `reduced` (fewer bits than the source), `volume` (an application below 100 %) |
+| `source`     | the richest stream playing, `null` when none                                        |
+| `output`     | the headphones' sink; `codec` is empty when not Bluetooth                            |
+
 
 ### Parrot Zik 2.0 capabilities (MyPods)
 

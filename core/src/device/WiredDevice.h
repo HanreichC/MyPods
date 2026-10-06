@@ -21,6 +21,7 @@ namespace MagicPodsCore
     public:
         std::string SinkPart() const override { return sink; }
         WiredDevice(std::shared_ptr<DBusDeviceInfo> info, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, const WiredOutput &output);
+        ~WiredDevice() override { Shutdown(); } // the capabilities' workers use SinkPart() and HeadphonesSink()
         // `plugged`: already playing into them, as when the daemon starts next to them
         static std::unique_ptr<WiredDevice> Create(const WiredOutput &output, bool plugged, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService);
         // The address the device has for an output; also names its settings

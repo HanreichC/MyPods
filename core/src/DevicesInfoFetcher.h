@@ -42,6 +42,10 @@ namespace MagicPodsCore {
         // Wired headphones come and go with the sound server's sinks, ports and card profiles (Windows: endpoints)
         size_t _sinkEventId = 0;
         size_t _cardEventId = 0;
+        size_t _reconnectedEventId = 0;
+        // Hi-Res (magicpods.hiRes) and the highest Bluetooth quality per headphones (btHighQuality) as PipeWire and
+        // WirePlumber drop-ins (AudioEffects::ApplySoundServerOptions), on a worker
+        void ApplySoundServerOptions();
         std::atomic<bool> _wiredPending{false};
         std::mutex _wiredLock{};
         // Blocking PulseAudio queries, never on the PulseAudio thread. `startup`: they were plugged in before the daemon

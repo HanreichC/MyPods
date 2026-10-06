@@ -88,6 +88,9 @@ namespace MagicPodsCore {
                 UpdateBleState();
             if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "headphoneOutputs")
                 RefreshWiredSoon();
+            if ((notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "hiRes") ||
+                notification.GetSettingName() == "btHighQuality")
+                ApplySoundServerOptions();
         });
 
         ClearAndFillDevicesMap();
@@ -95,6 +98,13 @@ namespace MagicPodsCore {
         // PulseAudio thread (Windows: Core Audio's): the queries run on a worker
         _sinkEventId = _audioClient->GetSinkChangedEvent().Subscribe([this](size_t, const uint32_t &) { RefreshWiredSoon(); });
         _cardEventId = _audioClient->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &) { RefreshWiredSoon(); });
+        // PipeWire restarted (an update, the Hi-Res option): the effect chain went with it, half alive; a new one
+        // goes in front of the headphones playing now (Bluetooth ones also route themselves on their card)
+        _reconnectedEventId = _audioClient->GetReconnectedEvent().Subscribe([this](size_t, bool) {
+            AudioEffects::Instance().Stop();
+            if (auto active = GetActiveDevice())
+                active->RouteAudioAsync();
+        });
 
         UpdateBleState();
 
@@ -143,12 +153,27 @@ namespace MagicPodsCore {
         _dbusService.IsBluetoothAdapterPowered().GetEvent().Subscribe([this](size_t listenerId, bool newPoweredValue) {
             _onDefaultAdapterChangeEnabled.FireEvent(newPoweredValue);
         });
+
+        ApplySoundServerOptions(); // the files follow the settings, also after a config.toml edited by hand
+    }
+
+    void DevicesInfoFetcher::ApplySoundServerOptions()
+    {
+        bool hiRes = _settingsService->GetValue<bool>("magicpods", "hiRes").value_or(false);
+        std::vector<std::string> cards;
+        for (const auto& device : GetDevices())
+            if (!device->WiredConnection() && device->LoadSettingInt("btHighQuality").value_or(0) != 0)
+                cards.push_back(_audioClient->GetNameFromMac(device->GetAddress()));
+        // writes files and restarts services: off the settings' thread (the WebSocket loop)
+        // ponytail: a detached worker per change, serialized inside; it may outlive the fetcher like RefreshWiredSoon's
+        std::thread([hiRes, cards]() { AudioEffects::ApplySoundServerOptions(hiRes, cards); }).detach();
     }
 
 DevicesInfoFetcher::~DevicesInfoFetcher()
 {
     _audioClient->GetSinkChangedEvent().Unsubscribe(_sinkEventId);
     _audioClient->GatAudioCardPropertyChangedEvent().Unsubscribe(_cardEventId);
+    _audioClient->GetReconnectedEvent().Unsubscribe(_reconnectedEventId);
     if (_bleScanActive)
         _bleService->StopScan();
     _settingsService->GetOnSettingUpdateEvent().Unsubscribe(_onSettingsChangeId);

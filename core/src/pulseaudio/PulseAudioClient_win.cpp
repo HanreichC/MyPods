@@ -243,4 +243,5 @@ namespace MagicPodsCore
     std::string PulseAudioClient::GetNameFromMac(const std::string &mac) { return mac; }
     bool PulseAudioClient::SetSinkVolume(const std::string &, double) { return false; }
     std::optional<SinkDetails> PulseAudioClient::GetSinkDetails(const std::string &) { return std::nullopt; }
+    std::vector<StreamInfo> PulseAudioClient::GetStreams() { return {}; }
 }

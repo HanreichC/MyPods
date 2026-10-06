@@ -4,8 +4,11 @@
 #include "CmnAudioEffectsCapabilities.h"
 #include "Logger.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <thread>
+#include <utility>
 
 namespace MagicPodsCore
 {
@@ -58,6 +61,151 @@ namespace MagicPodsCore
         UpdateTracking();
         _onChanged.FireEvent(*this);
         device.RouteAudioAsync();
+    }
+
+    int CmnSignalPathCapability::Bits(const std::string &format)
+    {
+        // "s16le", "s24le", "s24-32le" (24 bits in 32), "s32le", "u8", "float32le"
+        if (format.starts_with("float"))
+            return std::atoi(format.c_str() + 5);
+        if (format.starts_with("s") || format.starts_with("u"))
+            return std::atoi(format.c_str() + 1);
+        return 0;
+    }
+
+    nlohmann::json CmnSignalPathCapability::Describe(const std::vector<StreamInfo> &streams, const SinkDetails &output, bool processed)
+    {
+        auto spec = [](uint32_t rate, const std::string &format, int channels)
+        {
+            return nlohmann::json{{"rate", rate}, {"bits", Bits(format)}, {"float", format.starts_with("float")}, {"channels", channels}};
+        };
+        bool resampled = false, reduced = false, volume = false;
+        int outputBits = Bits(output.format);
+        const StreamInfo *source = nullptr;
+        for (const auto &stream : streams)
+        {
+            // the richest stream is the one listened for (a notification sound plays next to the music)
+            if (!source || std::pair(stream.rate, Bits(stream.format)) > std::pair(source->rate, Bits(source->format)))
+                source = &stream;
+            resampled = resampled || stream.rate != output.rate;
+            // a float source carries 24 bits of resolution; into 24 or 32 bit integers it loses nothing
+            int sourceBits = stream.format.starts_with("float") ? 24 : Bits(stream.format);
+            reduced = reduced || sourceBits > outputBits;
+            // ponytail: an application's volume is scaled in software; the output's own volume is left out, ALSA
+            // usually sets it in the hardware mixer
+            volume = volume || std::abs(stream.volume - 1) > 0.001;
+        }
+        std::vector<std::string> reasons;
+        for (auto [reason, applies] : {std::pair{"processed", processed}, {"encoded", !output.codec.empty()}, {"resampled", resampled},
+                                       {"reduced", reduced}, {"volume", volume}})
+            if (applies)
+                reasons.push_back(reason);
+
+        auto out = spec(output.rate, output.format, output.channels);
+        out["codec"] = output.codec;
+        return {{"playing", !streams.empty()}, {"bitPerfect", !streams.empty() && reasons.empty()}, {"reasons", reasons},
+                {"source", source ? spec(source->rate, source->format, source->channels) : nlohmann::json()}, {"output", out}};
+    }
+
+    CmnSignalPathCapability::CmnSignalPathCapability(Device &device) : Capability("signalPath", true), device(device)
+    {
+        auto pac = device.GetAudioClient();
+        // PulseAudio thread: the look runs on a worker
+        streamEventId = pac->GetStreamChangedEvent().Subscribe([this](size_t, const uint32_t &) { UpdateSoon(); });
+        sinkEventId = pac->GetSinkChangedEvent().Subscribe([this](size_t, const uint32_t &) { UpdateSoon(); });
+        onConnectedId = device.GetConnectedPropertyChangedEvent().Subscribe([this](size_t, bool connected)
+        {
+            if (!connected)
+                return Reset();
+            UpdateSoon();
+        });
+        worker = std::thread([this]() { Work(); });
+        UpdateSoon();
+    }
+
+    CmnSignalPathCapability::~CmnSignalPathCapability()
+    {
+        device.GetAudioClient()->GetStreamChangedEvent().Unsubscribe(streamEventId);
+        device.GetAudioClient()->GetSinkChangedEvent().Unsubscribe(sinkEventId);
+        device.GetConnectedPropertyChangedEvent().Unsubscribe(onConnectedId);
+        {
+            std::lock_guard guard{lock};
+            exiting = true;
+        }
+        wake.notify_one();
+        worker.join();
+    }
+
+    nlohmann::json CmnSignalPathCapability::CreateJsonBody()
+    {
+        std::lock_guard guard{lock};
+        return body;
+    }
+
+    void CmnSignalPathCapability::Reset()
+    {
+        {
+            std::lock_guard guard{lock};
+            body = nullptr;
+        }
+        Capability::Reset();
+    }
+
+    void CmnSignalPathCapability::UpdateSoon()
+    {
+        if (!device.GetConnected())
+            return;
+        {
+            std::lock_guard guard{lock};
+            requested = true;
+        }
+        wake.notify_one();
+    }
+
+    void CmnSignalPathCapability::Work()
+    {
+        std::unique_lock guard{lock};
+        while (true)
+        {
+            wake.wait(guard, [this]() { return requested || exiting; });
+            // the rest of the burst arrives meanwhile
+            if (wake.wait_for(guard, std::chrono::milliseconds(300), [this]() { return exiting; }))
+                return;
+            requested = false;
+            guard.unlock();
+            Update();
+            guard.lock();
+        }
+    }
+
+    void CmnSignalPathCapability::Update()
+    {
+        auto pac = device.GetAudioClient();
+        auto sink = device.HeadphonesSink();
+        auto output = sink ? pac->GetSinkDetails(*sink) : std::nullopt;
+        nlohmann::json next;
+        if (output)
+        {
+            // with the chain in front, the applications play into its sink
+            bool processed = AudioEffects::Instance().PlaysInto(device.SinkPart());
+            uint32_t target = output->index;
+            if (auto chain = processed ? pac->GetSinkDetails(AudioEffects::SINK_NAME) : std::nullopt)
+                target = chain->index;
+            std::vector<StreamInfo> playing;
+            for (const auto &stream : pac->GetStreams())
+                if (stream.sink == target && !stream.paused)
+                    playing.push_back(stream);
+            next = Describe(playing, *output, processed);
+        }
+        {
+            std::lock_guard guard{lock};
+            // disconnected meanwhile (Reset ran), or nothing new
+            if (!device.GetConnected() || (next == body && isAvailable == !next.is_null()))
+                return;
+            body = next;
+        }
+        isAvailable = !next.is_null();
+        _onChanged.FireEvent(*this);
     }
 
     CmnEqualizerCapability::CmnEqualizerCapability(Device &device) : Capability("equalizer", false), device(device)

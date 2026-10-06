@@ -77,6 +77,19 @@ namespace MagicPodsCore
         // Stop() if the chain plays into a sink `sinkPart` names (PulseAudioClient::SinkOf): there is one chain for all
         // headphones, and one pair going away must not take it from another
         void StopFor(const std::string &sinkPart);
+        // The chain runs and plays into the sink `sinkPart` names: what plays there is processed, not bit-perfect
+        bool PlaysInto(const std::string &sinkPart);
+
+        // Opt-in configuration of the user's own sound server, as drop-in files MyPods writes and removes; the user's
+        // other files stay untouched. Hi-Res: the graph follows the source's rate (no resampling where the output
+        // takes it) and what is still resampled gets PipeWire's best resampler. `cards` ("bluez_card.AA_BB_…"):
+        // headphones with the highest Bluetooth quality (AAC at its best VBR, LDAC at 990 kbit/s).
+        // Restarts the services whose files changed; blocking. Linux only.
+        static void ApplySoundServerOptions(bool hiRes, const std::vector<std::string> &cards);
+        static std::string HiResRatesConfig();
+        static std::string HiResStreamConfig();
+        // WirePlumber rule for `cards`, empty when there are none
+        static std::string BluetoothQualityConfig(const std::vector<std::string> &cards);
 
         // Head tracking: rotates the virtual speakers against the head so the sound stays anchored to the screen.
         void SetYaw(double degrees);

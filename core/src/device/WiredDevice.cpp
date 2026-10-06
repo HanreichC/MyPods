@@ -15,8 +15,9 @@ namespace MagicPodsCore
     {
         auto info = std::make_shared<DBusDeviceInfo>(AddressFor(output.sink), output.name, plugged);
         auto device = std::make_unique<WiredDevice>(info, audioClient, settingsService, output);
-#ifndef _WIN32 // spatial audio runs in PipeWire only (AudioEffects.h)
+#ifndef _WIN32 // spatial audio runs in PipeWire only (AudioEffects.h); Windows shows no streams
         device->capabilities.push_back(std::make_unique<CmnSpatialAudioCapability>(*device));
+        device->capabilities.push_back(std::make_unique<CmnSignalPathCapability>(*device));
 #endif
         device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));
 

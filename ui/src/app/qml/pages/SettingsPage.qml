@@ -12,6 +12,7 @@ Components.ScrollPage {
     id: rootPage
 
     property bool settingAnimation: true
+    property bool settingHiRes: false
     // {sink, name, headphones, automatic} per output that isn't Bluetooth
     property var outputs: []
 
@@ -35,6 +36,7 @@ Components.ScrollPage {
             cppBackend.getSetting("magicpods", "animation");
             cppBackend.getSetting("magicpods", "theme_tray");
             cppBackend.getSetting("magicpods", "appearance");
+            cppBackend.getSetting("magicpods", "hiRes");
             cppBackend.getOutputs();
         }
     }
@@ -48,6 +50,8 @@ Components.ScrollPage {
             if (!json || Object.keys(json).length === 0) {} else if (json.settings) {
                 if (json.settings?.magicpods?.animation != null)
                     rootPage.settingAnimation = json.settings.magicpods.animation;
+                if (json.settings?.magicpods?.hiRes != null)
+                    rootPage.settingHiRes = json.settings.magicpods.hiRes;
                 if (json.settings?.magicpods?.theme_tray != null && cppTrayIcon)
                     cppTrayIcon.themeMode = rootPage.themeTrayStringToIndex(json.settings.magicpods.theme_tray);
                 if (json.settings?.magicpods?.appearance != null)
@@ -131,6 +135,25 @@ Components.ScrollPage {
     }
 
     Components.Card {
+
+        // PipeWire follows the source's rate (a drop-in the daemon writes); Windows' audio engine picks its own format
+        MP.FormRow {
+            visible: Qt.platform.os !== "windows"
+            iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
+            iconColor: MP.Theme.purple
+            label: qsTrId("settings.hi_res")
+            tooltip: qsTrId("settings.hi_res.description")
+
+            Components.Toggle {
+                checked: rootPage.settingHiRes
+                enabled: cppBackend?.connected ?? false
+                Accessible.name: qsTrId("settings.hi_res")
+                onToggled: {
+                    rootPage.settingHiRes = checked;
+                    cppBackend.setSetting("magicpods", "hiRes", checked);
+                }
+            }
+        }
 
         MP.FormRow {
             iconSource: MP.Theme.asset("icons/icon-theme.svg")

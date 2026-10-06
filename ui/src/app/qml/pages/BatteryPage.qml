@@ -27,6 +27,7 @@ Components.ScrollPage {
     readonly property var volumeSwipeLengthData: capabilities?.volumeSwipeLength ?? null
     readonly property var endCallData: capabilities?.endCall ?? null
     readonly property var bluetoothCodec: capabilities?.bluetoothCodec ?? null
+    readonly property var signalPathData: capabilities?.signalPath ?? null
     readonly property var spatialAudioData: capabilities?.spatialAudio ?? null
     readonly property var equalizerData: capabilities?.equalizer ?? null
     readonly property var autoSwitchData: capabilities?.autoSwitch ?? null
@@ -94,7 +95,7 @@ Components.ScrollPage {
           options: [qsTrId("battery.auto_power_off.never"), "5 min", "10 min", "15 min", "30 min", "60 min"] }
     ]
 
-    readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, spatialAudioData, equalizerData, autoSwitchData, earDetectionData, listeningModesData, allowOffData, micModeData, hearingAidData, loudSoundReductionData, crownReversedData, sleepDetectionData, autoConnectData].some(function (v) {
+    readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, signalPathData, spatialAudioData, equalizerData, autoSwitchData, earDetectionData, listeningModesData, allowOffData, micModeData, hearingAidData, loudSoundReductionData, crownReversedData, sleepDetectionData, autoConnectData].some(function (v) {
         return v !== null;
     }) || zikSwitches.concat(zikLists).some(z => capabilities?.[z.key] !== undefined)
 
@@ -137,6 +138,46 @@ Components.ScrollPage {
         if (details.kbps)
             parts.push(qsTrId("battery.codec_details.kbps").arg(details.kbps));
         return parts.join(" · ");
+    }
+
+    // signalPath "source"/"output" -> "96 kHz · 24 bit", the output with its Bluetooth codec: "48 kHz · AAC"
+    function signalSpec(spec, withCodec) {
+        if (!spec)
+            return "";
+        var parts = [qsTrId("battery.codec_details.khz").arg(Number(spec.rate / 1000).toLocaleString(Qt.locale(), "f", spec.rate % 1000 ? 1 : 0))];
+        if (withCodec && spec.codec)
+            parts.push(codecDetails({ codec: spec.codec }));
+        else if (spec.float)
+            parts.push(qsTrId("battery.signal_path.float"));
+        else if (spec.bits)
+            parts.push(qsTrId("battery.codec_details.bits").arg(spec.bits));
+        return parts.join(" · ");
+    }
+
+    function signalPathText(path) {
+        if (!path)
+            return "";
+        if (!path.playing)
+            return qsTrId("battery.signal_path.idle").arg(signalSpec(path.output, true));
+        if (path.bitPerfect)
+            return qsTrId("battery.signal_path.bit_perfect").arg(signalSpec(path.source, false));
+        return signalSpec(path.source, false) + " → " + signalSpec(path.output, true);
+    }
+
+    // why it isn't bit-perfect, one line per reason
+    function signalPathReasons(path) {
+        if (!path)
+            return "";
+        if (path.bitPerfect)
+            return qsTrId("battery.signal_path.unchanged");
+        const texts = {
+            processed: qsTrId("battery.signal_path.processed"),
+            encoded: qsTrId("battery.signal_path.encoded").arg(codecDetails({ codec: path.output?.codec ?? "" })),
+            resampled: qsTrId("battery.signal_path.resampled"),
+            reduced: qsTrId("battery.signal_path.reduced"),
+            volume: qsTrId("battery.signal_path.volume")
+        };
+        return (path.reasons ?? []).map(r => texts[r] ?? r).join("\n");
     }
 
     function requestInfo() {
@@ -331,6 +372,37 @@ Components.ScrollPage {
                 text: rootPage.codecDetails(rootPage.bluetoothCodec?.details)
                 color: MP.Theme.secondaryText
                 elide: Text.ElideRight
+            }
+        }
+
+        // AAC at its best VBR, LDAC at 990 kbit/s: a WirePlumber rule the daemon writes for these headphones
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.bluetoothCodec?.highQuality !== undefined
+            label: qsTrId("battery.bluetooth_high_quality")
+            tooltip: qsTrId("battery.bluetooth_high_quality.tooltip")
+
+            Components.Toggle {
+                checked: rootPage.bluetoothCodec?.highQuality ?? false
+                enabled: !(rootPage.bluetoothCodec?.readonly ?? true)
+                Accessible.name: qsTrId("battery.bluetooth_high_quality")
+                onToggled: cppBackend.setCapability("bluetoothCodec", rootPage.currentAddress(), checked, "highQuality")
+            }
+        }
+
+        // Bit-perfect, or what changes the sound on its way (the tooltip says why)
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.signalPathData !== null
+            label: qsTrId("battery.signal_path")
+            tooltip: rootPage.signalPathReasons(rootPage.signalPathData)
+
+            MP.Label {
+                width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
+                text: rootPage.signalPathText(rootPage.signalPathData)
+                color: MP.Theme.secondaryText
+                elide: Text.ElideRight
+                Accessible.name: text + ". " + rootPage.signalPathReasons(rootPage.signalPathData)
             }
         }
 

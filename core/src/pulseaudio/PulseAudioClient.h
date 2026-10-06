@@ -7,6 +7,7 @@
 #ifndef _WIN32
 #include <pulse/pulseaudio.h>
 #endif
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -37,8 +38,21 @@ namespace MagicPodsCore{
         std::string format;
         uint8_t channels = 0;
         std::string codec;
+        uint32_t index = UINT32_MAX; // the sink's index, which streams name as theirs
 
         bool operator==(const SinkDetails&) const = default;
+    };
+
+    // An application's stream (sink input): what it plays, into which sink, how loud
+    struct StreamInfo {
+        uint32_t sink = UINT32_MAX;
+        uint32_t rate = 0;
+        std::string format; // "s24le", "float32le"
+        uint8_t channels = 0;
+        double volume = 1;  // 1 = 100 %, averaged over the channels
+        bool paused = false; // corked: connected but not playing
+
+        bool operator==(const StreamInfo&) const = default;
     };
 
     // Headphones on a jack or USB that this computer plays into right now
@@ -90,6 +104,8 @@ namespace MagicPodsCore{
             std::vector<WiredOutput> GetWiredHeadphones();
             // Every output that isn't Bluetooth (speakers, monitors, jacks, USB), for the user to say which are headphones; blocking
             std::vector<WiredOutput> GetOutputs();
+            // The applications' streams; blocking. Windows: none (shared mode hides them)
+            std::vector<StreamInfo> GetStreams();
 #ifndef _WIN32
             // The sink plays into wired headphones: a headphone jack whose port is active and not empty, or a USB headset
             static std::optional<WiredOutput> WiredHeadphones(const pa_sink_info& info);
@@ -105,9 +121,19 @@ namespace MagicPodsCore{
             Event<uint32_t>& GetSinkChangedEvent() {
                 return _onSinkChangedEvent;
             }
+            // A stream started, stopped, paused or changed its volume or format (index); PulseAudio thread. Windows: never
+            Event<uint32_t>& GetStreamChangedEvent() {
+                return _onStreamChangedEvent;
+            }
+            // The sound server is back after a restart; what ran in it (the effect chain) is gone. PulseAudio thread
+            Event<bool>& GetReconnectedEvent() {
+                return _onReconnectedEvent;
+            }
         private:
             Event<CardInfo> _onAudioCardPropertyChangedEvent{};
             Event<uint32_t> _onSinkChangedEvent{};
+            Event<uint32_t> _onStreamChangedEvent{};
+            Event<bool> _onReconnectedEvent{};
 #ifndef _WIN32
             std::atomic<bool> ready{false};
             std::atomic<bool> attempted{false};       // the first connection attempt failed

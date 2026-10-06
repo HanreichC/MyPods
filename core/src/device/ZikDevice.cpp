@@ -1,6 +1,7 @@
 #include "ZikDevice.h"
 #include "capabilities/zik/ZikCapabilities.h"
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
+#include "capabilities/cmn/CmnAudioEffectsCapabilities.h"
 
 #include <algorithm>
 
@@ -131,6 +132,9 @@ namespace MagicPodsCore
         };
 
         device->capabilities.push_back(std::make_unique<CmnBluetoothCodecCapability>(*device));
+#ifndef _WIN32 // Windows shows no streams
+        device->capabilities.push_back(std::make_unique<CmnSignalPathCapability>(*device));
+#endif
         device->capabilities.push_back(std::make_unique<ZikBatteryCapability>(*device));
         device->capabilities.push_back(std::make_unique<ZikAncCapability>(*device));
         device->capabilities.push_back(std::make_unique<ZikEqualizerCapability>(*device));
