@@ -13,6 +13,7 @@ layout(std140, binding = 0) uniform buf {
     float radius;
     float margin;   // the blurred backdrop reaches this far beyond the glass on every side
     float dark;
+    float tint;     // how much the tint covers: MyCAD's clear glass 0.17 (dark 0.24), more where text is read on it
 };
 layout(binding = 1) uniform sampler2D source;
 
@@ -44,10 +45,10 @@ void main()
     float bend = 1.0 - smoothstep(0.0, 20.0, t);
     vec2 off = n * bend * bend * 18.0;
     vec3 col = vec3(blurred(p - off * 1.08).r, blurred(p - off).g, blurred(p - off * 0.92).b);
-    // vibrancy, then the clear tint
+    // vibrancy, then the tint
     float l = dot(col, vec3(0.299, 0.587, 0.114));
     col = mix(vec3(l), col, 1.55);
-    col = isDark ? mix(col, vec3(0.12, 0.12, 0.14), 0.24) : mix(col, vec3(1.0), 0.17);
+    col = isDark ? mix(col, vec3(0.12, 0.12, 0.14), tint) : mix(col, vec3(1.0), tint);
     // light rim, brightest top left and bottom right
     float rim = 1.0 - smoothstep(0.0, 1.6, t);
     float spec = rim * (0.3 + 0.7 * abs(dot(n, normalize(vec2(-0.45, -1.0)))));

@@ -17,6 +17,8 @@ Item {
     property real radius: MP.Theme.radius
     property Item blurSource: null
     property bool translucent: false
+    // how much the tint covers the blurred backdrop: MyCAD's clear glass; popups with text to read take more
+    property real tint: MP.Theme.dark ? 0.24 : 0.17
     readonly property bool lens: blurSource !== null && GraphicsInfo.api !== GraphicsInfo.Software
     // the backdrop is captured this much larger, so the blur has something to draw from at the glass's edge
     readonly property int margin: 24
@@ -79,6 +81,7 @@ Item {
         property real radius: root.radius
         property real margin: root.margin
         property real dark: MP.Theme.dark ? 1 : 0
+        property real tint: root.tint
         fragmentShader: Qt.resolvedUrl("../../shaders/glass.frag.qsb")
     }
 

@@ -1311,5 +1311,10 @@ MyPods legt dafür Dateien in ~/.config/pipewire an (…/60-mypods-hires.conf) u
         <source></source>
         <translation>Verbindung</translation>
     </message>
+    <message id="battery.device_info.name.info_readonly">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Der Name, mit dem sich die Kopfhörer per Bluetooth melden. Diese Kopfhörer lassen ihn sich von hier aus nicht ändern.</translation>
+    </message>
 </context>
 </TS>

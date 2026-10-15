@@ -53,7 +53,7 @@ ToolButton {
         }
 
         // blurs the window's content behind it (the overlay it lies in is not part of that content)
-        background: MP.Glass { blurSource: ApplicationWindow.window?.contentItem ?? null }
+        background: MP.Glass { blurSource: ApplicationWindow.window?.contentItem ?? null; tint: MP.Theme.dark ? 0.72 : 0.78 }
 
         contentItem: ColumnLayout {
             spacing: 16

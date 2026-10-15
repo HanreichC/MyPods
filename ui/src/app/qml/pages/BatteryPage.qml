@@ -1407,7 +1407,8 @@ Components.ScrollPage {
             label: qsTrId("battery.device_info.name")
             iconSource: MP.Theme.asset("icons/icon-tag.svg")
             iconColor: MP.Theme.groupDevice
-            info: qsTrId("battery.device_info.name.info")
+            // where the headphones take a new name (AirPods) the text says how it is stored, elsewhere only what it is
+            info: (rootPage.deviceInfoData?.readonly ?? true) ? qsTrId("battery.device_info.name.info_readonly") : qsTrId("battery.device_info.name.info")
 
             MP.TextField {
                 implicitWidth: rootPage.mWidth
