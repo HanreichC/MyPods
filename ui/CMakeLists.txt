@@ -86,6 +86,7 @@ qt_add_qml_module(magicpods
         src/app/qml/components/Slider.qml
         src/app/qml/components/TextField.qml
         src/app/qml/components/CheckBox.qml
+        src/app/qml/components/ScrollBar.qml
         src/app/qml/pages/AboutPage.qml
         src/app/qml/pages/BatteryPage.qml
         src/app/qml/pages/HeadphonesPage.qml

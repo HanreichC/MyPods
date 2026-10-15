@@ -65,7 +65,7 @@ ToolButton {
                 contentHeight: column.implicitHeight
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                ScrollBar.vertical: MP.ScrollBar {}
 
                 Column {
                     id: column

@@ -20,6 +20,14 @@ QQC2.Page {
         anchors.fill: parent
         contentWidth: availableWidth
 
+        // between the bars at the top and the window's rounded corner at the bottom
+        QQC2.ScrollBar.vertical: MP.ScrollBar {
+            parent: scroll
+            x: scroll.width - width - MP.Units.smallSpacing
+            y: 12 + MP.Theme.barHeight + MP.Units.mediumSpacing
+            height: scroll.height - y - MP.Theme.radius
+        }
+
         Item {
             width: scroll.availableWidth
             // the bars float over the top; the column starts below them
