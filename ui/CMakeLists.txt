@@ -14,6 +14,8 @@ if(NOT WIN32)
     find_package(Qt6 6.9 REQUIRED COMPONENTS DBus)
     # Optional: anchors the tray popup under the panel on Wayland (KDE ships it; the AppImage builds without)
     find_package(LayerShellQt QUIET)
+    # Optional: KWin blurs the desktop behind the tray popup and the lid popup (Liquid Glass on KDE)
+    find_package(KF6WindowSystem QUIET)
 endif()
 
 qt_standard_project_setup(REQUIRES 6.8
@@ -133,6 +135,11 @@ endif()
 if(LayerShellQt_FOUND)
     target_link_libraries(magicpods PRIVATE LayerShellQt::Interface)
     target_compile_definitions(magicpods PRIVATE HAVE_LAYERSHELLQT)
+endif()
+
+if(KF6WindowSystem_FOUND)
+    target_link_libraries(magicpods PRIVATE KF6::WindowSystem)
+    target_compile_definitions(magicpods PRIVATE HAVE_KWINDOWSYSTEM)
 endif()
 
 target_compile_definitions(magicpods PRIVATE

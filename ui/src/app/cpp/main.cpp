@@ -41,6 +41,7 @@
 #include "TrayIcon.h"
 #include "TrayIconManager.h"
 #include "Backend.h"
+#include "BlurBehind.h"
 
 static void ensureEnvDefaults() {
     if (qEnvironmentVariableIsEmpty("QML2_IMPORT_PATH")) {
@@ -261,6 +262,9 @@ int main(int argc, char *argv[]) {
     if (!trayPopup) {
         qWarning() << "Failed to create TrayPopup.qml" << trayPopupComponent.errors();
     }
+    // Liquid Glass over the desktop where the compositor blurs it (KDE)
+    enableBlurBehind(trayPopup);
+    enableBlurBehind(qobject_cast<QWindow *>(popupAnimation.get()));
     bool trayPopupAnchored = false;
 #ifdef HAVE_LAYERSHELLQT
     // Wayland doesn't let windows place themselves; a layer surface anchored to the top right corner

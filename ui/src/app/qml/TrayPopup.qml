@@ -32,6 +32,10 @@ QQC2.ApplicationWindow {
     // room for the shadow around the panel; the panel itself sits just under the menu bar
     readonly property int shadowMargin: 28
     readonly property int topInset: 6
+    // KDE blurs the desktop behind the panel (main.cpp, BlurBehind.h): where, and whether it does
+    readonly property rect glassRect: Qt.rect(panel.x, panel.y, panel.width, panel.height)
+    readonly property real glassRadius: 22
+    property bool desktopBlur: false
 
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
     color: "transparent"
@@ -139,6 +143,8 @@ QQC2.ApplicationWindow {
 
         MP.Glass {
             anchors.fill: parent
+            radius: popup.glassRadius
+            translucent: popup.desktopBlur
         }
 
         ColumnLayout {

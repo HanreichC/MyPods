@@ -14,7 +14,8 @@ makedepends=(cmake git qt6-tools)
 optdepends=('pipewire-pulse: the sound server the daemon talks to'
             'libmysofa: spatial audio'
             'swh-plugins: lookahead limiter, spatial audio 7 dB louder'
-            'layer-shell-qt: tray popup placed under the panel on Wayland')
+            'layer-shell-qt: tray popup placed under the panel on Wayland'
+            'kwindowsystem: tray popup and lid popup as glass over the blurred desktop on KDE')
 provides=(mypods)
 conflicts=(mypods)
 source=("MyPods::git+$url.git")

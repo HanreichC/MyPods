@@ -52,7 +52,8 @@ ToolButton {
             NumberAnimation { property: "scale"; to: 0.96; duration: 120; easing.type: Easing.InCubic }
         }
 
-        background: MP.Glass {}
+        // blurs the window's content behind it (the overlay it lies in is not part of that content)
+        background: MP.Glass { blurSource: ApplicationWindow.window?.contentItem ?? null }
 
         contentItem: ColumnLayout {
             spacing: 16

@@ -44,6 +44,9 @@ QtObject {
     // Floating windows and alerts (tray popup, OSD, info): MyCAD's glass alert, light at the top
     readonly property color popup: dark ? Qt.rgba(52/255, 52/255, 58/255, 0.98) : Qt.rgba(1, 1, 1, 0.99)
     readonly property color popupBottom: dark ? Qt.rgba(38/255, 38/255, 43/255, 0.98) : Qt.rgba(244/255, 245/255, 248/255, 0.99)
+    // ... and with something blurred behind them: translucent, so the blur shows
+    readonly property color popupGlass: dark ? Qt.rgba(52/255, 52/255, 58/255, 0.72) : Qt.rgba(1, 1, 1, 0.7)
+    readonly property color popupGlassBottom: dark ? Qt.rgba(38/255, 38/255, 43/255, 0.72) : Qt.rgba(244/255, 245/255, 248/255, 0.7)
     readonly property color popupBorder: dark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.09)
     readonly property color shadow: Qt.rgba(0, 0, 0, dark ? 0.45 : 0.13)
     readonly property color closeHover: "#E5484D"

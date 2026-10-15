@@ -26,6 +26,11 @@ QQC2.ApplicationWindow {
     // Closed by hand or timed out while the lid stays open: like a Mac, not again for that pair until the lid was
     // closed (battery and charging updates keep coming meanwhile)
     property string dismissed: ""
+    // KDE blurs the desktop behind the panel (main.cpp, BlurBehind.h): where, and whether it does
+    readonly property rect glassRect: Qt.rect(frame.x + frame.shadowMargin, frame.y + frame.shadowMargin,
+                                              frame.width - frame.shadowMargin * 2, frame.height - frame.shadowMargin * 2)
+    readonly property real glassRadius: 28
+    property bool desktopBlur: false
 
     function dismiss() {
         dismissed = animationData?.address ?? "";
@@ -223,7 +228,8 @@ QQC2.ApplicationWindow {
             MP.Glass {
                 anchors.fill: parent
                 anchors.margins: frame.shadowMargin
-                radius: 28
+                radius: osdDialog.glassRadius
+                translucent: osdDialog.desktopBlur
             }
         }
 

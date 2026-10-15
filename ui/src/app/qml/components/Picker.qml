@@ -78,7 +78,7 @@ QQC2.ComboBox {
     }
 
     popup.padding: 5
-    popup.background: MP.Glass { radius: 14 }
+    popup.background: MP.Glass { radius: 14; blurSource: QQC2.ApplicationWindow.window?.contentItem ?? null }
     popup.enter: Transition {
         NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120; easing.type: Easing.OutCubic }
         NumberAnimation { property: "scale"; from: 0.94; to: 1; duration: 200; easing.type: Easing.OutBack }
