@@ -1271,5 +1271,25 @@ MyPods adds files under ~/.config/pipewire for it (…/60-mypods-hires.conf) and
         <source></source>
         <translation>Noise control</translation>
     </message>
+    <message id="info.done">
+        <location filename="../qml/components/InfoButton.qml" line="0"/>
+        <source></source>
+        <translation>Done</translation>
+    </message>
+    <message id="window.move">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Move window</translation>
+    </message>
+    <message id="window.minimize">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Minimize</translation>
+    </message>
+    <message id="window.close">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Close</translation>
+    </message>
 </context>
 </TS>

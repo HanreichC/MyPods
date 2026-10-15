@@ -42,7 +42,7 @@ MP.Card {
 
         Repeater {
             model: root.actions
-            delegate: QQC2.Button {
+            delegate: MP.Button {
                 text:      modelData.text
                 icon.name: modelData.icon ? (modelData.icon.name ?? "") : ""
                 onClicked: modelData.trigger()

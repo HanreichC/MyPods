@@ -11,12 +11,14 @@ QtObject {
     readonly property bool dark: appearance === "auto" ? Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
                                                        : appearance === "dark"
 
-    readonly property color base: dark ? "#000000" : "#F2F2F7"                                  // systemGroupedBackground
+    // Backdrop like MyCAD's viewport: a calm vertical gradient the glass floats on
+    readonly property color base: dark ? "#2A2A2E" : "#F4F5F7"
+    readonly property color baseBottom: dark ? "#1C1C1F" : "#D5D9E0"
 
-    // Apple HIG system colors (light / dark)
-    readonly property color text: dark ? "#FFFFFF" : "#000000"                                  // label
-    readonly property color secondaryText: dark ? Qt.rgba(235/255, 235/255, 245/255, 0.6) : Qt.rgba(60/255, 60/255, 67/255, 0.6)
-    readonly property color accent: dark ? "#0091FF" : "#0088FF"                                // systemBlue
+    // Text and system colors as in MyCAD (Apple HIG, light / dark)
+    readonly property color text: dark ? "#F5F5F7" : "#1D1D1F"
+    readonly property color secondaryText: dark ? "#98989D" : "#6E6E73"
+    readonly property color accent: dark ? "#0A84FF" : "#007AFF"                                // systemBlue
     readonly property color green: dark ? "#30D158" : "#34C759"
     readonly property color orange: dark ? "#FF9230" : "#FF8D28"
     readonly property color red: dark ? "#FF4245" : "#FF383C"
@@ -27,18 +29,24 @@ QtObject {
     readonly property color tertiaryFill: dark ? Qt.rgba(118/255, 118/255, 128/255, 0.24) : Qt.rgba(118/255, 118/255, 128/255, 0.12)
     readonly property color separator: dark ? Qt.rgba(84/255, 84/255, 88/255, 0.65) : Qt.rgba(60/255, 60/255, 67/255, 0.29)
 
-    // Content layer: secondarySystemGroupedBackground, no glass
-    readonly property color material: dark ? "#1C1C1E" : "#FFFFFF"
-    // Menus / pop-up lists (elevated, opaque)
-    readonly property color menu: dark ? "#2C2C2E" : "#FFFFFF"
+    // Content layer: MyCAD's settings glass, the backdrop shows through
+    readonly property color material: dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.62)
+    readonly property color materialBorder: dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.95)
+    // Menus / pop-up lists (elevated, nearly opaque)
+    readonly property color menu: dark ? Qt.rgba(44/255, 44/255, 48/255, 0.98) : Qt.rgba(251/255, 251/255, 253/255, 0.98)
     // Segmented-control thumb
     readonly property color thumb: dark ? "#636366" : "#FFFFFF"
 
     // Control layer: Liquid Glass (regular)
-    readonly property color glassStrong: dark ? Qt.rgba(0.17, 0.17, 0.2, 0.72) : Qt.rgba(1, 1, 1, 0.72)
-    readonly property color glassBorder: dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.85)
+    readonly property color glassStrong: dark ? Qt.rgba(0.17, 0.17, 0.2, 0.62) : Qt.rgba(1, 1, 1, 0.55)
+    readonly property color glassBorder: dark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.95)
     readonly property color glassSheen: dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.45)
-    readonly property color popup: dark ? Qt.rgba(0.11, 0.11, 0.13, 0.97) : Qt.rgba(0.98, 0.98, 1, 0.97)
+    // Floating windows and alerts (tray popup, OSD, info): MyCAD's glass alert, light at the top
+    readonly property color popup: dark ? Qt.rgba(52/255, 52/255, 58/255, 0.98) : Qt.rgba(1, 1, 1, 0.99)
+    readonly property color popupBottom: dark ? Qt.rgba(38/255, 38/255, 43/255, 0.98) : Qt.rgba(244/255, 245/255, 248/255, 0.99)
+    readonly property color popupBorder: dark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.09)
+    readonly property color shadow: Qt.rgba(0, 0, 0, dark ? 0.45 : 0.13)
+    readonly property color closeHover: "#E5484D"
 
     readonly property int radius: 26
     readonly property int maxContentWidth: 480

@@ -39,7 +39,7 @@ QQC2.Page {
 
             ColumnLayout {
                 id: column
-                y: MP.Units.hugeSpacing
+                y: MP.Units.largeSpacing // the large title level with the window buttons
                 width: Math.min(parent.width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)
                 x: Math.round((parent.width - width) / 2)
                 spacing: MP.Units.mediumSpacing
@@ -50,6 +50,8 @@ QQC2.Page {
                     text: page.title
                     Layout.fillWidth: true
                     Layout.leftMargin: MP.Units.smallSpacing
+                    // clear of the window buttons floating at the top right
+                    Layout.rightMargin: QQC2.ApplicationWindow.window?.titleInset ?? 0
                     Layout.bottomMargin: MP.Units.mediumSpacing
                     elide: Text.ElideRight
                 }

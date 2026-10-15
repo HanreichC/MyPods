@@ -16,6 +16,8 @@ ColumnLayout {
 
     property var ancData: null
     property string address: ""
+    // On the window's backdrop: the track is glass like the cards (in the tray popup a quiet fill)
+    property bool floating: false
     property int selectedAnc: 0
     readonly property var ancModes: ({
             OFF: 1,
@@ -83,9 +85,19 @@ ColumnLayout {
         Layout.fillWidth: true
         implicitHeight: 56
         radius: height / 2
-        color: MP.Theme.tertiaryFill
-        border.width: activeFocus ? 2 : 0
-        border.color: MP.Theme.accent
+        color: root.floating ? MP.Theme.material : MP.Theme.tertiaryFill
+        border.width: activeFocus ? 2 : root.floating ? 1 : 0
+        border.color: activeFocus ? MP.Theme.accent : MP.Theme.materialBorder
+
+        RectangularShadow {
+            z: -1
+            visible: root.floating
+            anchors.fill: parent
+            radius: parent.radius
+            blur: 24
+            offset.y: 4
+            color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0 : 0.05)
+        }
 
         activeFocusOnTab: true
         Keys.onLeftPressed: step(-1)

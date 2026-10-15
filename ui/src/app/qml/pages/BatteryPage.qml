@@ -63,7 +63,7 @@ Components.ScrollPage {
         property real from: -1
         Layout.fillWidth: true
 
-        QQC2.Slider {
+        MP.Slider {
             implicitWidth: rootPage.mWidth
             from: tuningRow.from
             to: 1
@@ -296,7 +296,7 @@ Components.ScrollPage {
             label: rootPage.autoSwitchData?.source ? qsTrId("battery.moved").arg(rootPage.autoSwitchData.source) : qsTrId("battery.moved_other")
             iconSource: MP.Theme.asset("icons/icon-headphones.svg")
 
-            QQC2.Button {
+            MP.Button {
                 text: qsTrId("battery.move_here")
                 highlighted: true
                 onClicked: cppBackend.setCapability("autoSwitch", rootPage.currentAddress(), true, "takeover")
@@ -307,6 +307,7 @@ Components.ScrollPage {
     // Noise control: HIG segmented control with a draggable Liquid Glass thumb
     Components.NoiseControl {
         id: noiseControl
+        floating: true
         visible: hasInfo && available
         Layout.fillWidth: true
         Layout.topMargin: MP.Units.mediumSpacing
@@ -482,7 +483,7 @@ Components.ScrollPage {
             spacing: 0
 
             // HIG (Sliders): label the range and its unit, like the scale beside the Music app's equalizer.
-            // Each label sits at the handle's center for its value: Material's 6 px padding plus half its 13 px handle.
+            // Each label sits at the handle's center for its value: the slider's 2 px padding plus half its 21 px knob.
             Item {
                 Layout.alignment: Qt.AlignVCenter // the sliders sit centered between two equally tall labels
                 Layout.preferredHeight: 120
@@ -538,7 +539,7 @@ Components.ScrollPage {
                         font.pixelSize: 11
                         color: MP.Theme.secondaryText
                     }
-                    QQC2.Slider {
+                    MP.Slider {
                         id: bandSlider
                         Layout.alignment: Qt.AlignHCenter
                         Layout.preferredHeight: 120
@@ -571,7 +572,7 @@ Components.ScrollPage {
             label: qsTrId("battery.tilt")
             info: qsTrId("battery.tilt.info")
 
-            QQC2.Slider {
+            MP.Slider {
                 implicitWidth: rootPage.mWidth
                 from: -6
                 to: 6
@@ -664,7 +665,7 @@ Components.ScrollPage {
                 label: modelData.label
                 info: modelData.info ?? ""
 
-                QQC2.TextField {
+                MP.TextField {
                     implicitWidth: rootPage.mWidth
                     text: rootPage.equalizerData?.[modelData.field] ?? ""
                     placeholderText: qsTrId("battery.audiogram.placeholder")
@@ -806,7 +807,7 @@ Components.ScrollPage {
             RowLayout {
                 spacing: MP.Units.smallSpacing
 
-                QQC2.Slider {
+                MP.Slider {
                     id: duckVolumeSlider
                     implicitWidth: rootPage.mWidth - 48
                     from: 0
@@ -948,37 +949,41 @@ Components.ScrollPage {
             }
         }
 
-        // What a press-and-hold of the stem cycles through; at least two modes, like on an iPhone
+        // What a press-and-hold of the stem cycles through; at least two modes, like on an iPhone.
+        // The modes wrap under the label: side by side they did not fit beside it
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.listeningModesData !== null
             label: qsTrId("battery.listening_modes")
             info: qsTrId("battery.listening_modes.info")
+        }
 
-            RowLayout {
-                spacing: MP.Units.smallSpacing
+        Flow {
+            Layout.fillWidth: true
+            Layout.bottomMargin: MP.Units.smallSpacing
+            visible: rootPage.listeningModesData !== null
+            spacing: MP.Units.mediumSpacing
 
-                Repeater {
-                    model: rootPage.listeningModeBits
-                    delegate: QQC2.CheckBox {
-                        required property var modelData
-                        readonly property int mask: rootPage.listeningModesData?.selected ?? 0
-                        visible: modelData.shown
-                        text: modelData.label
-                        checked: (mask & modelData.bit) !== 0
-                        enabled: !(rootPage.listeningModesData?.readonly ?? true)
-                        onToggled: {
-                            // a hidden "Off" (not allowed) must not ride along with the other modes
-                            const allowed = (rootPage.allowOffData?.selected ?? false) ? mask : (mask & ~0x01);
-                            const next = checked ? (allowed | modelData.bit) : (allowed & ~modelData.bit);
-                            let count = 0;
-                            for (let b = next; b; b >>= 1) count += b & 1;
-                            if (count < 2) { // the core refuses fewer than two anyway
-                                checked = Qt.binding(() => (mask & modelData.bit) !== 0);
-                                return;
-                            }
-                            cppBackend.setCapability("listeningModes", rootPage.currentAddress(), next);
+            Repeater {
+                model: rootPage.listeningModeBits
+                delegate: MP.CheckBox {
+                    required property var modelData
+                    readonly property int mask: rootPage.listeningModesData?.selected ?? 0
+                    visible: modelData.shown
+                    text: modelData.label
+                    checked: (mask & modelData.bit) !== 0
+                    enabled: !(rootPage.listeningModesData?.readonly ?? true)
+                    onToggled: {
+                        // a hidden "Off" (not allowed) must not ride along with the other modes
+                        const allowed = (rootPage.allowOffData?.selected ?? false) ? mask : (mask & ~0x01);
+                        const next = checked ? (allowed | modelData.bit) : (allowed & ~modelData.bit);
+                        let count = 0;
+                        for (let b = next; b; b >>= 1) count += b & 1;
+                        if (count < 2) { // the core refuses fewer than two anyway
+                            checked = Qt.binding(() => (mask & modelData.bit) !== 0);
+                            return;
                         }
+                        cppBackend.setCapability("listeningModes", rootPage.currentAddress(), next);
                     }
                 }
             }
@@ -1055,7 +1060,7 @@ Components.ScrollPage {
             RowLayout {
                 spacing: MP.Units.smallSpacing
 
-                QQC2.Slider {
+                MP.Slider {
                     id: toneVolumeSlider
                     implicitWidth: rootPage.mWidth - 48
                     from: 15
@@ -1210,7 +1215,7 @@ Components.ScrollPage {
             label: qsTrId("battery.device_info.name")
             info: qsTrId("battery.device_info.name.info")
 
-            QQC2.TextField {
+            MP.TextField {
                 implicitWidth: rootPage.mWidth
                 text: rootPage.deviceInfoData?.name ?? ""
                 enabled: !(rootPage.deviceInfoData?.readonly ?? true)

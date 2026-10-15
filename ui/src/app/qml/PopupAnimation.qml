@@ -214,17 +214,16 @@ QQC2.ApplicationWindow {
         id: frame
         width: osdDialog.width
         height: osdDialog.height
-        implicitWidth: popupRoot.width + (MP.Units.smallSpacing * 2)
-        implicitHeight: popupRoot.height + (MP.Units.smallSpacing * 2)
+        // the transparent margin around the glass carries its shadow
+        readonly property int shadowMargin: 28
+        implicitWidth: popupRoot.width + (MP.Units.smallSpacing + shadowMargin) * 2
+        implicitHeight: popupRoot.height + (MP.Units.smallSpacing + shadowMargin) * 2
         padding: 0
-        background: Rectangle {
-            radius: 28
-            color: MP.Theme.popup
-            border.width: 1
-            border.color: MP.Theme.glassBorder
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.tint(MP.Theme.popup, MP.Theme.glassSheen) }
-                GradientStop { position: 0.4; color: MP.Theme.popup }
+        background: Item {
+            MP.Glass {
+                anchors.fill: parent
+                anchors.margins: frame.shadowMargin
+                radius: 28
             }
         }
 
@@ -364,10 +363,9 @@ QQC2.ApplicationWindow {
                     }
                 }
 
-                QQC2.Button {
+                MP.Button {
                     Layout.topMargin: 12
                     highlighted: !popupRoot.connected
-                    Material.roundedScale: Material.FullScale
                     text: popupRoot.connected ? qsTrId("tray.disconnect") : qsTrId("tray.connect")
                     Layout.fillWidth: true
                     onClicked: {

@@ -1271,5 +1271,25 @@ MyPods legt dafür Dateien in ~/.config/pipewire an (…/60-mypods-hires.conf) u
         <source></source>
         <translation>Geräuschkontrolle</translation>
     </message>
+    <message id="info.done">
+        <location filename="../qml/components/InfoButton.qml" line="0"/>
+        <source></source>
+        <translation>Fertig</translation>
+    </message>
+    <message id="window.move">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Fenster bewegen</translation>
+    </message>
+    <message id="window.minimize">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Minimieren</translation>
+    </message>
+    <message id="window.close">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Schließen</translation>
+    </message>
 </context>
 </TS>

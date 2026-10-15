@@ -3,10 +3,11 @@
 // License: GPL-3.0
 
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import magicpods as MP
 
-// Inset-grouped section on a standard material (HIG: no Liquid Glass in the content layer).
+// Inset-grouped section as MyCAD's settings glass: translucent over the backdrop, a light edge, lifted a little.
 Rectangle {
     id: root
     default property alias content: column.data
@@ -18,6 +19,17 @@ Rectangle {
     implicitHeight: column.implicitHeight + verticalPadding * 2
     radius: MP.Theme.radius
     color: MP.Theme.material
+    border.width: 1
+    border.color: MP.Theme.materialBorder
+
+    RectangularShadow {
+        z: -1
+        anchors.fill: parent
+        radius: root.radius
+        blur: 24
+        offset.y: 4
+        color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0 : 0.05)
+    }
 
     ColumnLayout {
         id: column

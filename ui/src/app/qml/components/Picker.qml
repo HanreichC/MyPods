@@ -6,12 +6,11 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Controls.impl as Impl
 import QtQuick.Controls.Material
-import QtQuick.Effects
 import QtQuick.Layouts
 import magicpods as MP
 
 // HIG pop-up button for list rows: borderless, secondary value text, subtle fill on hover.
-// Its menu is an opaque rounded panel with a checkmark on the current item.
+// Its menu is a glass panel with a checkmark on the current item.
 QQC2.ComboBox {
     id: control
     flat: true
@@ -32,6 +31,16 @@ QQC2.ComboBox {
         color: control.hovered || control.pressed ? MP.Theme.tertiaryFill : "transparent"
     }
 
+    // macOS pop-up button: the up/down chevron instead of Material's triangle
+    indicator: Impl.IconImage {
+        x: control.width - width - 8
+        y: (control.height - height) / 2
+        sourceSize: Qt.size(16, 16)
+        source: MP.Theme.asset("icons/icon-chevrons.svg")
+        color: MP.Theme.secondaryText
+    }
+    rightPadding: 30
+
     delegate: QQC2.ItemDelegate {
         required property var modelData
         required property int index
@@ -50,7 +59,7 @@ QQC2.ComboBox {
                 Layout.preferredHeight: 18
                 sourceSize: Qt.size(18, 18)
                 source: MP.Theme.asset("icons/icon-check.svg")
-                color: MP.Theme.text
+                color: MP.Theme.accent
                 opacity: control.currentIndex === index ? 1 : 0
             }
             Text {
@@ -69,20 +78,12 @@ QQC2.ComboBox {
     }
 
     popup.padding: 5
-    popup.background: Item {
-        RectangularShadow {
-            anchors.fill: parent
-            radius: 14
-            blur: 24
-            offset.y: 6
-            color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0.5 : 0.18)
-        }
-        Rectangle {
-            anchors.fill: parent
-            radius: 14
-            color: MP.Theme.menu
-            border.width: 1
-            border.color: MP.Theme.separator
-        }
+    popup.background: MP.Glass { radius: 14 }
+    popup.enter: Transition {
+        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120; easing.type: Easing.OutCubic }
+        NumberAnimation { property: "scale"; from: 0.94; to: 1; duration: 200; easing.type: Easing.OutBack }
+    }
+    popup.exit: Transition {
+        NumberAnimation { property: "opacity"; to: 0; duration: 100 }
     }
 }
