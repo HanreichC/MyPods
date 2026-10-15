@@ -51,6 +51,7 @@ qt_add_executable(magicpods
 
 qt_add_resources(magicpods "fonts"
     PREFIX "/fonts"
+    BASE src/app/fonts # :/fonts/Inter-Regular.ttf, as main.cpp loads them
     FILES
         src/app/fonts/Inter-Regular.ttf
         src/app/fonts/Inter-Medium.ttf
@@ -89,6 +90,7 @@ qt_add_qml_module(magicpods
         src/app/qml/components/TextField.qml
         src/app/qml/components/CheckBox.qml
         src/app/qml/components/ScrollBar.qml
+        src/app/qml/components/NowPlaying.qml
         src/app/qml/pages/AboutPage.qml
         src/app/qml/pages/BatteryPage.qml
         src/app/qml/pages/HeadphonesPage.qml

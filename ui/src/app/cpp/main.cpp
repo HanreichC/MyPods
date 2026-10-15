@@ -116,10 +116,11 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
 
-    QFontDatabase::addApplicationFont(":/fonts/Inter-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/Inter-Medium.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/Inter-SemiBold.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/Inter-Bold.ttf");
+    // A missing font fails silently and Qt falls back to the system's; say so instead
+    for (const char *weight : {"Regular", "Medium", "SemiBold", "Bold"}) {
+        if (QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/Inter-%1.ttf").arg(QLatin1String(weight))) < 0)
+            qWarning() << "Inter" << weight << "is not in the resources";
+    }
     app.setFont(QFont("Inter", app.font().pointSize()));
 
     QQuickStyle::setStyle("Material");

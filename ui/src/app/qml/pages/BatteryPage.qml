@@ -281,7 +281,8 @@ Components.ScrollPage {
         bodyText: qsTrId("battery.connect_headphones.description")
     }
 
-    // Hero like the Mac's Control Center: the headphones on the left, their battery and noise control beside them
+    // Hero like the Mac's Control Center: the headphones on the left; beside them how they are connected, their
+    // battery, noise control and what they play
     Components.Card {
         visible: hasInfo
         padding: MP.Units.largeSpacing
@@ -303,7 +304,40 @@ Components.ScrollPage {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: MP.Units.largeSpacing
 
+                // How they are connected and what goes through, as chips: "USB", "48 kHz · 16 bit" / "AAC · 48 kHz …"
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: MP.Units.smallSpacing + 2
+                    visible: chipRepeater.count > 0
+
+                    Repeater {
+                        id: chipRepeater
+                        model: [
+                            rootPage.infoData?.wired === "usb" ? qsTrId("battery.wired.usb") : rootPage.infoData?.wired ? qsTrId("battery.wired.jack") : "",
+                            rootPage.signalPathData ? rootPage.signalSpec(rootPage.signalPathData.output, true)
+                                                    : rootPage.codecDetails(rootPage.bluetoothCodec?.details)
+                        ].filter(t => t !== "")
+                        delegate: Rectangle {
+                            required property string modelData
+                            implicitWidth: chipText.implicitWidth + 20
+                            implicitHeight: 24
+                            radius: height / 2
+                            color: MP.Theme.tertiaryFill
+
+                            Text {
+                                id: chipText
+                                anchors.centerIn: parent
+                                text: parent.modelData
+                                color: MP.Theme.secondaryText
+                                font.pixelSize: MP.Theme.captionSize
+                                font.weight: Font.Medium
+                            }
+                        }
+                    }
+                }
+
                 RowLayout {
+                    visible: ["single", "left", "right", "case"].some(k => (rootPage.capabilities?.battery?.[k]?.status ?? 0) >= 2)
                     Layout.alignment: Qt.AlignHCenter
                     spacing: MP.Units.largeSpacing
 
@@ -333,20 +367,18 @@ Components.ScrollPage {
                     }
                 }
 
-                // Wired headphones have no battery to show; how they are connected instead, like the Mac's Sound settings
-                MP.Label {
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: !!rootPage.infoData?.wired
-                    text: rootPage.infoData?.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack")
-                    color: MP.Theme.secondaryText
-                }
-
                 // Noise control: segmented control with a draggable Liquid Glass thumb
                 Components.NoiseControl {
                     id: noiseControl
                     Layout.fillWidth: true
                     ancData: rootPage.ancData
                     address: rootPage.currentAddress() ?? ""
+                }
+
+                // What's playing and how loud: the headphones' Control Center, also for those without a battery
+                Components.NowPlaying {
+                    Layout.fillWidth: true
+                    visible: shown
                 }
             }
         }
