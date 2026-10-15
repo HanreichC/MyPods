@@ -26,7 +26,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           arch: win64_msvc2022_64
-          modules: qtwebsockets
+          modules: qtwebsockets qtshadertools
           cache: true
 
       # OpenSSL, libuv and zlib from vcpkg.json; the built packages are cached between runs

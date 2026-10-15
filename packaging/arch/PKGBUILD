@@ -10,7 +10,7 @@ arch=(x86_64 aarch64)
 url="https://github.com/HanreichC/MyPods"
 license=(GPL-3.0-only)
 depends=(bluez bluez-libs libpulse openssl systemd-libs qt6-base qt6-declarative qt6-websockets qt6-svg)
-makedepends=(cmake git qt6-tools)
+makedepends=(cmake git qt6-tools qt6-shadertools)
 optdepends=('pipewire-pulse: the sound server the daemon talks to'
             'libmysofa: spatial audio'
             'swh-plugins: lookahead limiter, spatial audio 7 dB louder'

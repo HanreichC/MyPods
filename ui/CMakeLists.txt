@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 6.9: RectangularShadow
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist ShaderTools)
 if(NOT WIN32)
     # MPRIS for the tray popup's now playing (Windows asks the system media sessions instead)
     find_package(Qt6 6.9 REQUIRED COMPONENTS DBus)
@@ -96,6 +96,13 @@ qt_add_qml_module(magicpods
         src/app/qml/pages/ColorSample.qml
     RESOURCES
         ${APP_RESOURCE_FILES}
+)
+
+# MyCAD's glass (Glass.qml); qsb compiles it for every graphics API, at build time only
+qt_add_shaders(magicpods "shaders"
+    PREFIX "/qt/qml/magicpods"
+    FILES
+        src/app/shaders/glass.frag
 )
 
 set_target_properties(magicpods PROPERTIES

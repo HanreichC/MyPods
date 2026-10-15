@@ -72,57 +72,10 @@ QQC2.ApplicationWindow {
         root.visible = false;
     }
 
-    // Floating Liquid Glass capsule (control layer): blurs what scrolls under it
-    component GlassBar: Item {
-        id: bar
-        property real radius: height / 2
-
-        RectangularShadow {
-            anchors.fill: parent
-            radius: bar.radius
-            blur: 30
-            offset.y: 8
-            color: MP.Theme.shadow
-        }
-
-        ShaderEffectSource {
-            id: backdrop
-            anchors.fill: parent
-            visible: false
-            sourceItem: scene
-            sourceRect: Qt.rect(bar.x, bar.y, bar.width, bar.height)
-        }
-
-        Rectangle {
-            id: mask
-            anchors.fill: parent
-            radius: bar.radius
-            visible: false
-            layer.enabled: true
-        }
-
-        MultiEffect {
-            anchors.fill: parent
-            source: backdrop
-            autoPaddingEnabled: false
-            blurEnabled: true
-            blur: 1.0
-            blurMax: 48
-            saturation: 0.4
-            maskEnabled: true
-            maskSource: mask
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            radius: bar.radius
-            border.width: 1
-            border.color: MP.Theme.glassBorder
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.tint(MP.Theme.glassStrong, MP.Theme.glassSheen) }
-                GradientStop { position: 0.5; color: MP.Theme.glassStrong }
-            }
-        }
+    // Floating Liquid Glass (control layer): MyCAD's clear glass over what scrolls or slides under it
+    component GlassBar: MP.Glass {
+        blurSource: scene
+        radius: height / 2
     }
 
     component WindowButton: QQC2.AbstractButton {

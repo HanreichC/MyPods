@@ -15,7 +15,7 @@ apt-get install -y --no-install-recommends \
     libgl-dev libegl-dev libxkbcommon-dev libfontconfig1-dev libdbus-1-dev \
     libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxkbcommon-x11-0 libwayland-cursor0 libwayland-egl1
 pip3 install aqtinstall cmake
-aqt install-qt linux desktop $QT_VERSION linux_gcc_64 -m qtwebsockets -O /opt/qt
+aqt install-qt linux desktop $QT_VERSION linux_gcc_64 -m qtwebsockets qtshadertools -O /opt/qt
 
 CC=gcc-12 CXX=g++-12 cmake -S . -B $BUILD -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$QT
 cmake --build $BUILD -j"$(nproc)"

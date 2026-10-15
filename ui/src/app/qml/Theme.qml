@@ -32,21 +32,18 @@ QtObject {
     // Content layer: MyCAD's settings glass, the backdrop shows through
     readonly property color material: dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.62)
     readonly property color materialBorder: dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.95)
-    // Menus / pop-up lists (elevated, nearly opaque)
-    readonly property color menu: dark ? Qt.rgba(44/255, 44/255, 48/255, 0.98) : Qt.rgba(251/255, 251/255, 253/255, 0.98)
     // Segmented-control thumb
     readonly property color thumb: dark ? "#636366" : "#FFFFFF"
 
-    // Control layer: Liquid Glass (regular)
-    readonly property color glassStrong: dark ? Qt.rgba(0.17, 0.17, 0.2, 0.62) : Qt.rgba(1, 1, 1, 0.55)
+    // Control layer: Liquid Glass (its clear glass itself is glass.frag)
     readonly property color glassBorder: dark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.95)
     readonly property color glassSheen: dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.45)
-    // Floating windows and alerts (tray popup, OSD, info): MyCAD's glass alert, light at the top
+    // Floating windows and alerts without a blur behind: MyCAD's glass alert, light at the top
     readonly property color popup: dark ? Qt.rgba(52/255, 52/255, 58/255, 0.98) : Qt.rgba(1, 1, 1, 0.99)
     readonly property color popupBottom: dark ? Qt.rgba(38/255, 38/255, 43/255, 0.98) : Qt.rgba(244/255, 245/255, 248/255, 0.99)
-    // ... and with something blurred behind them: translucent, so the blur shows
-    readonly property color popupGlass: dark ? Qt.rgba(52/255, 52/255, 58/255, 0.72) : Qt.rgba(1, 1, 1, 0.7)
-    readonly property color popupGlassBottom: dark ? Qt.rgba(38/255, 38/255, 43/255, 0.72) : Qt.rgba(244/255, 245/255, 248/255, 0.7)
+    // ... over the desktop KWin blurs: clearer, yet readable over any wallpaper
+    readonly property color popupGlass: dark ? Qt.rgba(52/255, 52/255, 58/255, 0.55) : Qt.rgba(1, 1, 1, 0.55)
+    readonly property color popupGlassBottom: dark ? Qt.rgba(38/255, 38/255, 43/255, 0.55) : Qt.rgba(244/255, 245/255, 248/255, 0.55)
     readonly property color popupBorder: dark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.09)
     readonly property color shadow: Qt.rgba(0, 0, 0, dark ? 0.45 : 0.13)
     readonly property color closeHover: "#E5484D"
