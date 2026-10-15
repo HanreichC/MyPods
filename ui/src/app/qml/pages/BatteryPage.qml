@@ -281,8 +281,8 @@ Components.ScrollPage {
         bodyText: qsTrId("battery.connect_headphones.description")
     }
 
-    // Hero like the Mac's Control Center: the headphones on the left; beside them how they are connected, their
-    // battery, noise control and what they play
+    // Hero like the Mac's Control Center: the headphones on the left; beside them, on one left edge, how they are
+    // connected, their battery and noise control
     Components.Card {
         visible: hasInfo
         padding: MP.Units.largeSpacing
@@ -293,8 +293,8 @@ Components.ScrollPage {
             spacing: MP.Units.largeSpacing
 
             Components.DeviceImage {
-                Layout.preferredWidth: 136
-                Layout.preferredHeight: 136
+                Layout.preferredWidth: 112
+                Layout.preferredHeight: 112
                 Layout.alignment: Qt.AlignVCenter
                 info: rootPage.infoData
             }
@@ -338,8 +338,8 @@ Components.ScrollPage {
 
                 RowLayout {
                     visible: ["single", "left", "right", "case"].some(k => (rootPage.capabilities?.battery?.[k]?.status ?? 0) >= 2)
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: MP.Units.largeSpacing
+                    Layout.alignment: Qt.AlignLeft
+                    spacing: MP.Units.mediumSpacing + 4
 
                     Components.BatteryRing {
                         name: qsTrId("battery.battery_single")
@@ -374,13 +374,20 @@ Components.ScrollPage {
                     ancData: rootPage.ancData
                     address: rootPage.currentAddress() ?? ""
                 }
-
-                // What's playing and how loud: the headphones' Control Center, also for those without a battery
-                Components.NowPlaying {
-                    Layout.fillWidth: true
-                    visible: shown
-                }
             }
+        }
+    }
+
+    // What is playing and how loud, across the whole width: the headphones' Control Center
+    Components.Card {
+        visible: hasInfo && nowPlaying.shown
+        padding: MP.Units.largeSpacing
+        verticalPadding: MP.Units.mediumSpacing + 6
+
+        Components.NowPlaying {
+            id: nowPlaying
+            Layout.fillWidth: true
+            controlsBeside: true
         }
     }
 

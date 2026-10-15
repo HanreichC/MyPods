@@ -15,13 +15,17 @@ ColumnLayout {
     readonly property bool hasPlayer: Object.keys(player).length > 0
     // whether there is anything to show at all
     readonly property bool shown: hasPlayer || cppMedia.volume >= 0
+    // previous, play and next beside the title instead of under it
+    property bool controlsBeside: false
     spacing: 10
 
-    // ponytail: polls MPRIS and the volume once a second, only while the window showing it is open
+    // ponytail: polls MPRIS and the volume once a second while the window showing it is open, whether this is
+    // shown or not: it hides for want of a player, and only polling finds one again
     Timer {
         interval: 1000
         repeat: true
-        running: root.visible && (root.Window.window?.visible ?? false) && !volumeSlider.pressed
+        running: (root.Window.window?.visible ?? false) && !volumeSlider.pressed
+        triggeredOnStart: true
         onTriggered: cppMedia.refresh()
     }
 
@@ -38,6 +42,40 @@ ColumnLayout {
             sourceSize: Qt.size(14, 14)
             source: parent.icon.source
             color: MP.Theme.text
+        }
+    }
+
+    // Previous, play/pause (the larger one) and next
+    component Transport: RowLayout {
+        spacing: 20
+
+        Repeater {
+            model: [
+                { icon: "icon-backward.svg", name: qsTrId("tray.popup.previous"), enabled: root.player.canGoPrevious ?? false, action: () => cppMedia.previous() },
+                { icon: root.player.playing ? "icon-pause.svg" : "icon-play.svg", name: root.player.playing ? qsTrId("tray.popup.pause") : qsTrId("tray.popup.play"), enabled: true, action: () => cppMedia.playPause() },
+                { icon: "icon-forward.svg", name: qsTrId("tray.popup.next"), enabled: root.player.canGoNext ?? false, action: () => cppMedia.next() }
+            ]
+            delegate: QQC2.AbstractButton {
+                required property var modelData
+                // HIG: play/pause is the primary control, larger than its neighbours
+                readonly property bool primary: index === 1
+                required property int index
+                implicitWidth: primary ? 40 : 34
+                implicitHeight: primary ? 40 : 34
+                enabled: modelData.enabled
+                opacity: enabled ? 1 : 0.35
+                Accessible.name: modelData.name
+                onClicked: modelData.action()
+                background: Rectangle {
+                    radius: width / 2
+                    color: parent.pressed ? MP.Theme.fill : parent.hovered ? MP.Theme.tertiaryFill : "transparent"
+                }
+                contentItem: Impl.IconImage {
+                    sourceSize: primary ? Qt.size(26, 26) : Qt.size(20, 20)
+                    source: MP.Theme.asset("icons/" + modelData.icon)
+                    color: MP.Theme.text
+                }
+            }
         }
     }
 
@@ -104,6 +142,12 @@ ColumnLayout {
             }
         }
 
+        // the transport beside the title where there is room (the window), under it in the tray popup
+        Transport {
+            visible: root.controlsBeside
+            spacing: 4
+        }
+
         // Apple Music's star (favorite), for the iPhone's player when it takes it
         QQC2.AbstractButton {
             id: star
@@ -126,40 +170,10 @@ ColumnLayout {
         }
     }
 
-    RowLayout {
+    Transport {
         Layout.alignment: Qt.AlignHCenter
         Layout.topMargin: -4
-        visible: root.hasPlayer
-        spacing: 20
-
-        Repeater {
-            model: [
-                { icon: "icon-backward.svg", name: qsTrId("tray.popup.previous"), enabled: root.player.canGoPrevious ?? false, action: () => cppMedia.previous() },
-                { icon: root.player.playing ? "icon-pause.svg" : "icon-play.svg", name: root.player.playing ? qsTrId("tray.popup.pause") : qsTrId("tray.popup.play"), enabled: true, action: () => cppMedia.playPause() },
-                { icon: "icon-forward.svg", name: qsTrId("tray.popup.next"), enabled: root.player.canGoNext ?? false, action: () => cppMedia.next() }
-            ]
-            delegate: QQC2.AbstractButton {
-                required property var modelData
-                // HIG: play/pause is the primary control, larger than its neighbours
-                readonly property bool primary: index === 1
-                required property int index
-                implicitWidth: primary ? 40 : 34
-                implicitHeight: primary ? 40 : 34
-                enabled: modelData.enabled
-                opacity: enabled ? 1 : 0.35
-                Accessible.name: modelData.name
-                onClicked: modelData.action()
-                background: Rectangle {
-                    radius: width / 2
-                    color: parent.pressed ? MP.Theme.fill : parent.hovered ? MP.Theme.tertiaryFill : "transparent"
-                }
-                contentItem: Impl.IconImage {
-                    sourceSize: primary ? Qt.size(26, 26) : Qt.size(20, 20)
-                    source: MP.Theme.asset("icons/" + modelData.icon)
-                    color: MP.Theme.text
-                }
-            }
-        }
+        visible: root.hasPlayer && !root.controlsBeside
     }
 
     // Volume: Control Center style capsule, the fill is the value; − and + step to the
