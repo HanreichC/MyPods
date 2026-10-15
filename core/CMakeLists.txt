@@ -96,6 +96,7 @@ add_executable(magicpodscore
     src/device/capabilities/sgb/GalaxyBudsEarDetectionCapability.cpp
 
     src/device/capabilities/bhf/BhfBatteryCapability.cpp
+    src/device/capabilities/beo/BeoplayE8Capabilities.cpp
     src/device/capabilities/cmn/CmnBluetoothCodecCapability.cpp
     src/device/capabilities/cmn/CmnAudioEffectsCapabilities.cpp
 
@@ -103,6 +104,7 @@ add_executable(magicpodscore
     src/device/AapDevice.cpp
     src/device/GalaxyBudsDevice.cpp
     src/device/BhfDevice.cpp
+    src/device/BeoplayE8.cpp
     src/device/ZikDevice.cpp
     src/device/DeviceBattery.cpp
     src/dbus/BatteryProvider.cpp
@@ -135,6 +137,7 @@ if(WIN32)
         src/dbus/DBusDeviceInfo_win.cpp
         src/dbus/DBusService_win.cpp
         src/ble_ads/WinRtBleAdvertisingService.cpp
+        src/device/BeoplayE8_win.cpp
         src/pulseaudio/PulseAudioClient_win.cpp
         src/audio/AudioEffects_win.cpp
         src/media/MprisClient_win.cpp

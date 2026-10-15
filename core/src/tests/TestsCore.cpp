@@ -19,6 +19,7 @@
 #include "sdk/aap/Att.h"
 #include "media/EarDetectionPause.h"
 #include "sdk/aap/watchers/AapAncWatcher.h"
+#include "device/BeoplayE8.h"
 
 #include <atomic>
 #include <map>
@@ -57,6 +58,16 @@ namespace
 
 TestsCore::TestsCore()
 {
+    // Beoplay E8: the state notifications as captured on the earbuds (docs/beoplay-e8.md)
+    {
+        using BeoplayE8::Transparency;
+        Test("Beoplay E8: normal", Transparency({0x03, 0x00, 0x02}) == false);
+        Test("Beoplay E8: transparency", Transparency({0x03, 0x00, 0x03}) == true);
+        Test("Beoplay E8: paused, transparency", Transparency({0x03, 0x01, 0x03}) == true);
+        Test("Beoplay E8: unknown mode and short packet ignored", !Transparency({0x03, 0x00, 0x05}) && !Transparency({0x03, 0x00}));
+        Test("Beoplay E8: only the 1st gen by name", BeoplayE8::Is("Beoplay E8") && !BeoplayE8::Is("Beoplay E8 2.0"));
+    }
+
     // send queue: Close wakes the writer, Reopen drops what a previous session left behind
     {
         BlockingQueue<int> queue;

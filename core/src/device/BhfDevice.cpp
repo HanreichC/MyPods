@@ -6,6 +6,7 @@
 #include "capabilities/bhf/BhfBatteryCapability.h"
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
 #include "capabilities/cmn/CmnAudioEffectsCapabilities.h"
+#include "capabilities/beo/BeoplayE8Capabilities.h"
 
 namespace MagicPodsCore
 {
@@ -17,6 +18,9 @@ namespace MagicPodsCore
 
     BhfDevice::~BhfDevice()
     {
+        // the E8's link feeds capabilities: it goes first
+        GetConnectedPropertyChangedEvent().Unsubscribe(beoplayConnectedId);
+        beoplayLink.reset();
         Shutdown(); // the capabilities' workers stop while this class is still whole
         GetAudioClient()->GatAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
     }
@@ -27,6 +31,35 @@ namespace MagicPodsCore
 
         device->capabilities.push_back(std::make_unique<BhfBatteryCapability>(*device));
         device->capabilities.push_back(std::make_unique<CmnBluetoothCodecCapability>(*device));
+
+        // Beoplay E8: device info and the transparency state over LE, while the earbuds are connected
+        if (BeoplayE8::Is(deviceInfo->GetName()))
+        {
+            auto anc = std::make_unique<BeoplayE8AncCapability>();
+            auto info = std::make_unique<BeoplayE8DeviceInfoCapability>();
+            auto *ancRaw = anc.get();
+            auto *infoRaw = info.get();
+            auto *raw = device.get();
+            device->capabilities.push_back(std::move(anc));
+            device->capabilities.push_back(std::move(info));
+            auto follow = [raw, ancRaw, infoRaw](bool connected)
+            {
+                if (!connected)
+                {
+                    raw->beoplayLink.reset();
+                    ancRaw->Clear();
+                    infoRaw->Clear();
+                }
+                else if (!raw->beoplayLink)
+                {
+                    raw->beoplayLink = std::make_unique<BeoplayE8::Link>(raw->GetAddress(),
+                        [raw, infoRaw](const BeoplayE8::Info &i) { infoRaw->Update(raw->GetName(), i); },
+                        [ancRaw](bool transparency) { ancRaw->Update(transparency); });
+                }
+            };
+            device->beoplayConnectedId = device->GetConnectedPropertyChangedEvent().Subscribe([follow](size_t, bool connected) { follow(connected); });
+            follow(device->GetConnected());
+        }
 #ifndef _WIN32 // effects run in PipeWire (AudioEffects.h)
         device->capabilities.push_back(std::make_unique<CmnSpatialAudioCapability>(*device));
         device->capabilities.push_back(std::make_unique<CmnEqualizerCapability>(*device));

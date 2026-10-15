@@ -6,6 +6,7 @@
 
 #include "Event.h"
 #include "Device.h"
+#include "BeoplayE8.h"
 
 namespace MagicPodsCore
 {
@@ -15,6 +16,9 @@ namespace MagicPodsCore
 
     private:
     size_t cardEventId = 0;
+    // Beoplay E8: its LE link while connected (BeoplayE8.h)
+    std::unique_ptr<BeoplayE8::Link> beoplayLink;
+    size_t beoplayConnectedId = 0;
     void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
 
     public:
