@@ -16,10 +16,9 @@ QQC2.ApplicationWindow {
     id: root
     // Frameless like MyCAD: the window buttons sit in a glass capsule; GameScope runs it fullscreen anyway
     flags: gameScopeMode ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
-    minimumWidth: gameScopeMode ? 0 : 560
-    maximumWidth: gameScopeMode ? Screen.width : 560
-    minimumHeight: gameScopeMode ? 0 : 420
-    width: gameScopeMode ? Screen.width : 560
+    minimumWidth: gameScopeMode ? 0 : 720
+    minimumHeight: gameScopeMode ? 0 : 480
+    width: gameScopeMode ? Screen.width : 800
     height: gameScopeMode ? Screen.height : 720
     // Nur visibility setzen: zusammen mit visible gewinnt visibility und --hidden waere wirkungslos
     visibility: startHidden ? Window.Hidden : gameScopeMode ? Window.FullScreen : Window.Windowed
@@ -34,6 +33,33 @@ QQC2.ApplicationWindow {
 
     property alias currentIndex: swipeView.currentIndex
     readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radius
+    // How far a page's large title stays clear of the window buttons (read by ScrollPage)
+    readonly property int titleInset: windowBar.visible ? Math.max(0, content.x + (content.width + Math.min(content.width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)) / 2
+                                                                     - windowBar.x + MP.Units.mediumSpacing) : 0
+    readonly property var sections: [
+        { text: qsTrId("menu.battery"), icon: "icon-headphones-fill.svg" },
+        { text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
+        { text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
+        { text: qsTrId("menu.about"), icon: "icon-info-fill.svg" }
+    ]
+
+    // "Links 80 % · Rechts 70 % · Case 40 %" for the sidebar, wired headphones say how they are connected
+    function batteryText(info) {
+        const battery = info?.capabilities?.battery;
+        const parts = [
+            { part: battery?.single, name: qsTrId("battery.battery_single") },
+            { part: battery?.left, name: qsTrId("battery.battery_left") },
+            { part: battery?.right, name: qsTrId("battery.battery_right") },
+            { part: battery?.case, name: qsTrId("battery.battery_case") }
+        ].filter(p => p.part && p.part.status !== 0 && p.part.status !== 1)
+         .map(p => p.name + " " + qsTrId("format.percent").arg(p.part.battery));
+        if (parts.length > 0)
+            return parts.join(" · ");
+        if (info?.wired)
+            return info.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack");
+        return qsTrId("tray.popup.connected");
+    }
+
     // With a tray the window just hides; without one there would be no way to quit or reopen it.
     onClosing: (event) => {
         if (!trayAvailable) {
@@ -119,7 +145,7 @@ QQC2.ApplicationWindow {
         }
     }
 
-    // Everything the glass bars blur lives in here.
+    // Everything the window buttons' glass blurs lives in here.
     Item {
         id: scene
         anchors.fill: parent
@@ -134,7 +160,12 @@ QQC2.ApplicationWindow {
         }
 
         ColumnLayout {
-            anchors.fill: parent
+            id: content
+            anchors.left: parent.left
+            anchors.leftMargin: sidebar.x + sidebar.width
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
             spacing: 0
 
             QQC2.ProgressBar {
@@ -145,7 +176,7 @@ QQC2.ApplicationWindow {
 
             Components.InlineMessage {
                 Layout.margins: MP.Units.largeSpacing
-                Layout.topMargin: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // under the bars
+                Layout.topMargin: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // under the window buttons
                 visible: cppBackend?.unsupportedApi ?? false
                 type: 2
                 text: qsTrId("Error.service_api_wrong")
@@ -157,7 +188,7 @@ QQC2.ApplicationWindow {
                 Layout.fillHeight: true
                 clip: true
 
-                // HIG soft scroll edge effect: content fades out where it passes under the floating glass,
+                // HIG soft scroll edge effect: content fades out where it leaves at the top,
                 // and stays inside the window's rounded corners when a page slides past them.
                 // effects need a shader-capable scene graph; the software renderer drops the item
                 layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
@@ -168,7 +199,7 @@ QQC2.ApplicationWindow {
                     maskThresholdMin: 0.0
                 }
 
-                BatteryPage {}
+                BatteryPage { id: batteryPage }
                 HeadphonesPage {}
                 SettingsPage {}
                 AboutPage {}
@@ -185,8 +216,142 @@ QQC2.ApplicationWindow {
         radius: root.cornerRadius
         gradient: Gradient {
             GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.15) }
-            GradientStop { position: Math.min(0.5, (12 + MP.Theme.barHeight) / scrollEdgeMask.height); color: "black" }
+            GradientStop { position: Math.min(0.5, 14 / scrollEdgeMask.height); color: "black" }
             GradientStop { position: 1; color: "black" }
+        }
+    }
+
+    // Navigation on the left like MyCAD's dashboard: the app, the headphones in use, the sections, the version
+    Components.Card {
+        id: sidebar
+        x: 12
+        y: 12
+        width: 240
+        height: parent.height - 24
+        radius: 20
+        padding: 12
+        verticalPadding: 16
+        spacing: 2
+
+        MP.Heading {
+            Layout.leftMargin: 6
+            Layout.bottomMargin: 12
+            level: 2
+            text: "MyPods"
+        }
+
+        // The headphones in use; a click opens their controls
+        QQC2.AbstractButton {
+            id: deviceButton
+            readonly property var info: batteryPage.infoData
+            readonly property bool hasInfo: batteryPage.hasInfo
+            Layout.fillWidth: true
+            Layout.bottomMargin: 14
+            implicitHeight: Math.max(64, contentItem.implicitHeight + 20)
+            Accessible.name: hasInfo ? (info?.name ?? "") : qsTrId("battery.connect_headphones.header")
+            onClicked: swipeView.currentIndex = 0
+
+            background: Rectangle {
+                radius: 14
+                color: deviceButton.pressed || deviceButton.hovered ? MP.Theme.fill : MP.Theme.tertiaryFill
+            }
+            contentItem: RowLayout {
+                spacing: 10
+
+                Item {
+                    Layout.leftMargin: 8
+                    implicitWidth: 44
+                    implicitHeight: 44
+
+                    Components.DeviceImage {
+                        anchors.fill: parent
+                        visible: deviceButton.hasInfo
+                        sourceSize: Qt.size(88, 88)
+                        info: deviceButton.info
+                    }
+                    Impl.IconImage {
+                        anchors.centerIn: parent
+                        visible: !deviceButton.hasInfo
+                        sourceSize: Qt.size(26, 26)
+                        source: MP.Theme.asset("icons/icon-headphones.svg")
+                        color: MP.Theme.secondaryText
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.rightMargin: 8
+                    spacing: 2
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: deviceButton.Accessible.name
+                        color: MP.Theme.text
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        visible: deviceButton.hasInfo
+                        text: root.batteryText(deviceButton.info)
+                        color: MP.Theme.secondaryText
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                    }
+                }
+            }
+        }
+
+        Repeater {
+            model: root.sections
+            delegate: QQC2.AbstractButton {
+                id: navItem
+                required property var modelData
+                required property int index
+                readonly property bool current: swipeView.currentIndex === index
+                Layout.fillWidth: true
+                implicitHeight: 38
+                text: modelData.text
+                Accessible.role: Accessible.PageTab
+                Accessible.name: text
+                onClicked: swipeView.currentIndex = index
+
+                background: Rectangle {
+                    radius: 10
+                    color: navItem.current ? MP.Theme.fill : navItem.hovered ? MP.Theme.tertiaryFill : "transparent"
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                }
+                contentItem: RowLayout {
+                    spacing: 10
+
+                    Impl.IconImage {
+                        Layout.leftMargin: 10
+                        sourceSize: Qt.size(18, 18)
+                        source: MP.Theme.asset("icons/" + navItem.modelData.icon)
+                        color: navItem.current ? MP.Theme.accent : MP.Theme.secondaryText
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: navItem.text
+                        color: MP.Theme.text
+                        font.pixelSize: 14
+                        font.weight: navItem.current ? Font.DemiBold : Font.Normal
+                        elide: Text.ElideRight
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
+
+        Text {
+            Layout.leftMargin: 6
+            text: "MyPods " + Qt.application.version
+            color: MP.Theme.secondaryText
+            font.pixelSize: 11
         }
     }
 
@@ -200,8 +365,7 @@ QQC2.ApplicationWindow {
         border.color: MP.Theme.popupBorder
     }
 
-    // The bars at the top like MyCAD's toolbar and window buttons, equally tall: the tabs on the left,
-    // the window buttons (grip to move, minimize, close) on the right
+    // Window buttons in a glass capsule at the top right, as in MyCAD: grip to move, minimize, close
     GlassBar {
         id: windowBar
         visible: !gameScopeMode
@@ -248,74 +412,17 @@ QQC2.ApplicationWindow {
         }
     }
 
-    // Floating Liquid Glass tab bar (control layer)
-    GlassBar {
-        id: tabBar
-        readonly property var tabs: [
-            { text: qsTrId("menu.battery"), icon: "icon-headphones-fill.svg" },
-            { text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
-            { text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
-            { text: qsTrId("menu.about"), icon: "icon-info-fill.svg" }
-        ]
-        height: MP.Theme.barHeight
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: windowBar.visible ? windowBar.left : parent.right
-        anchors.margins: 12
-
-        // Sliding selection pill
-        Rectangle {
-            readonly property Item target: tabRepeater.count, tabRepeater.itemAt(swipeView.currentIndex)
-            x: tabRow.x + (target?.x ?? 0)
-            y: tabRow.y
-            width: target?.width ?? 0
-            height: tabRow.height
-            radius: height / 2
-            color: MP.Theme.fill
-            Behavior on x { NumberAnimation { duration: 380; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
-        }
-
-        Row {
-            id: tabRow
-            anchors.fill: parent
-            anchors.margins: 6
-
-            Repeater {
-                id: tabRepeater
-                model: tabBar.tabs
-                delegate: QQC2.TabButton {
-                    required property var modelData
-                    required property int index
-                    readonly property bool current: swipeView.currentIndex === index
-                    width: tabRow.width / tabBar.tabs.length
-                    height: tabRow.height
-                    padding: 0
-                    text: modelData.text
-                    display: QQC2.AbstractButton.TextUnderIcon
-                    spacing: 1
-                    font.pixelSize: 10
-                    font.weight: current ? Font.DemiBold : Font.Medium
-                    icon.source: MP.Theme.asset("icons/" + modelData.icon)
-                    icon.width: 20
-                    icon.height: 20
-                    icon.color: current ? MP.Theme.accent : MP.Theme.secondaryText
-                    Material.foreground: current ? MP.Theme.accent : MP.Theme.secondaryText
-                    background: null
-                    onClicked: swipeView.currentIndex = index
-                }
-            }
-        }
-    }
-
-    // Frameless: the top and bottom edges still resize the window (its width is fixed)
+    // Frameless: the edges still resize the window
     Repeater {
-        model: gameScopeMode ? [] : [Qt.TopEdge, Qt.BottomEdge]
+        model: gameScopeMode ? [] : [Qt.TopEdge, Qt.BottomEdge, Qt.LeftEdge, Qt.RightEdge]
         delegate: MouseArea {
             required property int modelData
-            width: root.width
-            height: 5
-            y: modelData === Qt.TopEdge ? 0 : root.height - height
-            cursorShape: Qt.SizeVerCursor
+            readonly property bool vertical: modelData === Qt.TopEdge || modelData === Qt.BottomEdge
+            x: modelData === Qt.RightEdge ? root.width - width : 0
+            y: modelData === Qt.BottomEdge ? root.height - height : 0
+            width: vertical ? root.width : 5
+            height: vertical ? 5 : root.height
+            cursorShape: vertical ? Qt.SizeVerCursor : Qt.SizeHorCursor
             onPressed: root.startSystemResize(modelData)
         }
     }

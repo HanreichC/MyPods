@@ -30,7 +30,6 @@ QQC2.Page {
 
         Item {
             width: scroll.availableWidth
-            // the bars float over the top; the column starts below them
             implicitHeight: column.y + column.implicitHeight + MP.Units.hugeSpacing
 
             // Flickable's default wheel/touchpad step is tiny; scroll a fixed distance per notch
@@ -47,7 +46,7 @@ QQC2.Page {
 
             ColumnLayout {
                 id: column
-                y: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // below the glass bars at the top
+                y: 20 // the large title level with the window buttons
                 width: Math.min(parent.width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)
                 x: Math.round((parent.width - width) / 2)
                 spacing: MP.Units.mediumSpacing
@@ -58,6 +57,8 @@ QQC2.Page {
                     text: page.title
                     Layout.fillWidth: true
                     Layout.leftMargin: MP.Units.smallSpacing
+                    // clear of the window buttons
+                    Layout.rightMargin: QQC2.ApplicationWindow.window?.titleInset ?? 0
                     Layout.bottomMargin: MP.Units.mediumSpacing
                     elide: Text.ElideRight
                 }
