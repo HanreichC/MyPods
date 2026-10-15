@@ -171,6 +171,8 @@ QQC2.ApplicationWindow {
                         color: MP.Theme.text
                         font.pixelSize: 15
                         font.weight: Font.DemiBold
+                        wrapMode: Text.Wrap // long names on two lines rather than cut off
+                        maximumLineCount: 2
                         elide: Text.ElideRight
                     }
                     Text {

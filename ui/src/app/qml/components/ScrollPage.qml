@@ -47,8 +47,10 @@ QQC2.Page {
             ColumnLayout {
                 id: column
                 y: 20 // the large title level with the window buttons
-                width: Math.min(parent.width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)
-                x: Math.round((parent.width - width) / 2)
+                // right of the window's sidebar, which the page slides under
+                readonly property int inset: QQC2.ApplicationWindow.window?.contentInset ?? 0
+                width: Math.min(parent.width - inset - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)
+                x: inset + Math.round((parent.width - inset - width) / 2)
                 spacing: MP.Units.mediumSpacing
 
                 MP.Heading {
@@ -60,6 +62,8 @@ QQC2.Page {
                     // clear of the window buttons
                     Layout.rightMargin: QQC2.ApplicationWindow.window?.titleInset ?? 0
                     Layout.bottomMargin: MP.Units.mediumSpacing
+                    wrapMode: Text.Wrap // a long device name on two lines rather than cut off
+                    maximumLineCount: 2
                     elide: Text.ElideRight
                 }
             }

@@ -66,6 +66,8 @@ Item {
             text: root.label.replace(/:\s*$/, "")
             color: MP.Theme.text
             font.pixelSize: 17
+            wrapMode: Text.Wrap // long labels and names wrap rather than being cut off
+            maximumLineCount: 3
             elide: Text.ElideRight
             opacity: root.enabled ? 1 : 0.4
         }

@@ -231,7 +231,8 @@ QQC2.ApplicationWindow {
             id: popupRoot
             anchors.centerIn: parent
             width: 248
-            height: isExt ? 290 + 18 : 290
+            // taller by a second line of a long name
+            height: (isExt ? 290 + 18 : 290) + (osdName.lineCount - 1) * 22
             clip: true
 
             MP.Animations {
@@ -299,6 +300,7 @@ QQC2.ApplicationWindow {
                 spacing: 0
 
                 MP.Heading {
+                    id: osdName
                     Layout.alignment: Qt.AlignHCenter
                     level: 3
                     text: popupRoot.device && popupRoot.device.name ? popupRoot.device.name : ""
@@ -306,7 +308,7 @@ QQC2.ApplicationWindow {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
-                    maximumLineCount: 1
+                    maximumLineCount: 2
                 }
 
                 SpriteSequence {

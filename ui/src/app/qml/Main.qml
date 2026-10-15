@@ -33,8 +33,10 @@ QQC2.ApplicationWindow {
 
     property alias currentIndex: swipeView.currentIndex
     readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radius
-    // How far a page's large title stays clear of the window buttons (read by ScrollPage)
-    readonly property int titleInset: windowBar.visible ? Math.max(0, content.x + (content.width + Math.min(content.width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)) / 2
+    // Pages span the whole window and slide under the glass sidebar; their content starts right of it.
+    // contentInset and titleInset (clear of the window buttons) are read by ScrollPage
+    readonly property int contentInset: sidebar.x + sidebar.width
+    readonly property int titleInset: windowBar.visible ? Math.max(0, contentInset + (width - contentInset + Math.min(width - contentInset - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)) / 2
                                                                      - windowBar.x + MP.Units.mediumSpacing) : 0
     readonly property var sections: [
         { text: qsTrId("menu.battery"), icon: "icon-headphones-fill.svg" },
@@ -73,10 +75,11 @@ QQC2.ApplicationWindow {
     // Floating Liquid Glass capsule (control layer): blurs what scrolls under it
     component GlassBar: Item {
         id: bar
+        property real radius: height / 2
 
         RectangularShadow {
             anchors.fill: parent
-            radius: height / 2
+            radius: bar.radius
             blur: 30
             offset.y: 8
             color: MP.Theme.shadow
@@ -93,7 +96,7 @@ QQC2.ApplicationWindow {
         Rectangle {
             id: mask
             anchors.fill: parent
-            radius: height / 2
+            radius: bar.radius
             visible: false
             layer.enabled: true
         }
@@ -112,7 +115,7 @@ QQC2.ApplicationWindow {
 
         Rectangle {
             anchors.fill: parent
-            radius: height / 2
+            radius: bar.radius
             border.width: 1
             border.color: MP.Theme.glassBorder
             gradient: Gradient {
@@ -160,12 +163,7 @@ QQC2.ApplicationWindow {
         }
 
         ColumnLayout {
-            id: content
-            anchors.left: parent.left
-            anchors.leftMargin: sidebar.x + sidebar.width
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            anchors.fill: parent
             spacing: 0
 
             QQC2.ProgressBar {
@@ -176,6 +174,7 @@ QQC2.ApplicationWindow {
 
             Components.InlineMessage {
                 Layout.margins: MP.Units.largeSpacing
+                Layout.leftMargin: root.contentInset + MP.Units.largeSpacing
                 Layout.topMargin: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // under the window buttons
                 visible: cppBackend?.unsupportedApi ?? false
                 type: 2
@@ -222,136 +221,143 @@ QQC2.ApplicationWindow {
     }
 
     // Navigation on the left like MyCAD's dashboard: the app, the headphones in use, the sections, the version
-    Components.Card {
+    GlassBar {
         id: sidebar
         x: 12
         y: 12
         width: 240
         height: parent.height - 24
         radius: 20
-        padding: 12
-        verticalPadding: 16
-        spacing: 2
 
-        MP.Heading {
-            Layout.leftMargin: 6
-            Layout.bottomMargin: 12
-            level: 2
-            text: "MyPods"
-        }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            anchors.topMargin: 16
+            anchors.bottomMargin: 16
+            spacing: 2
 
-        // The headphones in use; a click opens their controls
-        QQC2.AbstractButton {
-            id: deviceButton
-            readonly property var info: batteryPage.infoData
-            readonly property bool hasInfo: batteryPage.hasInfo
-            Layout.fillWidth: true
-            Layout.bottomMargin: 14
-            implicitHeight: Math.max(64, contentItem.implicitHeight + 20)
-            Accessible.name: hasInfo ? (info?.name ?? "") : qsTrId("battery.connect_headphones.header")
-            onClicked: swipeView.currentIndex = 0
-
-            background: Rectangle {
-                radius: 14
-                color: deviceButton.pressed || deviceButton.hovered ? MP.Theme.fill : MP.Theme.tertiaryFill
+            MP.Heading {
+                Layout.leftMargin: 6
+                Layout.bottomMargin: 12
+                level: 2
+                text: "MyPods"
             }
-            contentItem: RowLayout {
-                spacing: 10
 
-                Item {
-                    Layout.leftMargin: 8
-                    implicitWidth: 44
-                    implicitHeight: 44
-
-                    Components.DeviceImage {
-                        anchors.fill: parent
-                        visible: deviceButton.hasInfo
-                        sourceSize: Qt.size(88, 88)
-                        info: deviceButton.info
-                    }
-                    Impl.IconImage {
-                        anchors.centerIn: parent
-                        visible: !deviceButton.hasInfo
-                        sourceSize: Qt.size(26, 26)
-                        source: MP.Theme.asset("icons/icon-headphones.svg")
-                        color: MP.Theme.secondaryText
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.rightMargin: 8
-                    spacing: 2
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: deviceButton.Accessible.name
-                        color: MP.Theme.text
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        visible: deviceButton.hasInfo
-                        text: root.batteryText(deviceButton.info)
-                        color: MP.Theme.secondaryText
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                    }
-                }
-            }
-        }
-
-        Repeater {
-            model: root.sections
-            delegate: QQC2.AbstractButton {
-                id: navItem
-                required property var modelData
-                required property int index
-                readonly property bool current: swipeView.currentIndex === index
+            // The headphones in use; a click opens their controls
+            QQC2.AbstractButton {
+                id: deviceButton
+                readonly property var info: batteryPage.infoData
+                readonly property bool hasInfo: batteryPage.hasInfo
                 Layout.fillWidth: true
-                implicitHeight: 38
-                text: modelData.text
-                Accessible.role: Accessible.PageTab
-                Accessible.name: text
-                onClicked: swipeView.currentIndex = index
+                Layout.bottomMargin: 14
+                implicitHeight: Math.max(64, contentItem.implicitHeight + 20)
+                Accessible.name: hasInfo ? (info?.name ?? "") : qsTrId("battery.connect_headphones.header")
+                onClicked: swipeView.currentIndex = 0
 
                 background: Rectangle {
-                    radius: 10
-                    color: navItem.current ? MP.Theme.fill : navItem.hovered ? MP.Theme.tertiaryFill : "transparent"
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    radius: 14
+                    color: deviceButton.pressed || deviceButton.hovered ? MP.Theme.fill : MP.Theme.tertiaryFill
                 }
                 contentItem: RowLayout {
                     spacing: 10
 
-                    Impl.IconImage {
-                        Layout.leftMargin: 10
-                        sourceSize: Qt.size(18, 18)
-                        source: MP.Theme.asset("icons/" + navItem.modelData.icon)
-                        color: navItem.current ? MP.Theme.accent : MP.Theme.secondaryText
+                    Item {
+                        Layout.leftMargin: 8
+                        implicitWidth: 44
+                        implicitHeight: 44
+
+                        Components.DeviceImage {
+                            anchors.fill: parent
+                            visible: deviceButton.hasInfo
+                            sourceSize: Qt.size(88, 88)
+                            info: deviceButton.info
+                        }
+                        Impl.IconImage {
+                            anchors.centerIn: parent
+                            visible: !deviceButton.hasInfo
+                            sourceSize: Qt.size(26, 26)
+                            source: MP.Theme.asset("icons/icon-headphones.svg")
+                            color: MP.Theme.secondaryText
+                        }
                     }
-                    Text {
+
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        text: navItem.text
-                        color: MP.Theme.text
-                        font.pixelSize: 14
-                        font.weight: navItem.current ? Font.DemiBold : Font.Normal
-                        elide: Text.ElideRight
+                        Layout.rightMargin: 8
+                        spacing: 2
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: deviceButton.Accessible.name
+                            color: MP.Theme.text
+                            font.pixelSize: 14
+                            font.weight: Font.DemiBold
+                            wrapMode: Text.Wrap // long names on two lines rather than cut off
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: deviceButton.hasInfo
+                            text: root.batteryText(deviceButton.info)
+                            color: MP.Theme.secondaryText
+                            font.pixelSize: 11
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
                     }
                 }
             }
-        }
 
-        Item { Layout.fillHeight: true }
+            Repeater {
+                model: root.sections
+                delegate: QQC2.AbstractButton {
+                    id: navItem
+                    required property var modelData
+                    required property int index
+                    readonly property bool current: swipeView.currentIndex === index
+                    Layout.fillWidth: true
+                    implicitHeight: 38
+                    text: modelData.text
+                    Accessible.role: Accessible.PageTab
+                    Accessible.name: text
+                    onClicked: swipeView.currentIndex = index
 
-        Text {
-            Layout.leftMargin: 6
-            text: "MyPods " + Qt.application.version
-            color: MP.Theme.secondaryText
-            font.pixelSize: 11
+                    background: Rectangle {
+                        radius: 10
+                        color: navItem.current ? MP.Theme.fill : navItem.hovered ? MP.Theme.tertiaryFill : "transparent"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                    }
+                    contentItem: RowLayout {
+                        spacing: 10
+
+                        Impl.IconImage {
+                            Layout.leftMargin: 10
+                            sourceSize: Qt.size(18, 18)
+                            source: MP.Theme.asset("icons/" + navItem.modelData.icon)
+                            color: navItem.current ? MP.Theme.accent : MP.Theme.secondaryText
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: navItem.text
+                            color: MP.Theme.text
+                            font.pixelSize: 14
+                            font.weight: navItem.current ? Font.DemiBold : Font.Normal
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+            }
+
+            Item { Layout.fillHeight: true }
+
+            Text {
+                Layout.leftMargin: 6
+                text: "MyPods " + Qt.application.version
+                color: MP.Theme.secondaryText
+                font.pixelSize: 11
+            }
         }
     }
 
