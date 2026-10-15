@@ -49,6 +49,8 @@ QtObject {
     readonly property color closeHover: "#E5484D"
 
     readonly property int radius: 26
+    // The glass bars at the top of the window (tabs, window buttons); their buttons are 6 px smaller all round
+    readonly property int barHeight: 56
     readonly property int maxContentWidth: 480
 
     function asset(path) {

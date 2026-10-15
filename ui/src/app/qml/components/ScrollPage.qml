@@ -22,8 +22,8 @@ QQC2.Page {
 
         Item {
             width: scroll.availableWidth
-            // bottom room for the floating tab bar
-            implicitHeight: column.implicitHeight + MP.Units.hugeSpacing + 104
+            // the bars float over the top; the column starts below them
+            implicitHeight: column.y + column.implicitHeight + MP.Units.hugeSpacing
 
             // Flickable's default wheel/touchpad step is tiny; scroll a fixed distance per notch
             // and amplify touchpad pixel deltas (Wayland reports them roughly 1:1 with finger travel)
@@ -39,7 +39,7 @@ QQC2.Page {
 
             ColumnLayout {
                 id: column
-                y: MP.Units.largeSpacing // the large title level with the window buttons
+                y: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // below the glass bars at the top
                 width: Math.min(parent.width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)
                 x: Math.round((parent.width - width) / 2)
                 spacing: MP.Units.mediumSpacing
@@ -50,8 +50,6 @@ QQC2.Page {
                     text: page.title
                     Layout.fillWidth: true
                     Layout.leftMargin: MP.Units.smallSpacing
-                    // clear of the window buttons floating at the top right
-                    Layout.rightMargin: QQC2.ApplicationWindow.window?.titleInset ?? 0
                     Layout.bottomMargin: MP.Units.mediumSpacing
                     elide: Text.ElideRight
                 }

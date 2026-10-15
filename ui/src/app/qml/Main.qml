@@ -23,7 +23,8 @@ QQC2.ApplicationWindow {
     height: gameScopeMode ? Screen.height : 720
     // Nur visibility setzen: zusammen mit visible gewinnt visibility und --hidden waere wirkungslos
     visibility: startHidden ? Window.Hidden : gameScopeMode ? Window.FullScreen : Window.Windowed
-    color: MP.Theme.base
+    // Rounded like the popups: the corners outside the backdrop stay see-through
+    color: gameScopeMode ? MP.Theme.base : "transparent"
     // Material hard-codes Roboto/Noto for controls; the window font overrides it for every control
     font.family: "Inter"
 
@@ -32,9 +33,7 @@ QQC2.ApplicationWindow {
     Material.primary: MP.Theme.accent
 
     property alias currentIndex: swipeView.currentIndex
-    // How far a page's large title stays clear of the window buttons (read by ScrollPage)
-    readonly property int titleInset: windowBar.visible ? Math.max(0, (width + Math.min(width - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)) / 2
-                                                                     - windowBar.x + MP.Units.mediumSpacing) : 0
+    readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radius
     // With a tray the window just hides; without one there would be no way to quit or reopen it.
     onClosing: (event) => {
         if (!trayAvailable) {
@@ -100,8 +99,8 @@ QQC2.ApplicationWindow {
     component WindowButton: QQC2.AbstractButton {
         id: windowButton
         property bool danger: false
-        implicitWidth: 34
-        implicitHeight: 34
+        implicitWidth: 44
+        implicitHeight: 44
         focusPolicy: Qt.NoFocus
         Accessible.name: text
         QQC2.ToolTip.visible: hovered
@@ -127,6 +126,7 @@ QQC2.ApplicationWindow {
 
         Rectangle {
             anchors.fill: parent
+            radius: root.cornerRadius
             gradient: Gradient {
                 GradientStop { position: 0; color: MP.Theme.base }
                 GradientStop { position: 1; color: MP.Theme.baseBottom }
@@ -145,7 +145,7 @@ QQC2.ApplicationWindow {
 
             Components.InlineMessage {
                 Layout.margins: MP.Units.largeSpacing
-                Layout.rightMargin: root.titleInset + MP.Units.largeSpacing
+                Layout.topMargin: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // under the bars
                 visible: cppBackend?.unsupportedApi ?? false
                 type: 2
                 text: qsTrId("Error.service_api_wrong")
@@ -157,7 +157,8 @@ QQC2.ApplicationWindow {
                 Layout.fillHeight: true
                 clip: true
 
-                // HIG soft scroll edge effect: content fades out where it passes under the floating glass
+                // HIG soft scroll edge effect: content fades out where it passes under the floating glass,
+                // and stays inside the window's rounded corners when a page slides past them.
                 // effects need a shader-capable scene graph; the software renderer drops the item
                 layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
                 layer.effect: MultiEffect {
@@ -181,23 +182,34 @@ QQC2.ApplicationWindow {
         height: swipeView.height
         visible: false
         layer.enabled: true
+        radius: root.cornerRadius
         gradient: Gradient {
             GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.15) }
-            GradientStop { position: Math.min(0.5, 14 / scrollEdgeMask.height); color: "black" }
-            GradientStop { position: Math.max(0.5, 1 - 120 / scrollEdgeMask.height); color: "black" }
-            GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.15) }
+            GradientStop { position: Math.min(0.5, (12 + MP.Theme.barHeight) / scrollEdgeMask.height); color: "black" }
+            GradientStop { position: 1; color: "black" }
         }
     }
 
-    // Window buttons in a glass capsule at the top right, as in MyCAD: grip to move, minimize, close
+    // A fine edge around the rounded window, like the popups'
+    Rectangle {
+        anchors.fill: parent
+        visible: !gameScopeMode
+        radius: root.cornerRadius
+        color: "transparent"
+        border.width: 1
+        border.color: MP.Theme.popupBorder
+    }
+
+    // The bars at the top like MyCAD's toolbar and window buttons, equally tall: the tabs on the left,
+    // the window buttons (grip to move, minimize, close) on the right
     GlassBar {
         id: windowBar
         visible: !gameScopeMode
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: 12
-        width: windowRow.implicitWidth + 10
-        height: 44
+        width: windowRow.implicitWidth + 12
+        height: MP.Theme.barHeight
 
         DragHandler {
             target: null
@@ -210,7 +222,7 @@ QQC2.ApplicationWindow {
 
             Item {
                 width: 30
-                height: 34
+                height: 44
                 Accessible.role: Accessible.Grip
                 Accessible.name: qsTrId("window.move")
 
@@ -245,11 +257,11 @@ QQC2.ApplicationWindow {
             { text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
             { text: qsTrId("menu.about"), icon: "icon-info-fill.svg" }
         ]
-        width: Math.min(parent.width - MP.Units.hugeSpacing * 2, 400)
-        height: 64
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: MP.Units.largeSpacing
+        height: MP.Theme.barHeight
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: windowBar.visible ? windowBar.left : parent.right
+        anchors.margins: 12
 
         // Sliding selection pill
         Rectangle {
@@ -280,12 +292,12 @@ QQC2.ApplicationWindow {
                     padding: 0
                     text: modelData.text
                     display: QQC2.AbstractButton.TextUnderIcon
-                    spacing: 2
-                    font.pixelSize: 11
+                    spacing: 1
+                    font.pixelSize: 10
                     font.weight: current ? Font.DemiBold : Font.Medium
                     icon.source: MP.Theme.asset("icons/" + modelData.icon)
-                    icon.width: 22
-                    icon.height: 22
+                    icon.width: 20
+                    icon.height: 20
                     icon.color: current ? MP.Theme.accent : MP.Theme.secondaryText
                     Material.foreground: current ? MP.Theme.accent : MP.Theme.secondaryText
                     background: null
