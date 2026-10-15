@@ -30,7 +30,7 @@ Item {
     }
 
     Layout.fillWidth: true
-    implicitHeight: Math.max(44, row.implicitHeight + MP.Units.smallSpacing * 2)
+    implicitHeight: Math.max(40, row.implicitHeight + MP.Units.mediumSpacing)
 
     Rectangle {
         visible: root.hasRowAbove
@@ -43,18 +43,18 @@ Item {
     RowLayout {
         id: row
         anchors.fill: parent
-        spacing: MP.Units.mediumSpacing + 4
+        spacing: MP.Units.mediumSpacing + 2
 
         Rectangle {
             visible: root.iconSource.toString() !== ""
-            implicitWidth: 30
-            implicitHeight: 30
-            radius: 8
+            implicitWidth: 26
+            implicitHeight: 26
+            radius: MP.Theme.smallRadius - 1
             color: root.iconColor
 
             Impl.IconImage {
                 anchors.centerIn: parent
-                sourceSize: Qt.size(18, 18)
+                sourceSize: Qt.size(16, 16)
                 source: root.iconSource
                 color: "white"
             }
@@ -65,7 +65,7 @@ Item {
             Layout.fillWidth: true
             text: root.label.replace(/:\s*$/, "")
             color: MP.Theme.text
-            font.pixelSize: 17
+            font.pixelSize: MP.Theme.bodySize
             wrapMode: Text.Wrap // long labels and names wrap rather than being cut off
             maximumLineCount: 3
             elide: Text.ElideRight

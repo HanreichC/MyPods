@@ -7,11 +7,11 @@ import QtQuick.Controls as QQC2
 import QtQuick.Effects
 import magicpods as MP
 
-// iOS switch: 51x31 capsule, white knob, system green when on.
+// Switch at desktop size like MyCAD's: 38x22 capsule, white knob, system green when on.
 QQC2.Switch {
     id: control
-    implicitWidth: 51
-    implicitHeight: 31
+    implicitWidth: 38
+    implicitHeight: 22
     padding: 0
     spacing: 0
     contentItem: null
@@ -20,8 +20,8 @@ QQC2.Switch {
     indicator: Rectangle {
         x: 0
         y: 0
-        implicitWidth: 51
-        implicitHeight: 31
+        implicitWidth: 38
+        implicitHeight: 22
         radius: height / 2
         color: control.checked ? MP.Theme.green : MP.Theme.fill
         Behavior on color { ColorAnimation { duration: 200 } }
@@ -29,8 +29,8 @@ QQC2.Switch {
         Rectangle {
             x: control.checked ? parent.width - width - 2 : 2
             y: 2
-            width: control.pressed ? 31 : 27
-            height: 27
+            width: control.pressed ? 22 : 18
+            height: 18
             radius: height / 2
             color: "white"
             Behavior on x { NumberAnimation { duration: 280; easing.type: Easing.OutBack; easing.overshoot: 1.3 } }

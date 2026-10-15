@@ -80,20 +80,87 @@ Components.ScrollPage {
     // Parrot Zik: plain switches and lists. The core sends selected as bool (switch) or index (list);
     // a row with dependsOn is only editable while that switch is on.
     readonly property var zikSwitches: [
-        { key: "concertHall", label: qsTrId("battery.concert_hall"), info: qsTrId("battery.concert_hall.info") },
-        { key: "smartAudioTune", label: qsTrId("battery.smart_audio_tune"), info: qsTrId("battery.smart_audio_tune.info") },
-        { key: "ancPhoneMode", label: qsTrId("battery.anc_phone_mode"), info: qsTrId("battery.anc_phone_mode.info") },
-        { key: "voicePrompts", label: qsTrId("battery.voice_prompts"), info: qsTrId("battery.voice_prompts.info") },
-        { key: "autoConnection", label: qsTrId("battery.auto_connection_zik"), info: qsTrId("battery.auto_connection_zik.info") }
+        { key: "concertHall", group: "sound", icon: "icon-cube.svg", label: qsTrId("battery.concert_hall"), info: qsTrId("battery.concert_hall.info") },
+        { key: "smartAudioTune", group: "sound", icon: "icon-sparkles.svg", label: qsTrId("battery.smart_audio_tune"), info: qsTrId("battery.smart_audio_tune.info") },
+        { key: "ancPhoneMode", group: "noise", icon: "icon-phone.svg", label: qsTrId("battery.anc_phone_mode"), info: qsTrId("battery.anc_phone_mode.info") },
+        { key: "voicePrompts", group: "controls", icon: "icon-speech.svg", label: qsTrId("battery.voice_prompts"), info: qsTrId("battery.voice_prompts.info") },
+        { key: "autoConnection", group: "connection", icon: "icon-link.svg", label: qsTrId("battery.auto_connection_zik"), info: qsTrId("battery.auto_connection_zik.info") }
     ]
     readonly property var zikLists: [
-        { key: "concertHallRoom", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_room"), info: qsTrId("battery.concert_hall_room.info"),
+        { key: "concertHallRoom", group: "sound", icon: "icon-cube.svg", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_room"), info: qsTrId("battery.concert_hall_room.info"),
           options: [qsTrId("battery.concert_hall_room.silent"), qsTrId("battery.concert_hall_room.living"), qsTrId("battery.concert_hall_room.jazz"), qsTrId("battery.concert_hall_room.concert")] },
-        { key: "concertHallAngle", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_angle"), info: qsTrId("battery.concert_hall_angle.info"),
+        { key: "concertHallAngle", group: "sound", icon: "icon-cube.svg", dependsOn: "concertHall", label: qsTrId("battery.concert_hall_angle"), info: qsTrId("battery.concert_hall_angle.info"),
           options: ["30°", "60°", "90°", "120°", "150°", "180°"] },
-        { key: "autoPowerOff", label: qsTrId("battery.auto_power_off"), info: qsTrId("battery.auto_power_off.info"),
+        { key: "autoPowerOff", group: "device", icon: "icon-off.svg", label: qsTrId("battery.auto_power_off"), info: qsTrId("battery.auto_power_off.info"),
           options: [qsTrId("battery.auto_power_off.never"), "5 min", "10 min", "15 min", "30 min", "60 min"] }
     ]
+
+    // A Zik setting as a row: a switch, or a list of choices
+    component ZikSwitch: MP.FormRow {
+        id: row
+        required property var modelData
+        readonly property var cap: rootPage.capabilities?.[modelData.key] ?? null
+        Layout.fillWidth: true
+        visible: cap !== null
+        label: modelData.label
+        iconSource: MP.Theme.asset("icons/" + modelData.icon)
+        info: modelData.info ?? ""
+
+        Components.Toggle {
+            checked: row.cap?.selected ?? false
+            enabled: !(row.cap?.readonly ?? true)
+            onToggled: {
+                row.cap.selected = checked;
+                cppBackend.setCapability(row.modelData.key, rootPage.currentAddress(), checked);
+            }
+        }
+    }
+
+    component ZikList: MP.FormRow {
+        id: row
+        required property var modelData
+        readonly property var cap: rootPage.capabilities?.[modelData.key] ?? null
+        Layout.fillWidth: true
+        visible: cap !== null
+        label: modelData.label
+        iconSource: MP.Theme.asset("icons/" + modelData.icon)
+        info: modelData.info ?? ""
+
+        Components.Picker {
+            model: row.modelData.options
+            currentIndex: row.cap?.selected ?? -1
+            enabled: !(row.cap?.readonly ?? true)
+                     && (!row.modelData.dependsOn || (rootPage.capabilities?.[row.modelData.dependsOn]?.selected ?? false))
+            onActivated: {
+                row.cap.selected = currentIndex;
+                cppBackend.setCapability(row.modelData.key, rootPage.currentAddress(), currentIndex);
+            }
+        }
+    }
+
+    // A group of settings: its header above a card
+    component Section: ColumnLayout {
+        id: section
+        property string title
+        default property alias rows: sectionCard.content
+        Layout.fillWidth: true
+        Layout.topMargin: MP.Units.mediumSpacing
+        spacing: MP.Units.mediumSpacing
+
+        MP.Heading {
+            Layout.leftMargin: MP.Units.largeSpacing
+            level: 5
+            text: section.title
+        }
+        Components.Card {
+            id: sectionCard
+        }
+    }
+
+    // whether the headphones have a Zik setting of that group
+    function zikIn(group) {
+        return zikSwitches.concat(zikLists).some(z => z.group === group && capabilities?.[z.key] !== undefined);
+    }
 
     readonly property bool hasCapabilities: !!capabilities && [ancData, conversationAwarenessData, personalizedVolumeData, ancOneAirPodData, volumeSwipeData, adaptiveAudioNoiseData, pressAndHoldDurationData, pressSpeedData, toneVolumeData, volumeSwipeLengthData, endCallData, bluetoothCodec, signalPathData, spatialAudioData, equalizerData, autoSwitchData, earDetectionData, listeningModesData, allowOffData, micModeData, hearingAidData, loudSoundReductionData, crownReversedData, sleepDetectionData, autoConnectData].some(function (v) {
         return v !== null;
@@ -214,76 +281,74 @@ Components.ScrollPage {
         bodyText: qsTrId("battery.connect_headphones.description")
     }
 
-    Components.Card {
-        visible: hasInfo && rootPage.connectedHeadphones.length > 1
-
-        MP.FormRow {
-            Layout.fillWidth: true
-            label: qsTrId("battery.active_device")
-            info: qsTrId("battery.active_device.info")
-
-            Components.Picker {
-                model: rootPage.connectedHeadphones.map(h => h.name)
-                currentIndex: rootPage.connectedHeadphones.findIndex(h => h.address === rootPage.currentAddress())
-                onActivated: cppBackend.setActiveDevice(rootPage.connectedHeadphones[currentIndex].address)
-            }
-        }
-    }
-
-    // Hero: device render + battery rings
+    // Hero like the Mac's Control Center: the headphones on the left, their battery and noise control beside them
     Components.Card {
         visible: hasInfo
-        padding: MP.Units.hugeSpacing
-        verticalPadding: MP.Units.hugeSpacing
-        spacing: MP.Units.largeSpacing
-
-        Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 168
-
-            Components.DeviceImage {
-                anchors.centerIn: parent
-                width: 168; height: 168
-                info: rootPage.infoData
-            }
-        }
+        padding: MP.Units.largeSpacing
+        verticalPadding: MP.Units.largeSpacing
 
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: MP.Units.hugeSpacing
+            Layout.fillWidth: true
+            spacing: MP.Units.largeSpacing
 
-            Components.BatteryRing {
-                name: qsTrId("battery.battery_single")
-                battery: rootPage.capabilities?.battery?.single?.battery ?? 0
-                isCharging: rootPage.capabilities?.battery?.single?.charging ?? false
-                status: rootPage.capabilities?.battery?.single?.status ?? 0
+            Components.DeviceImage {
+                Layout.preferredWidth: 136
+                Layout.preferredHeight: 136
+                Layout.alignment: Qt.AlignVCenter
+                info: rootPage.infoData
             }
-            Components.BatteryRing {
-                name: qsTrId("battery.battery_left")
-                battery: rootPage.capabilities?.battery?.left?.battery ?? 0
-                isCharging: rootPage.capabilities?.battery?.left?.charging ?? false
-                status: rootPage.capabilities?.battery?.left?.status ?? 0
-            }
-            Components.BatteryRing {
-                name: qsTrId("battery.battery_right")
-                battery: rootPage.capabilities?.battery?.right?.battery ?? 0
-                isCharging: rootPage.capabilities?.battery?.right?.charging ?? false
-                status: rootPage.capabilities?.battery?.right?.status ?? 0
-            }
-            Components.BatteryRing {
-                name: qsTrId("battery.battery_case")
-                battery: rootPage.capabilities?.battery?.case?.battery ?? 0
-                isCharging: rootPage.capabilities?.battery?.case?.charging ?? false
-                status: rootPage.capabilities?.battery?.case?.status ?? 0
-            }
-        }
 
-        // Wired headphones have no battery to show; how they are connected instead, like the Mac's Sound settings
-        MP.Label {
-            Layout.alignment: Qt.AlignHCenter
-            visible: !!rootPage.infoData?.wired
-            text: rootPage.infoData?.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack")
-            color: MP.Theme.secondaryText
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: MP.Units.largeSpacing
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: MP.Units.largeSpacing
+
+                    Components.BatteryRing {
+                        name: qsTrId("battery.battery_single")
+                        battery: rootPage.capabilities?.battery?.single?.battery ?? 0
+                        isCharging: rootPage.capabilities?.battery?.single?.charging ?? false
+                        status: rootPage.capabilities?.battery?.single?.status ?? 0
+                    }
+                    Components.BatteryRing {
+                        name: qsTrId("battery.battery_left")
+                        battery: rootPage.capabilities?.battery?.left?.battery ?? 0
+                        isCharging: rootPage.capabilities?.battery?.left?.charging ?? false
+                        status: rootPage.capabilities?.battery?.left?.status ?? 0
+                    }
+                    Components.BatteryRing {
+                        name: qsTrId("battery.battery_right")
+                        battery: rootPage.capabilities?.battery?.right?.battery ?? 0
+                        isCharging: rootPage.capabilities?.battery?.right?.charging ?? false
+                        status: rootPage.capabilities?.battery?.right?.status ?? 0
+                    }
+                    Components.BatteryRing {
+                        name: qsTrId("battery.battery_case")
+                        battery: rootPage.capabilities?.battery?.case?.battery ?? 0
+                        isCharging: rootPage.capabilities?.battery?.case?.charging ?? false
+                        status: rootPage.capabilities?.battery?.case?.status ?? 0
+                    }
+                }
+
+                // Wired headphones have no battery to show; how they are connected instead, like the Mac's Sound settings
+                MP.Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: !!rootPage.infoData?.wired
+                    text: rootPage.infoData?.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack")
+                    color: MP.Theme.secondaryText
+                }
+
+                // Noise control: segmented control with a draggable Liquid Glass thumb
+                Components.NoiseControl {
+                    id: noiseControl
+                    Layout.fillWidth: true
+                    ancData: rootPage.ancData
+                    address: rootPage.currentAddress() ?? ""
+                }
+            }
         }
     }
 
@@ -304,153 +369,207 @@ Components.ScrollPage {
         }
     }
 
-    // Noise control: HIG segmented control with a draggable Liquid Glass thumb
-    Components.NoiseControl {
-        id: noiseControl
-        floating: true
-        visible: hasInfo && available
-        Layout.fillWidth: true
-        Layout.topMargin: MP.Units.mediumSpacing
-        ancData: rootPage.ancData
-        address: rootPage.currentAddress() ?? ""
-    }
-
-    MP.Heading {
-        visible: hasInfo && hasCapabilities
-        level: 5
-        Layout.topMargin: MP.Units.largeSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
-        text: qsTrId("battery.capabilities.header")
-    }
-
-    Components.Card {
-        visible: hasInfo && hasCapabilities
+    Section {
+        visible: hasInfo && (rootPage.ancData?.level !== undefined || [rootPage.adaptiveAudioNoiseData, rootPage.ancOneAirPodData, rootPage.allowOffData, rootPage.listeningModesData, rootPage.loudSoundReductionData].some(v => v !== null) || rootPage.zikIn("noise"))
+        title: qsTrId("battery.noise_control")
 
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.bluetoothCodec !== null
-            label: qsTrId("battery.bluetooth_codec")
-            // the explanation, then what each option is (PipeWire's own description)
-            info: {
-                var lines = [qsTrId("battery.bluetooth_codec.info")];
-                (rootPage.bluetoothCodec?.options || []).forEach(function (option) {
-                    if (option && option.length >= 2)
-                        lines.push(rootPage.codecLabel(option) + " — " + String(option[1]));
-                });
-                return lines.join("\n\n");
-            }
+            visible: rootPage.ancData?.level !== undefined
+            label: qsTrId("battery.noise_level")
+            iconSource: MP.Theme.asset("icons/icon-noise.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.noise_level.info")
 
             Components.Picker {
-                model: (rootPage.bluetoothCodec?.options ?? []).map(rootPage.codecLabel)
+                model: [qsTrId("battery.noise_level.normal"), qsTrId("battery.noise_level.max")]
+                currentIndex: (rootPage.ancData?.level ?? 1) - 1
+                enabled: !(rootPage.ancData?.readonly ?? true) && noiseControl.selectedAnc !== noiseControl.ancModes.OFF
+                onActivated: cppBackend.setCapability("anc", rootPage.currentAddress(), currentIndex + 1, "level")
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.adaptiveAudioNoiseData !== null
+            label: qsTrId("battery.adaptive_audio_noise")
+            iconSource: MP.Theme.asset("icons/icon-adaptive.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.adaptive_audio_noise.info")
+
+            Components.Picker {
+                model: [qsTrId("battery.adaptive_audio_noise.more"), qsTrId("battery.adaptive_audio_noise.default"), qsTrId("battery.adaptive_audio_noise.less")]
                 currentIndex: {
-                    var options = rootPage.bluetoothCodec?.options || [];
-                    for (var i = 0; i < options.length; i++) {
-                        if (options[i][0] === rootPage.bluetoothCodec.selected) return i;
-                    }
-                    return -1;
+                    const val = rootPage.adaptiveAudioNoiseData?.selected;
+                    if (val === 0) return 0;
+                    if (val === 50) return 1;
+                    if (val === 100) return 2;
+                    return 1;
                 }
-                enabled: !(rootPage.bluetoothCodec?.readonly ?? true)
+                enabled: !(rootPage.adaptiveAudioNoiseData?.readonly ?? true)
                 onActivated: {
-                    if (rootPage.bluetoothCodec && currentIndex >= 0) {
-                        var options = rootPage.bluetoothCodec.options || [];
-                        if (options[currentIndex]) {
-                            var nextValue = options[currentIndex][0];
-                            if (rootPage.bluetoothCodec.selected !== nextValue)
-                                cppBackend.setCapability("bluetoothCodec", rootPage.currentAddress(), nextValue);
+                    if (rootPage.adaptiveAudioNoiseData) {
+                        if (currentIndex === 0) {
+                            rootPage.adaptiveAudioNoiseData.selected = 0;
+                        } else if (currentIndex === 1) {
+                            rootPage.adaptiveAudioNoiseData.selected = 50;
+                        } else {
+                            rootPage.adaptiveAudioNoiseData.selected = 100;
                         }
+                        cppBackend.setCapability("adaptiveAudioNoise", rootPage.currentAddress(), rootPage.adaptiveAudioNoiseData.selected);
                     }
                 }
             }
         }
 
-        // What the Bluetooth link actually carries, read from the headphones' sink
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.codecDetails(rootPage.bluetoothCodec?.details) !== ""
-            label: qsTrId("battery.codec_details")
-            info: qsTrId("battery.codec_details.info")
+            visible: rootPage.ancOneAirPodData !== null
+            label: qsTrId("battery.anc_one_airpod")
+            iconSource: MP.Theme.asset("icons/icon-headphones.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.anc_one_airpod.info")
 
-            MP.Label {
-                width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
-                text: rootPage.codecDetails(rootPage.bluetoothCodec?.details)
-                color: MP.Theme.secondaryText
-                elide: Text.ElideRight
-            }
-        }
-
-        // AAC at its best VBR, LDAC at 990 kbit/s: a WirePlumber rule the daemon writes for these headphones
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.bluetoothCodec?.highQuality !== undefined
-            label: qsTrId("battery.bluetooth_high_quality")
-            info: qsTrId("battery.bluetooth_high_quality.info")
-
-            Components.Toggle {
-                checked: rootPage.bluetoothCodec?.highQuality ?? false
-                enabled: !(rootPage.bluetoothCodec?.readonly ?? true)
-                Accessible.name: qsTrId("battery.bluetooth_high_quality")
-                onToggled: cppBackend.setCapability("bluetoothCodec", rootPage.currentAddress(), checked, "highQuality")
-            }
-        }
-
-        // Bit-perfect, or what changes the sound on its way (the info says why, right now)
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.signalPathData !== null
-            label: qsTrId("battery.signal_path")
-            info: qsTrId("battery.signal_path.info") + (rootPage.signalPathData?.playing ? "\n\n" + rootPage.signalPathReasons(rootPage.signalPathData) : "")
-
-            MP.Label {
-                width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
-                text: rootPage.signalPathText(rootPage.signalPathData)
-                color: MP.Theme.secondaryText
-                elide: Text.ElideRight
-                Accessible.name: text + ". " + rootPage.signalPathReasons(rootPage.signalPathData)
-            }
-        }
-
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.spatialAudioData !== null
-            label: qsTrId("battery.spatial_audio")
-            info: qsTrId("battery.spatial_audio.info")
-
-            Components.Picker {
-                model: [qsTrId("battery.spatial_audio.off"), qsTrId("battery.spatial_audio.fixed")].concat((rootPage.spatialAudioData?.headTracking ?? true) ? [qsTrId("battery.spatial_audio.head_tracked")] : [])
-                currentIndex: rootPage.spatialAudioData?.selected ?? 0
-                enabled: !(rootPage.spatialAudioData?.readonly ?? true)
-                onActivated: {
-                    if (rootPage.spatialAudioData) {
-                        rootPage.spatialAudioData.selected = currentIndex;
-                        cppBackend.setCapability("spatialAudio", rootPage.currentAddress(), currentIndex);
-                    }
-                }
-            }
-        }
-
-        // 7.1 input for films and games; only the virtual speakers can play it
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.spatialAudioData?.surround !== undefined
-            label: qsTrId("battery.surround")
-            info: qsTrId("battery.surround.info")
-
-            Components.Toggle {
-                checked: rootPage.spatialAudioData?.surround ?? false
-                enabled: !(rootPage.spatialAudioData?.readonly ?? true) && (rootPage.spatialAudioData?.selected ?? 0) !== 0
+            Components.Toggle {                        
+                checked: rootPage.ancOneAirPodData?.selected ?? false
+                enabled: !(rootPage.ancOneAirPodData?.readonly ?? true)
                 onToggled: {
-                    if (rootPage.spatialAudioData) {
-                        rootPage.spatialAudioData.surround = checked;
-                        cppBackend.setCapability("spatialAudio", rootPage.currentAddress(), checked, "surround");
+                    if (rootPage.ancOneAirPodData) {
+                        rootPage.ancOneAirPodData.selected = checked;
+                        cppBackend.setCapability("ancOneAirPod", rootPage.currentAddress(), checked);
                     }
                 }
             }
         }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.loudSoundReductionData !== null
+            label: qsTrId("battery.loud_sound_reduction")
+            iconSource: MP.Theme.asset("icons/icon-ear.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.loud_sound_reduction.info")
+
+            Components.Toggle {
+                checked: rootPage.loudSoundReductionData?.selected ?? false
+                enabled: !(rootPage.loudSoundReductionData?.readonly ?? true)
+                onToggled: cppBackend.setCapability("loudSoundReduction", rootPage.currentAddress(), checked)
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.allowOffData !== null
+            label: qsTrId("battery.allow_off")
+            iconSource: MP.Theme.asset("icons/icon-off.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.allow_off.info")
+
+            Components.Toggle {
+                checked: rootPage.allowOffData?.selected ?? false
+                enabled: !(rootPage.allowOffData?.readonly ?? true)
+                onToggled: cppBackend.setCapability("allowOff", rootPage.currentAddress(), checked)
+            }
+        }
+
+        // What a press-and-hold of the stem cycles through; at least two modes, like on an iPhone.
+        // The modes wrap under the label: side by side they did not fit beside it
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.listeningModesData !== null
+            label: qsTrId("battery.listening_modes")
+            iconSource: MP.Theme.asset("icons/icon-hand.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.listening_modes.info")
+        }
+
+        Flow {
+            Layout.fillWidth: true
+            Layout.bottomMargin: MP.Units.smallSpacing
+            visible: rootPage.listeningModesData !== null
+            spacing: MP.Units.mediumSpacing
+
+            Repeater {
+                model: rootPage.listeningModeBits
+                delegate: MP.CheckBox {
+                    required property var modelData
+                    readonly property int mask: rootPage.listeningModesData?.selected ?? 0
+                    visible: modelData.shown
+                    text: modelData.label
+                    checked: (mask & modelData.bit) !== 0
+                    enabled: !(rootPage.listeningModesData?.readonly ?? true)
+                    onToggled: {
+                        // a hidden "Off" (not allowed) must not ride along with the other modes
+                        const allowed = (rootPage.allowOffData?.selected ?? false) ? mask : (mask & ~0x01);
+                        const next = checked ? (allowed | modelData.bit) : (allowed & ~modelData.bit);
+                        let count = 0;
+                        for (let b = next; b; b >>= 1) count += b & 1;
+                        if (count < 2) { // the core refuses fewer than two anyway
+                            checked = Qt.binding(() => (mask & modelData.bit) !== 0);
+                            return;
+                        }
+                        cppBackend.setCapability("listeningModes", rootPage.currentAddress(), next);
+                    }
+                }
+            }
+        }
+
+        Repeater {
+            model: rootPage.zikSwitches.filter(z => z.group === "noise")
+            delegate: ZikSwitch { iconColor: MP.Theme.groupNoise }
+        }
+    }
+
+    Section {
+        visible: hasInfo && (rootPage.transparencyTuningData !== null)
+        title: qsTrId("battery.transparency_tuning.header")
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.transparency_tuning.enabled")
+            iconSource: MP.Theme.asset("icons/icon-tra.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.transparency_tuning.enabled.info")
+
+            Components.Toggle {
+                checked: rootPage.transparencyTuningData?.enabled ?? false
+                onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "enabled")
+            }
+        }
+
+        TuningSlider { iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg"); iconColor: MP.Theme.groupNoise; field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification"); info: qsTrId("battery.transparency_tuning.amplification.info") }
+
+        TuningSlider { iconSource: MP.Theme.asset("icons/icon-balance.svg"); iconColor: MP.Theme.groupNoise; field: "balance"; label: qsTrId("battery.transparency_tuning.balance"); info: qsTrId("battery.transparency_tuning.balance.info") }
+
+        TuningSlider { iconSource: MP.Theme.asset("icons/icon-tilt.svg"); iconColor: MP.Theme.groupNoise; field: "tone"; label: qsTrId("battery.transparency_tuning.tone"); info: qsTrId("battery.transparency_tuning.tone.info") }
+
+        TuningSlider { iconSource: MP.Theme.asset("icons/icon-noise.svg"); iconColor: MP.Theme.groupNoise; field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction"); info: qsTrId("battery.transparency_tuning.ambient_noise_reduction.info") }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.transparency_tuning.conversation_boost")
+            iconSource: MP.Theme.asset("icons/icon-speech.svg")
+            iconColor: MP.Theme.groupNoise
+            info: qsTrId("battery.transparency_tuning.conversation_boost.info")
+
+            Components.Toggle {
+                checked: rootPage.transparencyTuningData?.conversationBoost ?? false
+                enabled: rootPage.transparencyTuningData?.enabled ?? false
+                onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "conversationBoost")
+            }
+        }
+    }
+
+    Section {
+        visible: hasInfo && ([rootPage.spatialAudioData, rootPage.equalizerData, rootPage.personalizedVolumeData, rootPage.hearingAidData].some(v => v !== null) || rootPage.zikIn("sound"))
+        title: qsTrId("battery.group.sound")
 
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.equalizerData !== null
             label: qsTrId("battery.equalizer")
+            iconSource: MP.Theme.asset("icons/icon-eq.svg")
+            iconColor: MP.Theme.groupSound
             info: qsTrId("battery.equalizer.info")
 
             Components.Picker {
@@ -570,6 +689,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.tilt !== undefined
             label: qsTrId("battery.tilt")
+            iconSource: MP.Theme.asset("icons/icon-tilt.svg")
+            iconColor: MP.Theme.groupSound
             info: qsTrId("battery.tilt.info")
 
             MP.Slider {
@@ -590,8 +711,52 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
+            visible: rootPage.spatialAudioData !== null
+            label: qsTrId("battery.spatial_audio")
+            iconSource: MP.Theme.asset("icons/icon-cube.svg")
+            iconColor: MP.Theme.groupSound
+            info: qsTrId("battery.spatial_audio.info")
+
+            Components.Picker {
+                model: [qsTrId("battery.spatial_audio.off"), qsTrId("battery.spatial_audio.fixed")].concat((rootPage.spatialAudioData?.headTracking ?? true) ? [qsTrId("battery.spatial_audio.head_tracked")] : [])
+                currentIndex: rootPage.spatialAudioData?.selected ?? 0
+                enabled: !(rootPage.spatialAudioData?.readonly ?? true)
+                onActivated: {
+                    if (rootPage.spatialAudioData) {
+                        rootPage.spatialAudioData.selected = currentIndex;
+                        cppBackend.setCapability("spatialAudio", rootPage.currentAddress(), currentIndex);
+                    }
+                }
+            }
+        }
+
+        // 7.1 input for films and games; only the virtual speakers can play it
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.spatialAudioData?.surround !== undefined
+            label: qsTrId("battery.surround")
+            iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
+            iconColor: MP.Theme.groupSound
+            info: qsTrId("battery.surround.info")
+
+            Components.Toggle {
+                checked: rootPage.spatialAudioData?.surround ?? false
+                enabled: !(rootPage.spatialAudioData?.readonly ?? true) && (rootPage.spatialAudioData?.selected ?? 0) !== 0
+                onToggled: {
+                    if (rootPage.spatialAudioData) {
+                        rootPage.spatialAudioData.surround = checked;
+                        cppBackend.setCapability("spatialAudio", rootPage.currentAddress(), checked, "surround");
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
             visible: rootPage.equalizerData?.correction !== undefined
             label: qsTrId("battery.headphone_correction")
+            iconSource: MP.Theme.asset("icons/icon-headphones.svg")
+            iconColor: MP.Theme.groupSound
             info: qsTrId("battery.headphone_correction.info")
 
             Components.Toggle {
@@ -610,6 +775,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.crossfeed !== undefined
             label: qsTrId("battery.crossfeed")
+            iconSource: MP.Theme.asset("icons/icon-crossfeed.svg")
+            iconColor: MP.Theme.groupSound
             info: qsTrId("battery.crossfeed.info")
 
             // spatial audio already lets each ear hear both channels
@@ -628,15 +795,17 @@ Components.ScrollPage {
         // Toggles of the equalizer capability that are just on/off
         Repeater {
             model: [
-                { field: "loudness", label: qsTrId("battery.loudness"), info: qsTrId("battery.loudness.info") },
-                { field: "hearing", label: qsTrId("battery.hearing_profile"), info: qsTrId("battery.hearing_profile.info") },
-                { field: "bypass", label: qsTrId("battery.bypass"), info: qsTrId("battery.bypass.info") }
+                { icon: "icon-speaker-wave.svg", field: "loudness", label: qsTrId("battery.loudness"), info: qsTrId("battery.loudness.info") },
+                { icon: "icon-ear.svg", field: "hearing", label: qsTrId("battery.hearing_profile"), info: qsTrId("battery.hearing_profile.info") },
+                { icon: "icon-ab.svg", field: "bypass", label: qsTrId("battery.bypass"), info: qsTrId("battery.bypass.info") }
             ]
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: rootPage.equalizerData?.[modelData.field] !== undefined
                 label: modelData.label
+                iconSource: MP.Theme.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.groupSound
                 info: modelData.info ?? ""
 
                 Components.Toggle {
@@ -655,14 +824,16 @@ Components.ScrollPage {
         // Hearing thresholds per ear from an audiogram, six values from 250 Hz to 8 kHz
         Repeater {
             model: [
-                { field: "audiogramLeft", label: qsTrId("battery.audiogram_left"), info: qsTrId("battery.audiogram.info") },
-                { field: "audiogramRight", label: qsTrId("battery.audiogram_right"), info: qsTrId("battery.audiogram.info") }
+                { icon: "icon-ear.svg", field: "audiogramLeft", label: qsTrId("battery.audiogram_left"), info: qsTrId("battery.audiogram.info") },
+                { icon: "icon-ear.svg", field: "audiogramRight", label: qsTrId("battery.audiogram_right"), info: qsTrId("battery.audiogram.info") }
             ]
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: (rootPage.equalizerData?.hearing ?? false) && rootPage.equalizerData?.[modelData.field] !== undefined
                 label: modelData.label
+                iconSource: MP.Theme.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.groupSound
                 info: modelData.info ?? ""
 
                 MP.TextField {
@@ -684,18 +855,19 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.autoSwitchData !== null
-            label: qsTrId("battery.auto_switch")
-            info: qsTrId("battery.auto_switch.info")
+            visible: rootPage.personalizedVolumeData !== null
+            label: qsTrId("battery.personalized_volume")
+            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.groupSound
+            info: qsTrId("battery.personalized_volume.info")
 
-            Components.Picker {
-                model: [qsTrId("battery.auto_switch.automatically"), qsTrId("battery.auto_switch.last_connected")]
-                currentIndex: rootPage.autoSwitchData?.selected ?? 0
-                enabled: !(rootPage.autoSwitchData?.readonly ?? true)
-                onActivated: {
-                    if (rootPage.autoSwitchData) {
-                        rootPage.autoSwitchData.selected = currentIndex;
-                        cppBackend.setCapability("autoSwitch", rootPage.currentAddress(), currentIndex);
+            Components.Toggle {
+                checked: rootPage.personalizedVolumeData?.selected ?? false
+                enabled: !(rootPage.personalizedVolumeData?.readonly ?? true)
+                onToggled: {
+                    if (rootPage.personalizedVolumeData) {
+                        rootPage.personalizedVolumeData.selected = checked;
+                        cppBackend.setCapability("personalizedVolume", rootPage.currentAddress(), checked);
                     }
                 }
             }
@@ -703,8 +875,40 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
+            visible: rootPage.hearingAidData !== null
+            label: qsTrId("battery.hearing_aid")
+            iconSource: MP.Theme.asset("icons/icon-ear.svg")
+            iconColor: MP.Theme.groupSound
+            info: qsTrId("battery.hearing_aid.info")
+
+            Components.Toggle {
+                checked: rootPage.hearingAidData?.selected ?? false
+                enabled: !(rootPage.hearingAidData?.readonly ?? true)
+                onToggled: cppBackend.setCapability("hearingAid", rootPage.currentAddress(), checked)
+            }
+        }
+
+        Repeater {
+            model: rootPage.zikSwitches.filter(z => z.group === "sound")
+            delegate: ZikSwitch { iconColor: MP.Theme.groupSound }
+        }
+
+        Repeater {
+            model: rootPage.zikLists.filter(z => z.group === "sound")
+            delegate: ZikList { iconColor: MP.Theme.groupSound }
+        }
+    }
+
+    Section {
+        visible: hasInfo && ([rootPage.earDetectionData, rootPage.conversationAwarenessData, rootPage.sleepDetectionData].some(v => v !== null))
+        title: qsTrId("battery.group.detection")
+
+        MP.FormRow {
+            Layout.fillWidth: true
             visible: rootPage.earDetectionData !== null
             label: qsTrId("battery.ear_detection")
+            iconSource: MP.Theme.asset("icons/icon-ear.svg")
+            iconColor: MP.Theme.groupDetection
             info: qsTrId("battery.ear_detection.info")
 
             Components.Toggle {
@@ -721,68 +925,10 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.ancData?.level !== undefined
-            label: qsTrId("battery.noise_level")
-            info: qsTrId("battery.noise_level.info")
-
-            Components.Picker {
-                model: [qsTrId("battery.noise_level.normal"), qsTrId("battery.noise_level.max")]
-                currentIndex: (rootPage.ancData?.level ?? 1) - 1
-                enabled: !(rootPage.ancData?.readonly ?? true) && noiseControl.selectedAnc !== noiseControl.ancModes.OFF
-                onActivated: cppBackend.setCapability("anc", rootPage.currentAddress(), currentIndex + 1, "level")
-            }
-        }
-
-        Repeater {
-            model: rootPage.zikSwitches
-            delegate: MP.FormRow {
-                id: row
-                required property var modelData
-                readonly property var cap: rootPage.capabilities?.[modelData.key] ?? null
-                Layout.fillWidth: true
-                visible: cap !== null
-                label: modelData.label
-                info: modelData.info ?? ""
-
-                Components.Toggle {
-                    checked: row.cap?.selected ?? false
-                    enabled: !(row.cap?.readonly ?? true)
-                    onToggled: {
-                        row.cap.selected = checked;
-                        cppBackend.setCapability(row.modelData.key, rootPage.currentAddress(), checked);
-                    }
-                }
-            }
-        }
-
-        Repeater {
-            model: rootPage.zikLists
-            delegate: MP.FormRow {
-                id: row
-                required property var modelData
-                readonly property var cap: rootPage.capabilities?.[modelData.key] ?? null
-                Layout.fillWidth: true
-                visible: cap !== null
-                label: modelData.label
-                info: modelData.info ?? ""
-
-                Components.Picker {
-                    model: row.modelData.options
-                    currentIndex: row.cap?.selected ?? -1
-                    enabled: !(row.cap?.readonly ?? true)
-                             && (!row.modelData.dependsOn || (rootPage.capabilities?.[row.modelData.dependsOn]?.selected ?? false))
-                    onActivated: {
-                        row.cap.selected = currentIndex;
-                        cppBackend.setCapability(row.modelData.key, rootPage.currentAddress(), currentIndex);
-                    }
-                }
-            }
-        }
-
-        MP.FormRow {
-            Layout.fillWidth: true
             visible: rootPage.conversationAwarenessData !== null
             label: qsTrId("battery.conversation_awareness")
+            iconSource: MP.Theme.asset("icons/icon-speech.svg")
+            iconColor: MP.Theme.groupDetection
             info: qsTrId("battery.conversation_awareness.info")
 
             Components.Toggle {
@@ -802,6 +948,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.conversationAwarenessData?.duckVolume !== undefined
             label: qsTrId("battery.conversation_awareness_volume")
+            iconSource: MP.Theme.asset("icons/icon-speaker.svg")
+            iconColor: MP.Theme.groupDetection
             info: qsTrId("battery.conversation_awareness_volume.info")
 
             RowLayout {
@@ -831,96 +979,41 @@ Components.ScrollPage {
             }
         }
 
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.personalizedVolumeData !== null
-            label: qsTrId("battery.personalized_volume")
-            info: qsTrId("battery.personalized_volume.info")
+        Repeater {
+            // plain switches the AirPods report (core: AapControlCapability Toggle)
+            model: [
+                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
+                { icon: "icon-moon.svg", key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
+                { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
+            ].filter(m => m.key === "sleepDetection")
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                visible: modelData.data !== null
+                label: modelData.label
+                iconSource: MP.Theme.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.groupDetection
+                info: modelData.info ?? ""
 
-            Components.Toggle {
-                checked: rootPage.personalizedVolumeData?.selected ?? false
-                enabled: !(rootPage.personalizedVolumeData?.readonly ?? true)
-                onToggled: {
-                    if (rootPage.personalizedVolumeData) {
-                        rootPage.personalizedVolumeData.selected = checked;
-                        cppBackend.setCapability("personalizedVolume", rootPage.currentAddress(), checked);
-                    }
+                Components.Toggle {
+                    checked: modelData.data?.selected ?? false
+                    enabled: !(modelData.data?.readonly ?? true)
+                    onToggled: cppBackend.setCapability(modelData.key, rootPage.currentAddress(), checked)
                 }
             }
         }
+    }
 
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.adaptiveAudioNoiseData !== null
-            label: qsTrId("battery.adaptive_audio_noise")
-            info: qsTrId("battery.adaptive_audio_noise.info")
-
-            Components.Picker {
-                model: [qsTrId("battery.adaptive_audio_noise.more"), qsTrId("battery.adaptive_audio_noise.default"), qsTrId("battery.adaptive_audio_noise.less")]
-                currentIndex: {
-                    const val = rootPage.adaptiveAudioNoiseData?.selected;
-                    if (val === 0) return 0;
-                    if (val === 50) return 1;
-                    if (val === 100) return 2;
-                    return 1;
-                }
-                enabled: !(rootPage.adaptiveAudioNoiseData?.readonly ?? true)
-                onActivated: {
-                    if (rootPage.adaptiveAudioNoiseData) {
-                        if (currentIndex === 0) {
-                            rootPage.adaptiveAudioNoiseData.selected = 0;
-                        } else if (currentIndex === 1) {
-                            rootPage.adaptiveAudioNoiseData.selected = 50;
-                        } else {
-                            rootPage.adaptiveAudioNoiseData.selected = 100;
-                        }
-                        cppBackend.setCapability("adaptiveAudioNoise", rootPage.currentAddress(), rootPage.adaptiveAudioNoiseData.selected);
-                    }
-                }
-            }
-        }
-
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.ancOneAirPodData !== null
-            label: qsTrId("battery.anc_one_airpod")
-            info: qsTrId("battery.anc_one_airpod.info")
-
-            Components.Toggle {                        
-                checked: rootPage.ancOneAirPodData?.selected ?? false
-                enabled: !(rootPage.ancOneAirPodData?.readonly ?? true)
-                onToggled: {
-                    if (rootPage.ancOneAirPodData) {
-                        rootPage.ancOneAirPodData.selected = checked;
-                        cppBackend.setCapability("ancOneAirPod", rootPage.currentAddress(), checked);
-                    }
-                }
-            }
-        }
-
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.pressAndHoldDurationData !== null
-            label: qsTrId("battery.press_and_hold_duration")
-            info: qsTrId("battery.press_and_hold_duration.info")
-
-            Components.Picker {
-                model: [qsTrId("battery.press_and_hold_duration.default"), qsTrId("battery.press_and_hold_duration.shorter"), qsTrId("battery.press_and_hold_duration.shortest")]
-                currentIndex: rootPage.pressAndHoldDurationData?.selected ?? 0
-                enabled: !(rootPage.pressAndHoldDurationData?.readonly ?? true)
-                onActivated: {
-                    if (rootPage.pressAndHoldDurationData) {
-                        rootPage.pressAndHoldDurationData.selected = currentIndex;
-                        cppBackend.setCapability("pressAndHoldDuration", rootPage.currentAddress(), currentIndex);
-                    }
-                }
-            }
-        }
+    Section {
+        visible: hasInfo && ([rootPage.pressSpeedData, rootPage.pressAndHoldDurationData, rootPage.volumeSwipeData, rootPage.volumeSwipeLengthData, rootPage.endCallData, rootPage.crownReversedData, rootPage.micModeData, rootPage.toneVolumeData].some(v => v !== null) || rootPage.zikIn("controls"))
+        title: qsTrId("battery.group.controls")
 
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.pressSpeedData !== null
             label: qsTrId("battery.press_speed")
+            iconSource: MP.Theme.asset("icons/icon-hand.svg")
+            iconColor: MP.Theme.groupControls
             info: qsTrId("battery.press_speed.info")
 
             Components.Picker {
@@ -938,52 +1031,62 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.allowOffData !== null
-            label: qsTrId("battery.allow_off")
-            info: qsTrId("battery.allow_off.info")
+            visible: rootPage.pressAndHoldDurationData !== null
+            label: qsTrId("battery.press_and_hold_duration")
+            iconSource: MP.Theme.asset("icons/icon-timer.svg")
+            iconColor: MP.Theme.groupControls
+            info: qsTrId("battery.press_and_hold_duration.info")
 
-            Components.Toggle {
-                checked: rootPage.allowOffData?.selected ?? false
-                enabled: !(rootPage.allowOffData?.readonly ?? true)
-                onToggled: cppBackend.setCapability("allowOff", rootPage.currentAddress(), checked)
+            Components.Picker {
+                model: [qsTrId("battery.press_and_hold_duration.default"), qsTrId("battery.press_and_hold_duration.shorter"), qsTrId("battery.press_and_hold_duration.shortest")]
+                currentIndex: rootPage.pressAndHoldDurationData?.selected ?? 0
+                enabled: !(rootPage.pressAndHoldDurationData?.readonly ?? true)
+                onActivated: {
+                    if (rootPage.pressAndHoldDurationData) {
+                        rootPage.pressAndHoldDurationData.selected = currentIndex;
+                        cppBackend.setCapability("pressAndHoldDuration", rootPage.currentAddress(), currentIndex);
+                    }
+                }
             }
         }
 
-        // What a press-and-hold of the stem cycles through; at least two modes, like on an iPhone.
-        // The modes wrap under the label: side by side they did not fit beside it
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.listeningModesData !== null
-            label: qsTrId("battery.listening_modes")
-            info: qsTrId("battery.listening_modes.info")
+            visible: rootPage.volumeSwipeData !== null
+            label: qsTrId("battery.volume_swipe")
+            iconSource: MP.Theme.asset("icons/icon-swipe.svg")
+            iconColor: MP.Theme.groupControls
+            info: qsTrId("battery.volume_swipe.info")
+
+            Components.Toggle {
+                id: volumeSwipe
+                checked: rootPage.volumeSwipeData?.selected ?? false
+                enabled: !(rootPage.volumeSwipeData?.readonly ?? true)
+                onToggled: {
+                    if (rootPage.volumeSwipeData) {
+                        rootPage.volumeSwipeData.selected = checked;
+                        cppBackend.setCapability("volumeSwipe", rootPage.currentAddress(), checked);
+                    }
+                }
+            }
         }
 
-        Flow {
+        MP.FormRow {
             Layout.fillWidth: true
-            Layout.bottomMargin: MP.Units.smallSpacing
-            visible: rootPage.listeningModesData !== null
-            spacing: MP.Units.mediumSpacing
+            visible: rootPage.volumeSwipeLengthData !== null
+            label: qsTrId("battery.volume_swipe_length")
+            iconSource: MP.Theme.asset("icons/icon-swipe.svg")
+            iconColor: MP.Theme.groupControls
+            info: qsTrId("battery.volume_swipe_length.info")
 
-            Repeater {
-                model: rootPage.listeningModeBits
-                delegate: MP.CheckBox {
-                    required property var modelData
-                    readonly property int mask: rootPage.listeningModesData?.selected ?? 0
-                    visible: modelData.shown
-                    text: modelData.label
-                    checked: (mask & modelData.bit) !== 0
-                    enabled: !(rootPage.listeningModesData?.readonly ?? true)
-                    onToggled: {
-                        // a hidden "Off" (not allowed) must not ride along with the other modes
-                        const allowed = (rootPage.allowOffData?.selected ?? false) ? mask : (mask & ~0x01);
-                        const next = checked ? (allowed | modelData.bit) : (allowed & ~modelData.bit);
-                        let count = 0;
-                        for (let b = next; b; b >>= 1) count += b & 1;
-                        if (count < 2) { // the core refuses fewer than two anyway
-                            checked = Qt.binding(() => (mask & modelData.bit) !== 0);
-                            return;
-                        }
-                        cppBackend.setCapability("listeningModes", rootPage.currentAddress(), next);
+            Components.Picker {
+                model: [qsTrId("battery.volume_swipe_length.default"), qsTrId("battery.volume_swipe_length.longer"), qsTrId("battery.volume_swipe_length.longest")]
+                currentIndex: rootPage.volumeSwipeLengthData?.selected ?? 0
+                enabled: (!(rootPage.volumeSwipeLengthData?.readonly ?? true) && volumeSwipe.checked)
+                onActivated: {
+                    if (rootPage.volumeSwipeLengthData) {
+                        rootPage.volumeSwipeLengthData.selected = currentIndex;
+                        cppBackend.setCapability("volumeSwipeLength", rootPage.currentAddress(), currentIndex);
                     }
                 }
             }
@@ -992,15 +1095,17 @@ Components.ScrollPage {
         Repeater {
             // plain switches the AirPods report (core: AapControlCapability Toggle)
             model: [
-                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
+                { icon: "icon-crown.svg", key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
                 { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
                 { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
-            ]
+            ].filter(m => m.key === "crownReversed")
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: modelData.data !== null
                 label: modelData.label
+                iconSource: MP.Theme.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.groupControls
                 info: modelData.info ?? ""
 
                 Components.Toggle {
@@ -1013,8 +1118,46 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
+            visible: rootPage.endCallData !== null
+            label: qsTrId("battery.end_call")
+            iconSource: MP.Theme.asset("icons/icon-phone.svg")
+            iconColor: MP.Theme.groupControls
+            info: qsTrId("battery.end_call.info")
+
+            Components.Picker {
+                model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
+                currentIndex: (rootPage.endCallData?.selected === 3) ? 1 : 0
+                enabled: !(rootPage.endCallData?.readonly ?? true)
+                onActivated: {
+                    if (rootPage.endCallData) {
+                        rootPage.endCallData.selected = currentIndex === 0 ? 2 : 3;
+                        cppBackend.setCapability("endCall", rootPage.currentAddress(), rootPage.endCallData.selected);
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.endCallData !== null
+            label: qsTrId("battery.mute_unmute")
+            iconSource: MP.Theme.asset("icons/icon-mic.svg")
+            iconColor: MP.Theme.groupControls
+            info: qsTrId("battery.mute_unmute.info")
+
+            Components.Picker {
+                model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
+                currentIndex: (rootPage.endCallData?.selected === 2) ? 1 : 0
+                enabled: false
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
             visible: rootPage.micModeData !== null
             label: qsTrId("battery.mic_mode")
+            iconSource: MP.Theme.asset("icons/icon-mic.svg")
+            iconColor: MP.Theme.groupControls
             info: qsTrId("battery.mic_mode.info")
 
             Components.Picker {
@@ -1027,34 +1170,10 @@ Components.ScrollPage {
 
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.loudSoundReductionData !== null
-            label: qsTrId("battery.loud_sound_reduction")
-            info: qsTrId("battery.loud_sound_reduction.info")
-
-            Components.Toggle {
-                checked: rootPage.loudSoundReductionData?.selected ?? false
-                enabled: !(rootPage.loudSoundReductionData?.readonly ?? true)
-                onToggled: cppBackend.setCapability("loudSoundReduction", rootPage.currentAddress(), checked)
-            }
-        }
-
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.hearingAidData !== null
-            label: qsTrId("battery.hearing_aid")
-            info: qsTrId("battery.hearing_aid.info")
-
-            Components.Toggle {
-                checked: rootPage.hearingAidData?.selected ?? false
-                enabled: !(rootPage.hearingAidData?.readonly ?? true)
-                onToggled: cppBackend.setCapability("hearingAid", rootPage.currentAddress(), checked)
-            }
-        }
-
-        MP.FormRow {
-            Layout.fillWidth: true
             visible: rootPage.toneVolumeData !== null
             label: qsTrId("battery.tone_volume")
+            iconSource: MP.Theme.asset("icons/icon-speaker.svg")
+            iconColor: MP.Theme.groupControls
             info: qsTrId("battery.tone_volume.info")
 
             RowLayout {
@@ -1088,131 +1207,167 @@ Components.ScrollPage {
             }
         }
 
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.volumeSwipeData !== null
-            label: qsTrId("battery.volume_swipe")
-            info: qsTrId("battery.volume_swipe.info")
-
-            Components.Toggle {
-                id: volumeSwipe
-                checked: rootPage.volumeSwipeData?.selected ?? false
-                enabled: !(rootPage.volumeSwipeData?.readonly ?? true)
-                onToggled: {
-                    if (rootPage.volumeSwipeData) {
-                        rootPage.volumeSwipeData.selected = checked;
-                        cppBackend.setCapability("volumeSwipe", rootPage.currentAddress(), checked);
-                    }
-                }
-            }
+        Repeater {
+            model: rootPage.zikSwitches.filter(z => z.group === "controls")
+            delegate: ZikSwitch { iconColor: MP.Theme.groupControls }
         }
+    }
+
+    Section {
+        visible: hasInfo && ([rootPage.bluetoothCodec, rootPage.signalPathData, rootPage.autoSwitchData, rootPage.autoConnectData].some(v => v !== null) || rootPage.zikIn("connection"))
+        title: qsTrId("battery.group.connection")
 
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.volumeSwipeLengthData !== null
-            label: qsTrId("battery.volume_swipe_length")
-            info: qsTrId("battery.volume_swipe_length.info")
+            visible: rootPage.bluetoothCodec !== null
+            label: qsTrId("battery.bluetooth_codec")
+            iconSource: MP.Theme.asset("icons/icon-codec.svg")
+            iconColor: MP.Theme.groupConnection
+            // the explanation, then what each option is (PipeWire's own description)
+            info: {
+                var lines = [qsTrId("battery.bluetooth_codec.info")];
+                (rootPage.bluetoothCodec?.options || []).forEach(function (option) {
+                    if (option && option.length >= 2)
+                        lines.push(rootPage.codecLabel(option) + " — " + String(option[1]));
+                });
+                return lines.join("\n\n");
+            }
 
             Components.Picker {
-                model: [qsTrId("battery.volume_swipe_length.default"), qsTrId("battery.volume_swipe_length.longer"), qsTrId("battery.volume_swipe_length.longest")]
-                currentIndex: rootPage.volumeSwipeLengthData?.selected ?? 0
-                enabled: (!(rootPage.volumeSwipeLengthData?.readonly ?? true) && volumeSwipe.checked)
+                model: (rootPage.bluetoothCodec?.options ?? []).map(rootPage.codecLabel)
+                currentIndex: {
+                    var options = rootPage.bluetoothCodec?.options || [];
+                    for (var i = 0; i < options.length; i++) {
+                        if (options[i][0] === rootPage.bluetoothCodec.selected) return i;
+                    }
+                    return -1;
+                }
+                enabled: !(rootPage.bluetoothCodec?.readonly ?? true)
                 onActivated: {
-                    if (rootPage.volumeSwipeLengthData) {
-                        rootPage.volumeSwipeLengthData.selected = currentIndex;
-                        cppBackend.setCapability("volumeSwipeLength", rootPage.currentAddress(), currentIndex);
+                    if (rootPage.bluetoothCodec && currentIndex >= 0) {
+                        var options = rootPage.bluetoothCodec.options || [];
+                        if (options[currentIndex]) {
+                            var nextValue = options[currentIndex][0];
+                            if (rootPage.bluetoothCodec.selected !== nextValue)
+                                cppBackend.setCapability("bluetoothCodec", rootPage.currentAddress(), nextValue);
+                        }
                     }
                 }
             }
         }
 
+        // What the Bluetooth link actually carries, read from the headphones' sink
         MP.FormRow {
             Layout.fillWidth: true
-            visible: rootPage.endCallData !== null
-            label: qsTrId("battery.end_call")
-            info: qsTrId("battery.end_call.info")
+            visible: rootPage.codecDetails(rootPage.bluetoothCodec?.details) !== ""
+            label: qsTrId("battery.codec_details")
+            iconSource: MP.Theme.asset("icons/icon-waveform.svg")
+            iconColor: MP.Theme.groupConnection
+            info: qsTrId("battery.codec_details.info")
+
+            MP.Label {
+                width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
+                text: rootPage.codecDetails(rootPage.bluetoothCodec?.details)
+                color: MP.Theme.secondaryText
+                elide: Text.ElideRight
+            }
+        }
+
+        // AAC at its best VBR, LDAC at 990 kbit/s: a WirePlumber rule the daemon writes for these headphones
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.bluetoothCodec?.highQuality !== undefined
+            label: qsTrId("battery.bluetooth_high_quality")
+            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.groupConnection
+            info: qsTrId("battery.bluetooth_high_quality.info")
+
+            Components.Toggle {
+                checked: rootPage.bluetoothCodec?.highQuality ?? false
+                enabled: !(rootPage.bluetoothCodec?.readonly ?? true)
+                Accessible.name: qsTrId("battery.bluetooth_high_quality")
+                onToggled: cppBackend.setCapability("bluetoothCodec", rootPage.currentAddress(), checked, "highQuality")
+            }
+        }
+
+        // Bit-perfect, or what changes the sound on its way (the info says why, right now)
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.signalPathData !== null
+            label: qsTrId("battery.signal_path")
+            iconSource: MP.Theme.asset("icons/icon-route.svg")
+            iconColor: MP.Theme.groupConnection
+            info: qsTrId("battery.signal_path.info") + (rootPage.signalPathData?.playing ? "\n\n" + rootPage.signalPathReasons(rootPage.signalPathData) : "")
+
+            MP.Label {
+                width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
+                text: rootPage.signalPathText(rootPage.signalPathData)
+                color: MP.Theme.secondaryText
+                elide: Text.ElideRight
+                Accessible.name: text + ". " + rootPage.signalPathReasons(rootPage.signalPathData)
+            }
+        }
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            visible: rootPage.autoSwitchData !== null
+            label: qsTrId("battery.auto_switch")
+            iconSource: MP.Theme.asset("icons/icon-arrows.svg")
+            iconColor: MP.Theme.groupConnection
+            info: qsTrId("battery.auto_switch.info")
 
             Components.Picker {
-                model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
-                currentIndex: (rootPage.endCallData?.selected === 3) ? 1 : 0
-                enabled: !(rootPage.endCallData?.readonly ?? true)
+                model: [qsTrId("battery.auto_switch.automatically"), qsTrId("battery.auto_switch.last_connected")]
+                currentIndex: rootPage.autoSwitchData?.selected ?? 0
+                enabled: !(rootPage.autoSwitchData?.readonly ?? true)
                 onActivated: {
-                    if (rootPage.endCallData) {
-                        rootPage.endCallData.selected = currentIndex === 0 ? 2 : 3;
-                        cppBackend.setCapability("endCall", rootPage.currentAddress(), rootPage.endCallData.selected);
+                    if (rootPage.autoSwitchData) {
+                        rootPage.autoSwitchData.selected = currentIndex;
+                        cppBackend.setCapability("autoSwitch", rootPage.currentAddress(), currentIndex);
                     }
                 }
             }
         }
 
-        MP.FormRow {
-            Layout.fillWidth: true
-            visible: rootPage.endCallData !== null
-            label: qsTrId("battery.mute_unmute")
-            info: qsTrId("battery.mute_unmute.info")
+        Repeater {
+            // plain switches the AirPods report (core: AapControlCapability Toggle)
+            model: [
+                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
+                { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
+                { icon: "icon-link.svg", key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
+            ].filter(m => m.key === "autoConnect")
+            delegate: MP.FormRow {
+                required property var modelData
+                Layout.fillWidth: true
+                visible: modelData.data !== null
+                label: modelData.label
+                iconSource: MP.Theme.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.groupConnection
+                info: modelData.info ?? ""
 
-            Components.Picker {
-                model: [qsTrId("battery.end_call.twice"), qsTrId("battery.end_call.once")]
-                currentIndex: (rootPage.endCallData?.selected === 2) ? 1 : 0
-                enabled: false
+                Components.Toggle {
+                    checked: modelData.data?.selected ?? false
+                    enabled: !(modelData.data?.readonly ?? true)
+                    onToggled: cppBackend.setCapability(modelData.key, rootPage.currentAddress(), checked)
+                }
             }
+        }
+
+        Repeater {
+            model: rootPage.zikSwitches.filter(z => z.group === "connection")
+            delegate: ZikSwitch { iconColor: MP.Theme.groupConnection }
         }
     }
 
-    // Customized transparency mode (AirPods Pro 2/3), stored on the AirPods
-    MP.Heading {
-        visible: hasInfo && rootPage.transparencyTuningData !== null
-        level: 5
-        Layout.topMargin: MP.Units.largeSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
-        text: qsTrId("battery.transparency_tuning.header")
-    }
-
-    Components.Card {
-        visible: hasInfo && rootPage.transparencyTuningData !== null
-
-        MP.FormRow {
-            Layout.fillWidth: true
-            label: qsTrId("battery.transparency_tuning.enabled")
-            info: qsTrId("battery.transparency_tuning.enabled.info")
-
-            Components.Toggle {
-                checked: rootPage.transparencyTuningData?.enabled ?? false
-                onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "enabled")
-            }
-        }
-        TuningSlider { field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification"); info: qsTrId("battery.transparency_tuning.amplification.info") }
-        TuningSlider { field: "balance"; label: qsTrId("battery.transparency_tuning.balance"); info: qsTrId("battery.transparency_tuning.balance.info") }
-        TuningSlider { field: "tone"; label: qsTrId("battery.transparency_tuning.tone"); info: qsTrId("battery.transparency_tuning.tone.info") }
-        TuningSlider { field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction"); info: qsTrId("battery.transparency_tuning.ambient_noise_reduction.info") }
-        MP.FormRow {
-            Layout.fillWidth: true
-            label: qsTrId("battery.transparency_tuning.conversation_boost")
-            info: qsTrId("battery.transparency_tuning.conversation_boost.info")
-
-            Components.Toggle {
-                checked: rootPage.transparencyTuningData?.conversationBoost ?? false
-                enabled: rootPage.transparencyTuningData?.enabled ?? false
-                onToggled: cppBackend.setCapability("transparencyTuning", rootPage.currentAddress(), checked, "conversationBoost")
-            }
-        }
-    }
-
-    // Name, model number, serial and firmware from the headphones; the name is stored on them
-    MP.Heading {
-        visible: hasInfo && rootPage.deviceInfoData !== null
-        level: 5
-        Layout.topMargin: MP.Units.largeSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
-        text: qsTrId("battery.device_info.header")
-    }
-
-    Components.Card {
-        visible: hasInfo && rootPage.deviceInfoData !== null
+    Section {
+        visible: hasInfo && (rootPage.deviceInfoData !== null || rootPage.zikIn("device"))
+        title: qsTrId("battery.device_info.header")
 
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.device_info.name")
+            iconSource: MP.Theme.asset("icons/icon-tag.svg")
+            iconColor: MP.Theme.groupDevice
             info: qsTrId("battery.device_info.name.info")
 
             MP.TextField {
@@ -1232,15 +1387,17 @@ Components.ScrollPage {
 
         Repeater {
             model: [
-                { label: qsTrId("battery.device_info.model"), value: rootPage.deviceInfoData?.model ?? "" },
-                { label: qsTrId("battery.device_info.serial"), value: rootPage.deviceInfoData?.serial ?? "" },
-                { label: qsTrId("battery.device_info.firmware"), value: rootPage.deviceInfoData?.firmware ?? "" }
+                { icon: "icon-headphones.svg", label: qsTrId("battery.device_info.model"), value: rootPage.deviceInfoData?.model ?? "" },
+                { icon: "icon-number.svg", label: qsTrId("battery.device_info.serial"), value: rootPage.deviceInfoData?.serial ?? "" },
+                { icon: "icon-chip.svg", label: qsTrId("battery.device_info.firmware"), value: rootPage.deviceInfoData?.firmware ?? "" }
             ]
             delegate: MP.FormRow {
                 required property var modelData
                 Layout.fillWidth: true
                 visible: modelData.value !== ""
                 label: modelData.label
+                iconSource: MP.Theme.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.groupDevice
                 info: modelData.info ?? ""
 
                 MP.Label {
@@ -1249,6 +1406,11 @@ Components.ScrollPage {
                     textFormat: Text.PlainText
                 }
             }
+        }
+
+        Repeater {
+            model: rootPage.zikLists.filter(z => z.group === "device")
+            delegate: ZikList { iconColor: MP.Theme.groupDevice }
         }
     }
 }

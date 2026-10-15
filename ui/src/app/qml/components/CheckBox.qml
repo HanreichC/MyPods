@@ -11,15 +11,15 @@ QQC2.CheckBox {
     id: control
     spacing: 6
     padding: 4
-    font.pixelSize: 15
+    font.pixelSize: MP.Theme.bodySize
     opacity: enabled ? 1 : 0.4
 
     indicator: Rectangle {
         x: control.leftPadding
         y: control.topPadding + (control.availableHeight - height) / 2
-        implicitWidth: 20
-        implicitHeight: 20
-        radius: 6
+        implicitWidth: 16
+        implicitHeight: 16
+        radius: 5
         color: control.checked ? MP.Theme.accent : MP.Theme.fill
         border.width: control.visualFocus ? 2 : 0
         border.color: MP.Theme.accent
@@ -28,7 +28,7 @@ QQC2.CheckBox {
         Impl.IconImage {
             anchors.centerIn: parent
             visible: control.checked
-            sourceSize: Qt.size(16, 16)
+            sourceSize: Qt.size(13, 13)
             source: MP.Theme.asset("icons/icon-check.svg")
             color: "white"
         }

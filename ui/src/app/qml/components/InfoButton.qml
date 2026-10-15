@@ -14,14 +14,14 @@ ToolButton {
     property string title: ""
     property string info: ""
 
-    implicitWidth: 28
-    implicitHeight: 28
+    implicitWidth: 24
+    implicitHeight: 24
     padding: 4
     display: AbstractButton.IconOnly
     icon.source: MP.Theme.asset("icons/icon-info.svg")
     icon.color: MP.Theme.accent
-    icon.width: 20
-    icon.height: 20
+    icon.width: 16
+    icon.height: 16
     focusPolicy: Qt.StrongFocus
     Accessible.name: qsTrId("info.about").arg(title)
     Accessible.description: info
@@ -33,7 +33,7 @@ ToolButton {
         id: dialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        width: Math.min(380, (parent?.width ?? 412) - 32)
+        width: Math.min(360, (parent?.width ?? 412) - 32)
         height: Math.min(implicitHeight, (parent?.height ?? 600) - 32)
         modal: true
         focus: true
@@ -77,7 +77,7 @@ ToolButton {
                         width: parent.width
                         text: root.title.replace(/:\s*$/, "")
                         color: MP.Theme.text
-                        font.pixelSize: 17
+                        font.pixelSize: 15
                         font.weight: Font.DemiBold
                         wrapMode: Text.Wrap
                         Accessible.role: Accessible.Heading
@@ -87,7 +87,7 @@ ToolButton {
                         text: root.info
                         textFormat: Text.PlainText
                         color: MP.Theme.secondaryText
-                        font.pixelSize: 14
+                        font.pixelSize: 13
                         lineHeight: 1.2
                         wrapMode: Text.Wrap
                     }

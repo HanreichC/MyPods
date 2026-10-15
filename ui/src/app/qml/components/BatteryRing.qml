@@ -13,7 +13,7 @@ Column {
     property bool isCharging: false
     property int status: 2
     property string name: ""
-    property int size: 64
+    property int size: 56
 
     readonly property real level: Math.max(0, Math.min(100, battery)) / 100
     readonly property color tint: MP.Theme.batteryColor(battery, isCharging)
@@ -81,7 +81,7 @@ Column {
         Text {
             text: root.name
             color: MP.Theme.secondaryText
-            font.pixelSize: 12
+            font.pixelSize: MP.Theme.captionSize
             font.weight: Font.Medium
         }
     }

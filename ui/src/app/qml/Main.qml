@@ -32,17 +32,16 @@ QQC2.ApplicationWindow {
     Material.primary: MP.Theme.accent
 
     property alias currentIndex: swipeView.currentIndex
-    readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radius
+    readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.windowRadius
     // Pages span the whole window and slide under the glass sidebar; their content starts right of it.
     // contentInset and titleInset (clear of the window buttons) are read by ScrollPage
     readonly property int contentInset: sidebar.x + sidebar.width
     readonly property int titleInset: windowBar.visible ? Math.max(0, contentInset + (width - contentInset + Math.min(width - contentInset - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)) / 2
                                                                      - windowBar.x + MP.Units.mediumSpacing) : 0
     readonly property var sections: [
-        { text: qsTrId("menu.battery"), icon: "icon-headphones-fill.svg" },
-        { text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
-        { text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
-        { text: qsTrId("menu.about"), icon: "icon-info-fill.svg" }
+        { page: 1, text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
+        { page: 2, text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
+        { page: 3, text: qsTrId("menu.about"), icon: "icon-info-fill.svg" }
     ]
 
     // "Links 80 % · Rechts 70 % · Case 40 %" for the sidebar, wired headphones say how they are connected
@@ -81,8 +80,8 @@ QQC2.ApplicationWindow {
     component WindowButton: QQC2.AbstractButton {
         id: windowButton
         property bool danger: false
-        implicitWidth: 44
-        implicitHeight: 44
+        implicitWidth: 36
+        implicitHeight: 36
         focusPolicy: Qt.NoFocus
         Accessible.name: text
         QQC2.ToolTip.visible: hovered
@@ -173,143 +172,155 @@ QQC2.ApplicationWindow {
         }
     }
 
-    // Navigation on the left like MyCAD's dashboard: the app, the headphones in use, the sections, the version
+    // A row in the sidebar: the headphones with their picture, the sections with their symbol; a second line
+    // below the name, highlighted while its page is open
+    component SidebarItem: QQC2.AbstractButton {
+        id: sidebarItem
+        property bool current: false
+        property string detail: ""
+        property var device: null
+        Layout.fillWidth: true
+        implicitHeight: Math.max(device ? 48 : 32, contentItem.implicitHeight + 12)
+        Accessible.role: Accessible.PageTab
+        Accessible.name: text
+
+        background: Rectangle {
+            radius: MP.Theme.tileRadius
+            color: sidebarItem.current ? MP.Theme.fill : sidebarItem.hovered ? MP.Theme.tertiaryFill : "transparent"
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        contentItem: RowLayout {
+            spacing: 10
+
+            Item {
+                Layout.leftMargin: sidebarItem.device ? 6 : 10
+                implicitWidth: sidebarItem.device ? 34 : 16
+                implicitHeight: implicitWidth
+
+                Components.DeviceImage {
+                    anchors.fill: parent
+                    visible: !!sidebarItem.device
+                    sourceSize: Qt.size(68, 68)
+                    info: sidebarItem.device ?? ({})
+                }
+                Impl.IconImage {
+                    anchors.centerIn: parent
+                    visible: !sidebarItem.device
+                    sourceSize: Qt.size(16, 16)
+                    source: sidebarItem.icon.source
+                    color: sidebarItem.current ? MP.Theme.accent : MP.Theme.secondaryText
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.rightMargin: 8
+                spacing: 1
+
+                Text {
+                    Layout.fillWidth: true
+                    text: sidebarItem.text
+                    color: MP.Theme.text
+                    font.pixelSize: 13
+                    font.weight: sidebarItem.current || sidebarItem.device ? Font.DemiBold : Font.Normal
+                    wrapMode: Text.Wrap // long names on two lines rather than cut off
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: text !== ""
+                    text: sidebarItem.detail
+                    color: MP.Theme.secondaryText
+                    font.pixelSize: MP.Theme.sectionSize
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+            }
+        }
+    }
+
+    // Navigation on the left like MyCAD's dashboard and the Mac's System Settings: the headphones that are
+    // connected (a click makes them the active ones and opens their controls), the sections, the version
     GlassBar {
         id: sidebar
+        // the headphones to list: the connected ones, or the active ones before the list has come
+        readonly property var devices: batteryPage.connectedHeadphones.length > 0 ? batteryPage.connectedHeadphones
+                                       : batteryPage.hasInfo ? [batteryPage.infoData] : []
         x: 12
         y: 12
-        width: 240
+        width: 232
         height: parent.height - 24
-        radius: 20
+        radius: MP.Theme.radius
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
+            anchors.margins: 8
             anchors.topMargin: 16
-            anchors.bottomMargin: 16
+            anchors.bottomMargin: 14
             spacing: 2
 
             MP.Heading {
-                Layout.leftMargin: 6
-                Layout.bottomMargin: 12
+                Layout.leftMargin: 10
+                Layout.bottomMargin: 14
                 level: 2
                 text: "MyPods"
             }
 
-            // The headphones in use; a click opens their controls
-            QQC2.AbstractButton {
-                id: deviceButton
-                readonly property var info: batteryPage.infoData
-                readonly property bool hasInfo: batteryPage.hasInfo
-                Layout.fillWidth: true
-                Layout.bottomMargin: 14
-                implicitHeight: Math.max(64, contentItem.implicitHeight + 20)
-                Accessible.name: hasInfo ? (info?.name ?? "") : qsTrId("battery.connect_headphones.header")
-                onClicked: swipeView.currentIndex = 0
+            MP.Heading {
+                Layout.leftMargin: 10
+                Layout.bottomMargin: 4
+                level: 5
+                text: qsTrId("headphones.headphones")
+            }
 
-                background: Rectangle {
-                    radius: 14
-                    color: deviceButton.pressed || deviceButton.hovered ? MP.Theme.fill : MP.Theme.tertiaryFill
-                }
-                contentItem: RowLayout {
-                    spacing: 10
-
-                    Item {
-                        Layout.leftMargin: 8
-                        implicitWidth: 44
-                        implicitHeight: 44
-
-                        Components.DeviceImage {
-                            anchors.fill: parent
-                            visible: deviceButton.hasInfo
-                            sourceSize: Qt.size(88, 88)
-                            info: deviceButton.info
-                        }
-                        Impl.IconImage {
-                            anchors.centerIn: parent
-                            visible: !deviceButton.hasInfo
-                            sourceSize: Qt.size(26, 26)
-                            source: MP.Theme.asset("icons/icon-headphones.svg")
-                            color: MP.Theme.secondaryText
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.rightMargin: 8
-                        spacing: 2
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: deviceButton.Accessible.name
-                            color: MP.Theme.text
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            wrapMode: Text.Wrap // long names on two lines rather than cut off
-                            maximumLineCount: 2
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            visible: deviceButton.hasInfo
-                            text: root.batteryText(deviceButton.info)
-                            color: MP.Theme.secondaryText
-                            font.pixelSize: 11
-                            wrapMode: Text.Wrap
-                            maximumLineCount: 2
-                            elide: Text.ElideRight
-                        }
+            Repeater {
+                model: sidebar.devices
+                delegate: SidebarItem {
+                    required property var modelData
+                    readonly property bool active: modelData.address === batteryPage.currentAddress()
+                    device: modelData
+                    text: modelData.name ?? ""
+                    detail: active ? root.batteryText(batteryPage.infoData) : qsTrId("tray.popup.connected")
+                    current: active && swipeView.currentIndex === 0
+                    onClicked: {
+                        if (!active)
+                            cppBackend.setActiveDevice(modelData.address);
+                        swipeView.currentIndex = 0;
                     }
                 }
             }
 
+            // nothing connected: the way to the help on connecting
+            SidebarItem {
+                visible: sidebar.devices.length === 0
+                text: qsTrId("battery.connect_headphones.header")
+                icon.source: MP.Theme.asset("icons/icon-headphones.svg")
+                current: swipeView.currentIndex === 0
+                onClicked: swipeView.currentIndex = 0
+            }
+
+            Item { implicitHeight: 14 }
+
             Repeater {
                 model: root.sections
-                delegate: QQC2.AbstractButton {
-                    id: navItem
+                delegate: SidebarItem {
                     required property var modelData
-                    required property int index
-                    readonly property bool current: swipeView.currentIndex === index
-                    Layout.fillWidth: true
-                    implicitHeight: 38
                     text: modelData.text
-                    Accessible.role: Accessible.PageTab
-                    Accessible.name: text
-                    onClicked: swipeView.currentIndex = index
-
-                    background: Rectangle {
-                        radius: 10
-                        color: navItem.current ? MP.Theme.fill : navItem.hovered ? MP.Theme.tertiaryFill : "transparent"
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                    }
-                    contentItem: RowLayout {
-                        spacing: 10
-
-                        Impl.IconImage {
-                            Layout.leftMargin: 10
-                            sourceSize: Qt.size(18, 18)
-                            source: MP.Theme.asset("icons/" + navItem.modelData.icon)
-                            color: navItem.current ? MP.Theme.accent : MP.Theme.secondaryText
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: navItem.text
-                            color: MP.Theme.text
-                            font.pixelSize: 14
-                            font.weight: navItem.current ? Font.DemiBold : Font.Normal
-                            elide: Text.ElideRight
-                        }
-                    }
+                    icon.source: MP.Theme.asset("icons/" + modelData.icon)
+                    current: swipeView.currentIndex === modelData.page
+                    onClicked: swipeView.currentIndex = modelData.page
                 }
             }
 
             Item { Layout.fillHeight: true }
 
             Text {
-                Layout.leftMargin: 6
+                Layout.leftMargin: 10
                 text: "MyPods " + Qt.application.version
                 color: MP.Theme.secondaryText
-                font.pixelSize: 11
+                font.pixelSize: MP.Theme.sectionSize
             }
         }
     }
@@ -345,7 +356,7 @@ QQC2.ApplicationWindow {
 
             Item {
                 width: 30
-                height: 44
+                height: 36
                 Accessible.role: Accessible.Grip
                 Accessible.name: qsTrId("window.move")
 

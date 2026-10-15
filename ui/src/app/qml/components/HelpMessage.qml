@@ -15,8 +15,8 @@ ColumnLayout {
     spacing: MP.Units.mediumSpacing
 
     Image {
-        Layout.preferredWidth: 112
-        Layout.preferredHeight: 112
+        Layout.preferredWidth: 96
+        Layout.preferredHeight: 96
         Layout.alignment: Qt.AlignHCenter
         Layout.bottomMargin: MP.Units.mediumSpacing
         sourceSize: Qt.size(224, 224)

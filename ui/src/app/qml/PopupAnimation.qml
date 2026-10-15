@@ -29,7 +29,7 @@ QQC2.ApplicationWindow {
     // KDE blurs the desktop behind the panel (main.cpp, BlurBehind.h): where, and whether it does
     readonly property rect glassRect: Qt.rect(frame.x + frame.shadowMargin, frame.y + frame.shadowMargin,
                                               frame.width - frame.shadowMargin * 2, frame.height - frame.shadowMargin * 2)
-    readonly property real glassRadius: 28
+    readonly property real glassRadius: MP.Theme.radius
     property bool desktopBlur: false
 
     function dismiss() {

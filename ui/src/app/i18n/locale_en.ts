@@ -1291,5 +1291,25 @@ MyPods adds files under ~/.config/pipewire for it (…/60-mypods-hires.conf) and
         <source></source>
         <translation>Close</translation>
     </message>
+    <message id="battery.group.sound">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Sound</translation>
+    </message>
+    <message id="battery.group.detection">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Detection</translation>
+    </message>
+    <message id="battery.group.controls">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Controls</translation>
+    </message>
+    <message id="battery.group.connection">
+        <location filename="../qml/pages/BatteryPage.qml" line="0"/>
+        <source></source>
+        <translation>Connection</translation>
+    </message>
 </context>
 </TS>

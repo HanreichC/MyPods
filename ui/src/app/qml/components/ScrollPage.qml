@@ -46,7 +46,8 @@ QQC2.Page {
 
             ColumnLayout {
                 id: column
-                y: 20 // the large title level with the window buttons
+                // the page title level with the window buttons
+                y: 12 + (MP.Theme.barHeight - MP.Theme.titleSize * 1.2) / 2
                 // right of the window's sidebar, which the page slides under
                 readonly property int inset: QQC2.ApplicationWindow.window?.contentInset ?? 0
                 width: Math.min(parent.width - inset - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)

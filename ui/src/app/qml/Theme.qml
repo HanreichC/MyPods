@@ -48,10 +48,30 @@ QtObject {
     readonly property color shadow: Qt.rgba(0, 0, 0, dark ? 0.45 : 0.13)
     readonly property color closeHover: "#E5484D"
 
-    readonly property int radius: 26
-    // The glass bars at the top of the window (tabs, window buttons); their buttons are 6 px smaller all round
-    readonly property int barHeight: 56
-    readonly property int maxContentWidth: 480
+    // One scale of corners, each concentric in the one around it (12 px apart):
+    // the window, then sidebar / cards / popups, then tiles and rows in them, then small controls
+    readonly property int windowRadius: 32
+    readonly property int radius: 20
+    readonly property int tileRadius: 12
+    readonly property int smallRadius: 8
+
+    // One scale of type, a desktop's like MyCAD's (not the iPhone's 17 pt)
+    readonly property int titleSize: 24
+    readonly property int bodySize: 14
+    readonly property int captionSize: 12
+    readonly property int sectionSize: 11
+
+    // The glass capsule with the window buttons; its buttons are 6 px smaller all round
+    readonly property int barHeight: 48
+    readonly property int maxContentWidth: 560
+
+    // Icon tiles by group, so a row's colour says where it belongs
+    readonly property color groupNoise: indigo
+    readonly property color groupSound: dark ? "#FF375F" : "#FF2D55"   // systemPink
+    readonly property color groupDetection: green
+    readonly property color groupControls: orange
+    readonly property color groupConnection: accent
+    readonly property color groupDevice: gray
 
     function asset(path) {
         return Qt.resolvedUrl("assets/" + path);

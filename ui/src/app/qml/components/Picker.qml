@@ -16,8 +16,8 @@ QQC2.ComboBox {
     flat: true
     // Sized to the longest option, so no language gets cut off
     implicitContentWidthPolicy: QQC2.ComboBox.WidestText
-    implicitHeight: 36
-    font.pixelSize: 17
+    implicitHeight: 30
+    font.pixelSize: MP.Theme.bodySize
     Material.foreground: MP.Theme.secondaryText
     opacity: enabled ? 1 : 0.4
 
@@ -27,7 +27,7 @@ QQC2.ComboBox {
     onModelChanged: { reapplyIndex.when = true; reapplyIndex.when = false; }
 
     background: Rectangle {
-        radius: 10
+        radius: MP.Theme.smallRadius
         color: control.hovered || control.pressed ? MP.Theme.tertiaryFill : "transparent"
     }
 
@@ -45,7 +45,7 @@ QQC2.ComboBox {
         required property var modelData
         required property int index
         width: ListView.view.width
-        height: 40
+        height: 30
         padding: 0
         leftPadding: 8
         rightPadding: 12
@@ -55,9 +55,9 @@ QQC2.ComboBox {
             spacing: 6
 
             Impl.IconImage {
-                Layout.preferredWidth: 18
-                Layout.preferredHeight: 18
-                sourceSize: Qt.size(18, 18)
+                Layout.preferredWidth: 16
+                Layout.preferredHeight: 16
+                sourceSize: Qt.size(16, 16)
                 source: MP.Theme.asset("icons/icon-check.svg")
                 color: MP.Theme.accent
                 opacity: control.currentIndex === index ? 1 : 0
@@ -67,18 +67,18 @@ QQC2.ComboBox {
                 text: modelData
                 color: MP.Theme.text
                 font.family: control.font.family
-                font.pixelSize: 15
+                font.pixelSize: MP.Theme.bodySize
                 elide: Text.ElideRight
             }
         }
         background: Rectangle {
-            radius: 8
+            radius: MP.Theme.smallRadius // concentric in the menu's tile radius at its 4 px padding
             color: parent.highlighted || parent.hovered ? MP.Theme.tertiaryFill : "transparent"
         }
     }
 
-    popup.padding: 5
-    popup.background: MP.Glass { radius: 14; blurSource: QQC2.ApplicationWindow.window?.contentItem ?? null }
+    popup.padding: 4
+    popup.background: MP.Glass { radius: MP.Theme.tileRadius; blurSource: QQC2.ApplicationWindow.window?.contentItem ?? null }
     popup.enter: Transition {
         NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120; easing.type: Easing.OutCubic }
         NumberAnimation { property: "scale"; from: 0.94; to: 1; duration: 200; easing.type: Easing.OutBack }

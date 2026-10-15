@@ -7,5 +7,5 @@ import magicpods as MP
 
 Text {
     color: MP.Theme.text
-    font.pixelSize: 17
+    font.pixelSize: MP.Theme.bodySize
 }

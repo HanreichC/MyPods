@@ -14,7 +14,7 @@ import magicpods as MP
 // - neither (or the software renderer): MyCAD's glass alert, nearly opaque and light at the top.
 Item {
     id: root
-    property real radius: 22
+    property real radius: MP.Theme.radius
     property Item blurSource: null
     property bool translucent: false
     readonly property bool lens: blurSource !== null && GraphicsInfo.api !== GraphicsInfo.Software

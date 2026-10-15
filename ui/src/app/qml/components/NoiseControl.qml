@@ -83,7 +83,7 @@ ColumnLayout {
         enabled: !(root.ancData?.readonly ?? true)
         opacity: enabled ? 1 : 0.4
         Layout.fillWidth: true
-        implicitHeight: 56
+        implicitHeight: 44
         radius: height / 2
         color: root.floating ? MP.Theme.material : MP.Theme.tertiaryFill
         border.width: activeFocus ? 2 : root.floating ? 1 : 0
@@ -172,7 +172,7 @@ ColumnLayout {
 
                         Impl.IconImage {
                             anchors.centerIn: parent
-                            sourceSize: Qt.size(24, 24)
+                            sourceSize: Qt.size(20, 20)
                             source: MP.Theme.asset("icons/" + modelData.icon)
                             color: MP.Theme.text
                             // lens magnification under the glass thumb
@@ -220,7 +220,7 @@ ColumnLayout {
 
         MP.Label {
             color: MP.Theme.secondaryText
-            font.pixelSize: 13
+            font.pixelSize: MP.Theme.captionSize
             font.weight: Font.Medium
             text: root.buttons.find(b => b.mode === root.selectedAnc)?.text ?? ""
         }

@@ -5,13 +5,14 @@
 import QtQuick
 import magicpods as MP
 
-// HIG text styles: 1 = Large Title, 2 = Title 2, 3 = Headline, 4 = Body emphasized, 5 = grouped section header (Footnote)
+// Desktop text styles like MyCAD's: 1 = page title, 2 = title, 3 = headline, 4 = body emphasized,
+// 5 = section header (small caps in grey, like MyCAD's LIBRARY)
 Text {
     id: root
     property int level: 1
     color: level === 5 ? MP.Theme.secondaryText : MP.Theme.text
-    font.pixelSize: ({ 1: 34, 2: 22, 3: 17, 4: 17 })[level] ?? 13
-    font.weight: level === 5 ? Font.Normal : (level <= 2 ? Font.Bold : Font.DemiBold)
-    font.letterSpacing: ({ 1: -0.7, 2: -0.4 })[level] ?? 0
+    font.pixelSize: ({ 1: MP.Theme.titleSize, 2: 20, 3: 15, 4: MP.Theme.bodySize })[level] ?? MP.Theme.sectionSize
+    font.weight: level <= 2 ? Font.Bold : Font.DemiBold
+    font.letterSpacing: ({ 1: -0.4, 2: -0.3, 5: 0.5 })[level] ?? 0
     font.capitalization: level === 5 ? Font.AllUppercase : Font.MixedCase
 }

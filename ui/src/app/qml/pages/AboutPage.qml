@@ -16,12 +16,12 @@ Components.ScrollPage {
     Item {
         Layout.fillWidth: true
         Layout.topMargin: MP.Units.hugeSpacing
-        implicitHeight: 112
+        implicitHeight: 88
 
         RectangularShadow {
             anchors.fill: logo
             anchors.margins: 8
-            radius: 26
+            radius: MP.Theme.radius
             blur: 32
             offset.y: 10
             color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0.5 : 0.18)
@@ -30,7 +30,7 @@ Components.ScrollPage {
         Image {
             id: logo
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 112; height: 112
+            width: 88; height: 88
             sourceSize: Qt.size(224, 224)
             source: MP.Theme.asset("icons/mp-logo-color.svg")
         }
@@ -60,12 +60,16 @@ Components.ScrollPage {
 
         MP.FormRow {
             label: "MyPods"
+            iconSource: MP.Theme.asset("icons/icon-apps.svg")
+            iconColor: MP.Theme.accent
             MP.Label { color: MP.Theme.secondaryText; text: Qt.application.version }
         }
 
         // The running daemon's version; only without a connection the file next to the app is asked
         MP.FormRow {
             label: "MyPods Core"
+            iconSource: MP.Theme.asset("icons/icon-chip.svg")
+            iconColor: MP.Theme.gray
             MP.Label {
                 color: MP.Theme.secondaryText
                 text: (cppBackend && cppBackend.backendVersion)

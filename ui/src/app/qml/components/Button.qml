@@ -8,12 +8,12 @@ import magicpods as MP
 // Capsule button like MyCAD's: highlighted = the prominent action (accent, white text), otherwise a quiet fill.
 QQC2.Button {
     id: control
-    implicitHeight: 34
+    implicitHeight: 30
     topInset: 0 // Material insets the background 6 px top and bottom
     bottomInset: 0
-    leftPadding: 18
-    rightPadding: 18
-    font.pixelSize: 14
+    leftPadding: 16
+    rightPadding: 16
+    font.pixelSize: 13
     font.weight: Font.DemiBold
     opacity: enabled ? 1 : 0.4
 

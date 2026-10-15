@@ -34,7 +34,7 @@ QQC2.ApplicationWindow {
     readonly property int topInset: 6
     // KDE blurs the desktop behind the panel (main.cpp, BlurBehind.h): where, and whether it does
     readonly property rect glassRect: Qt.rect(panel.x, panel.y, panel.width, panel.height)
-    readonly property real glassRadius: 22
+    readonly property real glassRadius: MP.Theme.radius
     property bool desktopBlur: false
 
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
@@ -122,7 +122,7 @@ QQC2.ApplicationWindow {
         default property alias content: tileColumn.data
         Layout.fillWidth: true
         implicitHeight: tileColumn.implicitHeight + 24
-        radius: 16
+        radius: MP.Theme.tileRadius
         color: MP.Theme.tertiaryFill
 
         ColumnLayout {
@@ -250,7 +250,7 @@ QQC2.ApplicationWindow {
 
                     Text {
                         Layout.fillWidth: true
-                        text: qsTrId("battery.conversation_awareness")
+                        text: qsTrId("battery.conversation_awareness").replace(/:\s*$/, "") // a label, not a form field
                         color: MP.Theme.text
                         font.pixelSize: 13
                         font.weight: Font.Medium
