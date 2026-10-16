@@ -143,21 +143,6 @@
         <source></source>
         <translation>Adaptive mode:</translation>
     </message>
-    <message id="battery.adaptive_audio_noise.more">
-        <location filename="../qml/pages/BatteryPage.qml" line="435"/>
-        <source></source>
-        <translation>More noise</translation>
-    </message>
-    <message id="battery.adaptive_audio_noise.default">
-        <location filename="../qml/pages/BatteryPage.qml" line="435"/>
-        <source></source>
-        <translation>Default</translation>
-    </message>
-    <message id="battery.adaptive_audio_noise.less">
-        <location filename="../qml/pages/BatteryPage.qml" line="435"/>
-        <source></source>
-        <translation>Less noise</translation>
-    </message>
     <message id="battery.anc_one_airpod">
         <location filename="../qml/pages/BatteryPage.qml" line="464"/>
         <source></source>
@@ -1107,7 +1092,7 @@ The iPhone only talks to the computer if BlueZ announces itself as an Apple devi
     <message id="battery.adaptive_audio_noise.info">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
         <source></source>
-        <translation>How much of your surroundings adaptive mode lets in: more noise (closer to transparency), default, or less noise (closer to noise cancellation).</translation>
+        <translation>How much of your surroundings adaptive mode lets in, like the slider on the iPhone: left more noise (closer to transparency), right less (closer to noise cancellation).</translation>
     </message>
     <message id="battery.anc_one_airpod.info">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>

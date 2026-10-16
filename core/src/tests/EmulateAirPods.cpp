@@ -3,15 +3,22 @@
 
 // Emulated AirPods Max against the real audio path: a null sink named like the headphones' bluez sink,
 // AAP packets fed straight into the capabilities, everything after that is the daemon's own code.
+// Then emulated AirPods Pro 3 switching between this computer and an iPhone, with MPRIS players on the session
+// bus and a fake BlueZ adapter on the system bus (the container's; on a desktop org.bluez is taken).
 // Needs a running PipeWire, no Bluetooth. magicpodscore --emulate-airpods
 
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
 #include "device/ZikDevice.h"
 #include "device/capabilities/aap/AapAudioEffectsCapabilities.h"
+#include "device/capabilities/aap/AapAudioSwitchCapability.h"
+#include "device/capabilities/aap/AapEarDetectionCapability.h"
+#include "dbus/DBusService.h"
+#include "sdk/aap/Att.h"
 #include "audio/AudioEffects.h"
 #include "Logger.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdio>
@@ -89,7 +96,109 @@ namespace
             _client = Client::CreateL2CAP(MAC, 0x1001); // never started: sent packets just queue
         }
         void Receive(const std::vector<unsigned char> &packet) { GetResponseDataRecived().FireEvent(packet); }
+
+        std::mutex sentLock;
+        std::vector<std::vector<unsigned char>> sent;
+        void SendData(const std::vector<unsigned char> &data) override
+        {
+            std::lock_guard lock{sentLock};
+            sent.push_back(data);
+        }
+        bool Sent(const std::vector<unsigned char> &packet)
+        {
+            std::lock_guard lock{sentLock};
+            return std::ranges::find(sent, packet) != sent.end();
+        }
+        void ClearSent()
+        {
+            std::lock_guard lock{sentLock};
+            sent.clear();
+        }
     };
+
+    // A media player on the session bus, as Spotify or a browser shows itself (MPRIS)
+    struct FakePlayer
+    {
+        static constexpr const char *PLAYER = "org.mpris.MediaPlayer2.Player";
+        std::unique_ptr<sdbus::IConnection> bus;
+        std::unique_ptr<sdbus::IObject> object;
+        std::mutex lock;
+        std::string status = "Stopped";
+        std::atomic<int> plays{0}, pauses{0};
+
+        explicit FakePlayer(const std::string &name)
+        {
+            bus = sdbus::createSessionBusConnection(name);
+            object = sdbus::createObject(*bus, "/org/mpris/MediaPlayer2");
+            object->registerMethod("Play").onInterface(PLAYER).implementedAs([this] { plays++; Set("Playing"); });
+            object->registerMethod("Pause").onInterface(PLAYER).implementedAs([this] { pauses++; Set("Paused"); });
+            object->registerProperty("PlaybackStatus").onInterface(PLAYER).withGetter([this] { std::lock_guard l{lock}; return status; });
+            object->finishRegistration();
+            bus->enterEventLoopAsync();
+        }
+        ~FakePlayer()
+        {
+            bus->leaveEventLoop(); // no Play/Pause runs into the object while it goes
+        }
+        // the user presses play or pause in the player itself
+        void Set(const std::string &newStatus)
+        {
+            {
+                std::lock_guard l{lock};
+                status = newStatus;
+            }
+            object->emitPropertiesChangedSignal(PLAYER, std::vector<std::string>{"PlaybackStatus"});
+        }
+        std::string Status()
+        {
+            std::lock_guard l{lock};
+            return status;
+        }
+    };
+
+    // bluetoothd's adapter, as far as the daemon asks it: its address and name
+    struct FakeBluez
+    {
+        std::unique_ptr<sdbus::IConnection> bus;
+        std::unique_ptr<sdbus::IObject> root, adapter; // destroyed before the bus they live on
+
+        explicit FakeBluez(const std::string &address)
+        {
+            bus = sdbus::createSystemBusConnection("org.bluez");
+            root = sdbus::createObject(*bus, "/");
+            root->addObjectManager();
+            adapter = sdbus::createObject(*bus, "/org/bluez/hci0");
+            adapter->registerProperty("Address").onInterface("org.bluez.Adapter1").withGetter([address] { return address; });
+            adapter->registerProperty("Alias").onInterface("org.bluez.Adapter1").withGetter([] { return std::string("chris-p1"); });
+            adapter->registerProperty("Powered").onInterface("org.bluez.Adapter1").withGetter([] { return true; });
+            adapter->finishRegistration();
+            bus->enterEventLoopAsync();
+        }
+        ~FakeBluez()
+        {
+            bus->leaveEventLoop(); // no call runs into the objects while they go
+            adapter.reset();
+            root.reset();
+        }
+    };
+
+    // An AAP packet from the AirPods: header, opcode, body
+    std::vector<unsigned char> Aap(unsigned char opcode, std::vector<unsigned char> body)
+    {
+        std::vector<unsigned char> packet{0x04, 0x00, 0x04, 0x00, opcode, 0x00};
+        packet.insert(packet.end(), body.begin(), body.end());
+        return packet;
+    }
+
+    std::vector<unsigned char> MacBytes(const std::string &mac, bool reversed)
+    {
+        std::vector<unsigned char> bytes;
+        for (size_t i = 0; i < 17; i += 3)
+            bytes.push_back(static_cast<unsigned char>(std::stoi(mac.substr(i, 2), nullptr, 16)));
+        if (reversed)
+            std::ranges::reverse(bytes);
+        return bytes;
+    }
 
     int failures = 0;
     void Check(const char *name, bool ok, const std::string &detail = "")
@@ -323,6 +432,208 @@ int EmulateAirPods()
         Check("Zik: own bands kept", eq["selected"] == "Custom" && eq["bands"] == nlohmann::json({3.0, -1.5, 0.0, 12.0, -12.0}), eq.dump());
         zik->SetCapabilities({{"equalizer", {{"custom", {3, 0, 0, 0, 13}}}}});
         Check("Zik: out of range refused", zik->GetAsJson()["capabilities"]["equalizer"]["bands"][4] == -12.0);
+    }
+
+    // AirPods Pro 3 between this computer and an iPhone ("Connect to This Mac: Automatically"): what plays gets the
+    // AirPods. The iPhone's side is the AAP traffic the AirPods relay; the players are real MPRIS players on the bus.
+    std::filesystem::remove(settingsPath);
+    const std::string LOCAL = "10:20:30:40:50:60", IPHONE = "A1:B2:C3:D4:E5:F6";
+    std::unique_ptr<FakeBluez> bluez;
+    try
+    {
+        bluez = std::make_unique<FakeBluez>(LOCAL);
+        DBusService service; // finds the adapter, whose address and name the switching asks for
+    }
+    catch (const std::exception &e)
+    {
+        Check("Handoff: fake BlueZ on the system bus", false, e.what());
+    }
+    if (bluez)
+    {
+        std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces{{"org.bluez.Device1", {
+            {"Address", sdbus::Variant{MAC}},
+            {"Name", sdbus::Variant{std::string("AirPods Pro (emuliert)")}},
+            {"Modalias", sdbus::Variant{std::string("bluetooth:v004Cp2027d0001")}},
+            {"Connected", sdbus::Variant{true}},
+        }}};
+        auto info = std::make_shared<DBusDeviceInfo>(sdbus::ObjectPath{"/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"}, interfaces);
+        EmulatedPods pods{info, std::make_shared<PulseAudioClient>(), std::make_shared<SettingsService>(settingsPath.string())};
+        AapAudioSwitchCapability handoff{pods};
+        AapEarDetectionCapability ear{pods};
+        FakePlayer music{"org.mpris.MediaPlayer2.spotify"};
+        FakePlayer phone{"org.mpris.MediaPlayer2.kdeconnect.mpris_iphone"}; // KDE Connect's mirror of the phone's player
+        std::string speakers = Sh("pactl load-module module-null-sink sink_name=mypods_speakers");
+        auto inEar = [](unsigned char primary, unsigned char secondary) { return Aap(0x06, {primary, secondary}); };
+        auto source = [&](int type) { auto body = MacBytes(IPHONE, true); body.push_back(static_cast<unsigned char>(type)); return Aap(0x0E, body); };
+        auto owns = [](bool yes) { return Aap(0x09, {0x06, static_cast<unsigned char>(yes ? 0x01 : 0x00), 0x00, 0x00, 0x00}); };
+        auto iphoneTakes = [&]
+        {
+            std::string text = "Hijackv2 audioRoutingSetOwnershipToFalse btName iPhone von Chris";
+            auto body = MacBytes(IPHONE, true);
+            body.insert(body.end(), {static_cast<unsigned char>(text.size()), 0x00});
+            body.insert(body.end(), text.begin(), text.end());
+            return Aap(0x11, body);
+        };
+        // PC playback starts and the takeover runs to its end (it resumes the player twice, 1.5 s apart)
+        auto playHere = [&]
+        {
+            int before = music.plays;
+            music.Set("Paused");
+            music.Set("Playing");
+            return WaitFor([&] { return music.plays >= before + 2; }, 6000);
+        };
+        // ... or doesn't take them: playback starts and nothing happens
+        auto startHere = [&]
+        {
+            music.Set("Paused");
+            music.Set("Playing");
+            std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        };
+        auto json = [&] { return handoff.GetAsJson()["autoSwitch"]; };
+
+        pods.Receive(Aap(0x2E, [&] {
+            std::vector<unsigned char> body{0x00, 0x00, 0x02};
+            for (auto *mac : {&LOCAL, &IPHONE})
+            {
+                auto bytes = MacBytes(*mac, false);
+                body.insert(body.end(), bytes.begin(), bytes.end());
+                body.insert(body.end(), {0x01, 0x01});
+            }
+            return body;
+        }()));
+        pods.Receive(Aap(0x09, {0x0A, 0x01, 0x00, 0x00, 0x00})); // ear detection on
+        pods.Receive(inEar(0x00, 0x00));
+        Check("Pro 3: both worn", pods.podsInEar == 2 && json()["owns"] == true, json().dump());
+
+        Sh("pactl set-default-sink mypods_speakers");
+        bool took = playHere();
+        Check("Pro 3: playback here takes the AirPods", took && pods.ownsAudio && music.Status() == "Playing" &&
+                                                        pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)), music.Status());
+        Check("Pro 3: takeover asks the iPhone, never this computer", pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)) &&
+                                                                    pods.Sent(AapAudioSwitchCapability::ShowNearbyUI(IPHONE)) &&
+                                                                    pods.Sent(AapAudioSwitchCapability::MediaInformation(IPHONE, LOCAL, "chris-p1")) &&
+                                                                    !pods.Sent(AapAudioSwitchCapability::HijackRequest(LOCAL)));
+        Check("Pro 3: the AirPods are the output", WaitFor([] { return Sh("pactl get-default-sink") == BLUEZ_SINK; }), Sh("pactl get-default-sink"));
+
+        pods.Receive(source(2)); // the iPhone's last report before it stopped
+        Check("Pro 3: stale report right after the takeover ignored", pods.ownsAudio);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        pods.ClearSent();
+        pods.Receive(iphoneTakes());
+        Check("Pro 3: the iPhone takes them, this computer lets go", !pods.ownsAudio && pods.Sent(AapAudioSwitchCapability::OwnsConnection(false)) &&
+                                                                    json()["source"] == "iPhone" && json()["owns"] == false, json().dump());
+
+        // during the takeover the AirPods still report the iPhone; that must not bounce the audio back
+        pods.ClearSent();
+        int before = music.plays;
+        music.Set("Paused");
+        music.Set("Playing");
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        pods.Receive(source(2));
+        pods.Receive(owns(false));
+        WaitFor([&] { return music.plays >= before + 2; }, 6000);
+        Check("Pro 3: reports during the takeover don't bounce it back", pods.ownsAudio && pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)));
+        pods.Receive(owns(false));
+        Check("Pro 3: nor in the 3 s after it", pods.ownsAudio);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        pods.Receive(owns(false));
+        Check("Pro 3: the AirPods say another device owns them: let go", !pods.ownsAudio);
+
+        // Apple never steals a call
+        pods.Receive(source(1));
+        pods.ClearSent();
+        startHere();
+        Check("Pro 3: a call on the iPhone keeps them there", !pods.ownsAudio && !pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)));
+        pods.Receive(source(0));
+
+        // nobody wears them: playing here stays on the speakers, and ear detection leaves the player alone
+        int pauses = music.pauses;
+        pods.Receive(inEar(0x01, 0x01));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        Check("Pro 3: taken out while the iPhone has them, nothing paused here", music.pauses == pauses && music.Status() == "Playing");
+        startHere();
+        Check("Pro 3: not worn, not taken", !pods.ownsAudio && !pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)));
+        pods.Receive(inEar(0x00, 0x00));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        Check("Pro 3: put back in while the iPhone has them, nothing resumed here", music.pauses == pauses);
+
+        // "When Last Connected to This Mac": only by hand
+        handoff.SetFromJson({{"autoSwitch", {{"selected", 1}}}});
+        startHere();
+        Check("Pro 3: switching by hand only, playback doesn't take them", !pods.ownsAudio);
+        before = music.plays;
+        handoff.SetFromJson({{"autoSwitch", {{"takeover", true}}}});
+        Check("Pro 3: \"Move here\" takes them", WaitFor([&] { return pods.ownsAudio.load() && pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)); }, 6000));
+        handoff.SetFromJson({{"autoSwitch", {{"selected", 0}}}});
+        WaitFor([&] { return music.plays >= before + 2; }, 6000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        pods.Receive(iphoneTakes());
+
+        // the phone's own player, mirrored by KDE Connect, is the iPhone playing: neither a takeover nor paused
+        pods.ClearSent();
+        music.Set("Paused");
+        phone.Set("Playing");
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        Check("Pro 3: the phone's mirrored player doesn't pull them back", !pods.ownsAudio && !pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)));
+        playHere();
+        Check("Pro 3: taking them over pauses only this computer's players", pods.ownsAudio && phone.pauses == 0 && phone.Status() == "Playing",
+              std::to_string(phone.pauses));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
+        Sh("pactl unload-module " + speakers);
+    }
+
+    // AirPods Pro 3 as the daemon builds them (AapDevice::Create), told what a pair reports after connecting:
+    // every setting the model has must be offered, and nothing of another model's
+    std::filesystem::remove(settingsPath);
+    if (bluez)
+    {
+        std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces{{"org.bluez.Device1", {
+            {"Address", sdbus::Variant{MAC}},
+            {"Name", sdbus::Variant{std::string("AirPods Pro von Chris")}},
+            {"Modalias", sdbus::Variant{std::string("bluetooth:v004Cp2027d0001")}},
+            {"Connected", sdbus::Variant{true}},
+        }}};
+        auto info = std::make_shared<DBusDeviceInfo>(sdbus::ObjectPath{"/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"}, interfaces);
+        auto pro3 = AapDevice::Create(info, std::make_shared<PulseAudioClient>(), std::make_shared<SettingsService>(settingsPath.string()), nullptr);
+        auto feed = [&](const std::vector<unsigned char> &packet) { pro3->GetResponseDataRecived().FireEvent(packet); };
+        feed(Aap(0x04, {0x03, 0x02, 0x01, 87, 0x02, 0x01, 0x04, 0x01, 84, 0x02, 0x01, 0x08, 0x01, 62, 0x01, 0x01}));
+        feed(Aap(0x06, {0x00, 0x00}));
+        // control commands: adaptive, its level, CA, ANC with one AirPod, press speed and hold, volume swipe and its
+        // length, adaptive volume, tone volume, mute/end call, press-and-hold modes, "Off" not allowed, microphone,
+        // hearing aid enrolled but off, sleep detection, connect automatically, ear detection
+        for (auto control : std::vector<std::vector<unsigned char>>{
+                 {0x0D, 0x04}, {0x2E, 50}, {0x28, 0x01}, {0x1B, 0x01}, {0x17, 0x00}, {0x18, 0x00}, {0x25, 0x01}, {0x23, 0x00},
+                 {0x26, 0x01}, {0x1F, 80}, {0x24, 0x21, 0x22, 0x03}, {0x1A, 0x0E}, {0x34, 0x02}, {0x01, 0x00}, {0x2C, 0x01, 0x02},
+                 {0x35, 0x01}, {0x20, 0x01}, {0x0A, 0x01}})
+        {
+            control.resize(5);
+            feed(Aap(0x09, control));
+        }
+        std::vector<unsigned char> about{0x00, 0x00, 0x00, 0x00, 0x00};
+        for (std::string field : {"AirPods Pro von Chris", "A3064", "Apple Inc.", "H3XYZ0000000", "8A356"})
+            about.insert(about.end(), field.c_str(), field.c_str() + field.size() + 1);
+        feed(Aap(0x1D, about));
+        pro3->GetAttValueEvent().FireEvent({Att::LOUD_SOUND_REDUCTION, {0x01}});
+        std::vector<unsigned char> tuning(100, 0x00);
+        tuning[2] = 0x80; tuning[3] = 0x3F; // enabled = 1.0f
+        pro3->GetAttValueEvent().FireEvent({Att::TRANSPARENCY, tuning});
+
+        auto json = pro3->GetAsJson();
+        auto &caps = json["capabilities"];
+        std::string missing;
+        for (const char *key : {"battery", "anc", "adaptiveAudioNoise", "conversationAwareness", "ancOneAirPod", "pressSpeed",
+                                "pressAndHoldDuration", "volumeSwipe", "volumeSwipeLength", "personalizedVolume", "toneVolume", "endCall",
+                                "listeningModes", "allowOff", "micMode", "hearingAid", "sleepDetection", "autoConnect", "earDetection",
+                                "deviceInfo", "loudSoundReduction", "transparencyTuning", "autoSwitch", "spatialAudio", "equalizer"})
+            if (!caps.contains(key))
+                missing += std::string(key) + " ";
+        Check("Pro 3: every setting it reports is offered", missing.empty() && !caps.contains("crownReversed") &&
+                                                            caps["spatialAudio"]["headTracking"] == true && caps["anc"]["selected"] == 4 &&
+                                                            caps["deviceInfo"]["model"] == "A3064",
+              missing + json.dump());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
     }
 
     if (!previousDefault.empty())

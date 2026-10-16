@@ -549,8 +549,11 @@ sh tools/run_checks.sh build
 
 # Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, tone, limiter,
 # loudness, hearing profile, A/B, 7.1, routing, a sound server restart, Hi-Res with a 96 kHz source
-# and the signal path). Needs PipeWire, no Bluetooth; briefly switches the default sink to a fake
-# headphones sink. Best in the container: it restarts PipeWire and writes the Hi-Res drop-ins.
+# and the signal path), and emulated AirPods Pro 3 that hand the audio back and forth with an iPhone
+# (real MPRIS players, the iPhone's smart routing messages, a fake BlueZ adapter) and offer every
+# setting they report. Needs PipeWire, no Bluetooth; briefly switches the default sink to a fake
+# headphones sink. Best in the container: it restarts PipeWire, writes the Hi-Res drop-ins and
+# owns org.bluez on the container's system bus.
 ./build/modules/magicpodscore --emulate-airpods
 # The same in the dev container, against its own PipeWire (leaves the host's audio alone)
 podman run --rm -v "$PWD:/workspace" -w /workspace <dev image> sh tools/emulate_in_container.sh build

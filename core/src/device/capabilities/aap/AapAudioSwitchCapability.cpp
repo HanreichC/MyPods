@@ -224,8 +224,9 @@ namespace MagicPodsCore
         if (data.size() < 6 || data[0] != 0x04 || data[1] != 0x00 || data[2] != 0x04 || data[3] != 0x00)
             return;
 
-        // right after taking over, stale "someone else streams" reports are still in flight
-        bool grace = NowMs() - takeoverAt < 3000;
+        // while taking over (the A2DP switch alone takes seconds) and right after, stale "someone else streams"
+        // reports are still in flight; giving the audio back on them would bounce it between the devices
+        bool grace = busy || NowMs() - takeoverAt < 3000;
         switch (data[4])
         {
         case 0x09:
@@ -412,6 +413,7 @@ namespace MagicPodsCore
             MprisClient::Instance().Play(paused);
             std::this_thread::sleep_for(milliseconds(1000));
             MprisClient::Instance().Play(paused);
+            takeoverAt = NowMs();
             busy = false;
         }).detach();
     }

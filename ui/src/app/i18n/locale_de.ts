@@ -143,21 +143,6 @@
         <source></source>
         <translation>Adaptiver Modus:</translation>
     </message>
-    <message id="battery.adaptive_audio_noise.more">
-        <location filename="../qml/pages/BatteryPage.qml" line="435"/>
-        <source></source>
-        <translation>Mehr Geräusche</translation>
-    </message>
-    <message id="battery.adaptive_audio_noise.default">
-        <location filename="../qml/pages/BatteryPage.qml" line="435"/>
-        <source></source>
-        <translation>Standard</translation>
-    </message>
-    <message id="battery.adaptive_audio_noise.less">
-        <location filename="../qml/pages/BatteryPage.qml" line="435"/>
-        <source></source>
-        <translation>Weniger Geräusche</translation>
-    </message>
     <message id="battery.anc_one_airpod">
         <location filename="../qml/pages/BatteryPage.qml" line="464"/>
         <source></source>
@@ -1107,7 +1092,7 @@ Das iPhone redet nur mit dem Computer, wenn BlueZ sich als Apple-Gerät meldet (
     <message id="battery.adaptive_audio_noise.info">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
         <source></source>
-        <translation>Wie viel der adaptive Modus von der Umgebung durchlässt: mehr Geräusche (näher an Transparenz), Standard oder weniger Geräusche (näher an Geräuschunterdrückung).</translation>
+        <translation>Wie viel der adaptive Modus von der Umgebung durchlässt, wie der Regler am iPhone: links mehr Geräusche (näher an Transparenz), rechts weniger (näher an Geräuschunterdrückung).</translation>
     </message>
     <message id="battery.anc_one_airpod.info">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>

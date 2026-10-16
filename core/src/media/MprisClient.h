@@ -36,6 +36,7 @@ namespace MagicPodsCore
         MprisClient();
 #ifndef _WIN32
         std::vector<std::string> Players();
+        bool IsLocal(const std::string &sender);
         std::string Status(const std::string &player);
         void Call(const std::string &player, const std::string &method);
 

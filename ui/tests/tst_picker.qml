@@ -36,5 +36,14 @@ Item {
             selected = 0;
             compare(picker.currentIndex, 0, "caller's binding still alive");
         }
+
+        // Qt 6.12's Material ComboBox drew the value white whatever Material.foreground said
+        function test_valueReadableInBothAppearances() {
+            for (const appearance of ["light", "dark"]) {
+                MP.Theme.appearance = appearance;
+                verify(Qt.colorEqual(picker.contentItem.color, MP.Theme.secondaryText), appearance + ": " + picker.contentItem.color);
+            }
+            MP.Theme.appearance = "auto";
+        }
     }
 }

@@ -9,6 +9,14 @@ namespace MagicPodsCore
     static constexpr const char *MPRIS_PATH = "/org/mpris/MediaPlayer2";
     static constexpr const char *MPRIS_PLAYER = "org.mpris.MediaPlayer2.Player";
 
+    // Mirrors are not players of this computer: playerctld repeats the local ones, KDE Connect shows a phone's.
+    // A phone's player taken for a local one would pull the AirPods back whenever the phone plays, and pausing it
+    // would stop the phone.
+    static bool IsMirror(const std::string &name)
+    {
+        return name.ends_with(".playerctld") || name.starts_with("org.mpris.MediaPlayer2.kdeconnect");
+    }
+
     MprisClient &MprisClient::Instance()
     {
         static MprisClient instance;
@@ -35,7 +43,7 @@ namespace MagicPodsCore
                     auto sender = msg.getSender();
                     bool started = status == "Playing" && _lastStatus[sender] != "Playing";
                     _lastStatus[sender] = status;
-                    if (started)
+                    if (started && IsLocal(sender))
                     {
                         Logger::Info("MPRIS: %s started playing", sender.c_str());
                         _onPlaybackStarted.FireEvent(sender);
@@ -57,9 +65,40 @@ namespace MagicPodsCore
         auto dbus = sdbus::createProxy(*_calls, "org.freedesktop.DBus", "/org/freedesktop/DBus");
         dbus->callMethod("ListNames").onInterface("org.freedesktop.DBus").storeResultsTo(names);
         for (auto &name : names)
-            if (name.starts_with("org.mpris.MediaPlayer2."))
+            if (name.starts_with("org.mpris.MediaPlayer2.") && !IsMirror(name))
                 players.push_back(name);
         return players;
+    }
+
+    bool MprisClient::IsLocal(const std::string &sender)
+    {
+        // signals carry the unique name (":1.42"), the mirrors are known by their well-known one
+        std::lock_guard lock{_callsLock};
+        if (!_calls)
+            return false;
+        try
+        {
+            auto dbus = sdbus::createProxy(*_calls, "org.freedesktop.DBus", "/org/freedesktop/DBus");
+            for (auto &player : Players())
+            {
+                try
+                {
+                    std::string owner;
+                    dbus->callMethod("GetNameOwner").onInterface("org.freedesktop.DBus").withArguments(player).storeResultsTo(owner);
+                    if (owner == sender)
+                        return true;
+                }
+                catch (const sdbus::Error &e)
+                {
+                    Logger::Debug("MPRIS: %s: %s", player.c_str(), e.getMessage().c_str()); // quit meanwhile
+                }
+            }
+        }
+        catch (const sdbus::Error &e)
+        {
+            Logger::Error("MPRIS: %s", e.getMessage().c_str());
+        }
+        return false;
     }
 
     std::string MprisClient::Status(const std::string &player)

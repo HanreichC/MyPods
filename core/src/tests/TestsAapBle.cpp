@@ -46,6 +46,21 @@ TestsAapBle::TestsAapBle()
     Test("TestPrivateAirPods2_6", TestPrivateAirPods2_6(enc));
     Test("TestPrivateAirPods2_7", TestPrivateAirPods2_7(enc));
     Test("TestPrivateAirPods2_8", TestPrivateAirPods2_8(enc));
+
+    // No Pro 3 capture yet: two AirPods 2 captures with the model swapped to 27 20 must parse the same (popup trigger
+    // from the case bits, exact battery from the encrypted tail), not like the Max (byte 8)
+    auto asPro3 = [&](std::string hex, bool popup)
+    {
+        auto pods2 = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes(hex), static_cast<unsigned short>(AapModelIds::airpods2), enc);
+        hex.replace(6, 4, "2720");
+        auto pro3 = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes(hex), static_cast<unsigned short>(AapModelIds::airpodspro3), enc);
+        if (!pods2 || !pro3 || pro3->model != AapModelIds::airpodspro3 || pro3->animation != popup)
+            return false;
+        pods2->model = AapModelIds::airpodspro3;
+        return *pods2 == *pro3;
+    };
+    Test("AirPods Pro 3: lid open, exact battery", asPro3("0719010f2075aab7010000fc5e182d7502ec13733292d933061b3c", true));
+    Test("AirPods Pro 3: pods out of the case, no popup", asPro3("0719010f2053a9960200050185c65a0aff9097826bd7c542e1cc55", false));
 }
 
 bool TestsAapBle::TestAirPodsMaxInEar_utp_22()

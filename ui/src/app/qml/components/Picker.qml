@@ -18,8 +18,15 @@ QQC2.ComboBox {
     implicitContentWidthPolicy: QQC2.ComboBox.WidestText
     implicitHeight: 30
     font.pixelSize: MP.Theme.bodySize
-    Material.foreground: MP.Theme.secondaryText
     opacity: enabled ? 1 : 0.4
+
+    // The value in secondary text. Set on the text itself: since Qt 6.12 Material's ComboBox no longer takes
+    // Material.foreground for it and drew white, invisible in light mode.
+    Binding {
+        target: control.contentItem
+        property: "color"
+        value: MP.Theme.secondaryText
+    }
 
     // A new model (language switch, refreshed options) resets ComboBox to index 0 without
     // re-running the caller's currentIndex binding; overriding it for a moment re-applies it.

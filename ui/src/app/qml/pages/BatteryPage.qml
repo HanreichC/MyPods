@@ -436,27 +436,18 @@ Components.ScrollPage {
             iconColor: MP.Theme.groupNoise
             info: qsTrId("battery.adaptive_audio_noise.info")
 
-            Components.Picker {
-                model: [qsTrId("battery.adaptive_audio_noise.more"), qsTrId("battery.adaptive_audio_noise.default"), qsTrId("battery.adaptive_audio_noise.less")]
-                currentIndex: {
-                    const val = rootPage.adaptiveAudioNoiseData?.selected;
-                    if (val === 0) return 0;
-                    if (val === 50) return 1;
-                    if (val === 100) return 2;
-                    return 1;
-                }
+            // The iPhone's slider: 0 lets more noise through, 100 less; any level the iPhone set shows as it is
+            MP.Slider {
+                implicitWidth: rootPage.mWidth
+                from: 0
+                to: 100
+                stepSize: 5
+                value: rootPage.adaptiveAudioNoiseData?.selected ?? 50
                 enabled: !(rootPage.adaptiveAudioNoiseData?.readonly ?? true)
-                onActivated: {
-                    if (rootPage.adaptiveAudioNoiseData) {
-                        if (currentIndex === 0) {
-                            rootPage.adaptiveAudioNoiseData.selected = 0;
-                        } else if (currentIndex === 1) {
-                            rootPage.adaptiveAudioNoiseData.selected = 50;
-                        } else {
-                            rootPage.adaptiveAudioNoiseData.selected = 100;
-                        }
-                        cppBackend.setCapability("adaptiveAudioNoise", rootPage.currentAddress(), rootPage.adaptiveAudioNoiseData.selected);
-                    }
+                Accessible.name: qsTrId("battery.adaptive_audio_noise")
+                onPressedChanged: {
+                    if (!pressed)
+                        cppBackend.setCapability("adaptiveAudioNoise", rootPage.currentAddress(), Math.round(value));
                 }
             }
         }

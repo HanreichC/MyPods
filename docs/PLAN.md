@@ -268,6 +268,57 @@ der Kopfbewegung, ob die Pro 3 den Head-Tracking-Start von LibrePods akzeptieren
 * **(H)** offen: ATT-Kanal neben BlueZ, Wertebereiche der Transparenz-Regler, ob der BLE-Scan-Stopp während
   der Verbindung das A2DP-Stottern wirklich behebt.
 
+### 3.8 Stand 2026-10-16: vor dem ersten Abend mit echten AirPods Pro 3
+
+Ohne Hardware geprüft (`--selftest`, `--emulate-airpods` im Container, Popup gerendert):
+
+* Popup: Pro-3-Advertisement geht den Case-Weg (Deckel-Bits, Zähler), nicht den der Max; exakter Akku aus der
+  verschlüsselten Payload. Sprite `76_8231.png` (5280 px breit, die GPU hier kann 16384) passt hell wie dunkel
+  zum Glass-Design.
+* Alle Pro-3-Einstellungen erscheinen, sobald die AirPods sie melden; `crownReversed` (Max) nicht.
+* Umschalten mit emulierter Pro 3, iPhone-Verkehr und echten MPRIS-Playern: PC spielt → Übernahme mit Anfrage an
+  das iPhone (nie an den PC selbst); iPhone übernimmt → PC gibt ab; kein Zurückspringen durch veraltete Meldungen
+  während und 3 s nach einer Übernahme; Anruf am iPhone, nicht getragen, „Bei letzter Verbindung“ → keine
+  Übernahme; „Hierher bewegen“ immer; KDE Connects Spiegel eines Handy-Players löst nichts aus und wird nicht
+  pausiert.
+* Feature-Flags: MyPods schickt `4D 00 0E …` (MagicPodsCore, Stand Upstream), LibrePods inzwischen `4D 00 D7 …`.
+  Fehlen an der Pro 3 Adaptiv/CA, ist das der erste Verdacht (`AapInitExt.cpp`).
+* AutoEQ hat noch keine Messung der Pro 3; eigene Korrektur über `eqFile`.
+
+**Ablauf am Abend** (Schritt für Schritt, Erwartung → wo nachsehen, wenn nicht):
+
+1. Vorher: `sh install.sh`; in `~/.config/mypods/config.toml` unter `[magicpods]` `logLevel = 0` (Trace: jedes
+   AAP-Paket als `r:…`), dann `journalctl --user -u mypods-core -f` mitlaufen lassen. Das Trace-Log enthält
+   IRK/ENC: nicht veröffentlichen, danach wieder `logLevel = 20`.
+2. Vor dem Koppeln: `python3 tools/sniff.py --log captures/pro3.txt --seconds 120`, Deckel mehrmals auf/zu,
+   Pods raus/rein, Case laden → Modell `AirPods Pro 3 (0x2027)`, Lid-Zähler läuft. Die Datei wird Testvektor.
+3. Koppeln (Case-Taste halten, bis es weiß blinkt) → `bluetoothctl info <MAC> | grep Modalias` zeigt
+   `bluetooth:v004Cp2027…`, die Pods stehen ohne Neustart in der Seitenleiste. Stehen sie als „Kopfhörer“ ohne
+   ANC da, stimmt die Modalias nicht → `AapModelIds.h`.
+4. Erste Verbindung → Log: Akku, ANC, `AapPrivateKeys`; in der config `irk`/`enc` unter der MAC; Gerät-Abschnitt
+   zeigt A3063/A3064/A3065 und die Firmware.
+5. Popup: PC trennen (der BLE-Scan läuft nur, solange sie nicht mit dem PC verbunden sind), Pods ins Case,
+   Deckel zu und wieder auf → Popup mit Animation, Akku in 1-%-Schritten; Deckel zu → Popup geht.
+6. Einstellungen, jede am iPhone gegenprüfen: Geräuschkontrolle inkl. Adaptiv-Regler, „Aus“ erst nach
+   „Aus erlauben“, Gesprächserkennung (sprechen → leiser), Loud Sound Reduction, Transparenz-Feintuning,
+   Drücken-und-Halten, Lautstärke wischen, Ohrerkennung (Pod raus → Pause, rein → weiter), Umbenennen.
+7. Umschalten, der Kern. iPhone: Bluetooth → AirPods → „Mit diesem iPhone verbinden: Automatisch“; MyPods:
+   „Automatisch“. Pods im Ohr.
+   * iPhone spielt, am PC Spotify/Browser starten → binnen ~3 s pausiert das iPhone, Banner nennt `chris-p1`,
+     PC-Ton in den Pods. Log: `AutoSwitch: taking the audio over`.
+   * Am iPhone Play → PC pausiert, PC-Ausgabe auf den Lautsprechern, iPhone in den Pods.
+     Log: `AutoSwitch: another device took the audio`.
+   * Fünfmal hin und her: bleibt es einmal hängen oder springt zurück? Dann im Log die `r:040004000e00…`
+     (Audioquelle), `…0900 06…` (owns) und `…1100…` (Smart Routing) um den Moment herum ansehen.
+   * Kommt nie eine Übernahme an: fehlt `r:040004002e00…` (Liste der verbundenen Geräte), geht die Anfrage an
+     niemanden → `AapAudioSwitchCapability::TakeOver`.
+   * PC nicht verbunden (nur iPhone), am PC Play → MyPods verbindet selbst (braucht die Ohr-Bits aus dem
+     Advertisement, also IRK aus Schritt 4).
+   * Anruf am iPhone, während der PC spielt → PC pausiert; Play am PC während des Anrufs → bleibt am iPhone.
+8. Audio: Codec AAC auf der Geräteseite; „Höchste Bluetooth-Qualität“ (AAC VBR) zehn Minuten auf Aussetzer
+   hören, sonst wieder aus. EQ-Presets, Spatial Audio fest/kopfgeführt (Kopf drehen → Klang bleibt im Raum;
+   Richtung falsch → Vorzeichen in `AapSpatialAudioCapability::Yaw`), Signalweg zeigt „AAC kodiert“.
+
 ---
 
 ## Quellen

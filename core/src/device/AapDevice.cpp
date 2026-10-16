@@ -64,7 +64,7 @@ namespace MagicPodsCore
 
     void AapDevice::SendData(const AapRequest &setter) //TODO: MAKE COMMON CLASS FOR SETTERS
     {
-        _client->SendData(setter.Request());
+        SendData(setter.Request());
     }
 
     void AapDevice::SendData(const std::vector<unsigned char> &data)

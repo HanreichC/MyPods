@@ -61,7 +61,7 @@ namespace MagicPodsCore
         }
 
         void SendData(const AapRequest &setter);
-        void SendData(const std::vector<unsigned char> &data);
+        virtual void SendData(const std::vector<unsigned char> &data); // the emulator records what goes out
 
         // Models with ATT settings (Loud Sound Reduction, customized transparency)
         static bool HasAttSettings(unsigned short productId);
