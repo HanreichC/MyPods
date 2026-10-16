@@ -224,6 +224,16 @@ void BackendManager::recover()
             return;
         }
 
+#ifdef Q_OS_WIN
+        // Windows is shutting down and ended the daemon before the UI: a start now fails with 0xc0000142 and
+        // a popup. Looked at again later, so a cancelled shutdown still gets the daemon back.
+        if (GetSystemMetrics(SM_SHUTTINGDOWN)) {
+            recovering.store(false);
+            recover();
+            return;
+        }
+#endif
+
         if (isRunning()) {
             qDebug() << "[BackendManager] Process still alive — transient disconnect";
             recovering.store(false);
