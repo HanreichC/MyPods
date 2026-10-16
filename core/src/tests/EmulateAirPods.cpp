@@ -237,6 +237,23 @@ int EmulateAirPods()
 
         auto headphones = BhfDevice::Create(info, std::make_shared<PulseAudioClient>(), settings);
         Check("Generic: saved EQ applied when the daemon starts", defaultSinkIs(AudioEffects::SINK_NAME) && Param("eqL0:Gain") == 5.5, sink);
+
+        // Picked in the sidebar while the sound plays elsewhere: it comes back through the chain, and the client sees
+        // the default change (what DevicesInfoFetcher::RefreshOutput marks the headphones by)
+        auto pac = std::make_shared<PulseAudioClient>();
+        std::atomic<int> sinkEvents{0};
+        auto eventId = pac->GetSinkChangedEvent().Subscribe([&](size_t, const uint32_t &) { sinkEvents++; });
+        std::string speakers = Sh("pactl load-module module-null-sink sink_name=mypods_speakers");
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        sinkEvents = 0;
+        Sh("pactl set-default-sink mypods_speakers");
+        Check("Output elsewhere: the client reports the speakers", WaitFor([&] { return pac->GetDefaultSink() == "mypods_speakers"; }));
+        Check("Output elsewhere: the default change is an event", WaitFor([&] { return sinkEvents > 0; }));
+        headphones->MakeDefaultOutput();
+        Check("Picked: the headphones play again, through the chain", defaultSinkIs(AudioEffects::SINK_NAME) &&
+              pac->GetDefaultSink() == AudioEffects::SINK_NAME && AudioEffects::Instance().PlaysInto(headphones->SinkPart()), sink);
+        pac->GetSinkChangedEvent().Unsubscribe(eventId);
+        Sh("pactl unload-module " + speakers);
         auto json = headphones->GetAsJson()["capabilities"];
         Check("Generic: spatial audio without head tracking, EQ", json.contains("spatialAudio") && json["spatialAudio"]["headTracking"] == false &&
                                                                   json.contains("equalizer") && !json["equalizer"].contains("correction"), json.dump());

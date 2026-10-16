@@ -61,11 +61,15 @@ namespace MagicPodsCore {
         mutable std::mutex _devicesLock{};
         std::map<std::string, std::shared_ptr<Device>> _devicesMap{}; // address -> device
         std::shared_ptr<Device> _activeDevice{};
+        std::string _outputAddress{}; // the headphones the system plays to
 
         Event<std::shared_ptr<Device>> _onActiveDeviceChangedEvent{};
         Event<std::shared_ptr<Device>> _onDeviceAddEvent{};
         Event<std::shared_ptr<Device>> _onDeviceRemoveEvent{};
         Event<bool> _onDefaultAdapterChangeEnabled{};
+        Event<bool> _onOutputChangedEvent{};
+        // Which headphones the system plays to; blocking, part of RefreshWired, which every sink change runs
+        void RefreshOutput();
 
     public:
         DevicesInfoFetcher(const std::shared_ptr<SettingsService> &settingsService);
@@ -82,6 +86,8 @@ namespace MagicPodsCore {
         // Makes a connected device the one the UI shows and the broadcasts are about, and switches the system's
         // output to it; false if it isn't connected
         bool SetActiveDevice(const std::string& address);
+        // The headphones the system plays to (also through the effect chain), "" for another output
+        std::string GetOutputAddress() const;
         // The outputs that aren't Bluetooth: {"sink", "name", "headphones", "automatic"}; automatic ones are
         // headphones by themselves (a plugged jack, a USB headset), the others as the user marks them. Blocking.
         nlohmann::json GetOutputs();
@@ -113,6 +119,10 @@ namespace MagicPodsCore {
 
         Event<bool>& GetOnDefaultAdapterChangeEnabledEvent() {
             return _onDefaultAdapterChangeEnabled;
+        }
+
+        Event<bool>& GetOnOutputChangedEvent() {
+            return _onOutputChangedEvent;
         }
 
     private:

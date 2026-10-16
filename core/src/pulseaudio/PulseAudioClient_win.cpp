@@ -56,7 +56,8 @@ namespace MagicPodsCore
         HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(LPCWSTR, DWORD) override { return Changed(); }
         HRESULT STDMETHODCALLTYPE OnDeviceAdded(LPCWSTR) override { return Changed(); }
         HRESULT STDMETHODCALLTYPE OnDeviceRemoved(LPCWSTR) override { return Changed(); }
-        HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow, ERole, LPCWSTR) override { return S_OK; }
+        // the output for music changed: in the taskbar, the sound settings or here (SetDefaultSink)
+        HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR) override { return flow == eRender && role == eMultimedia ? Changed() : S_OK; }
         HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR, const PROPERTYKEY) override { return S_OK; }
         // owned by the client, which unregisters it before it goes
         ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
@@ -236,6 +237,17 @@ namespace MagicPodsCore
             if (FAILED(policy->SetDefaultEndpoint(id.c_str(), role)))
                 return false;
         return true;
+    }
+
+    std::optional<std::string> PulseAudioClient::GetDefaultSink()
+    {
+        winrt::com_ptr<IMMDevice> device;
+        LPWSTR id = nullptr;
+        if (!_native->enumerator || FAILED(_native->enumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, device.put())) || FAILED(device->GetId(&id)))
+            return std::nullopt;
+        std::string sink = Utf8(id);
+        CoTaskMemFree(id);
+        return sink;
     }
 
     bool PulseAudioClient::SetCardProfile(const std::string &, const std::string &) { return false; }

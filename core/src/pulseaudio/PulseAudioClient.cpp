@@ -100,7 +100,8 @@ namespace MagicPodsCore
     {
         // Runs on the loop thread with the lock held: subscribers must not call back into this client
         pa_context_set_subscribe_callback(ctx, [](pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
-            if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK)
+            if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK ||
+                (t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SERVER) // the default sink changed
                 static_cast<PulseAudioClient*>(userdata)->_onSinkChangedEvent.FireEvent(idx);
             if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK_INPUT)
                 static_cast<PulseAudioClient*>(userdata)->_onStreamChangedEvent.FireEvent(idx);
@@ -109,7 +110,7 @@ namespace MagicPodsCore
             if (auto op = pa_context_get_card_info_by_index(c, idx, OnCardInfo, userdata))
                 pa_operation_unref(op);
         }, this);
-        auto mask = PA_SUBSCRIPTION_MASK_CARD | PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT;
+        auto mask = PA_SUBSCRIPTION_MASK_CARD | PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT | PA_SUBSCRIPTION_MASK_SERVER;
         if (auto op = pa_context_subscribe(ctx, static_cast<pa_subscription_mask_t>(mask), nullptr, nullptr))
             pa_operation_unref(op);
         ready = true;
@@ -224,6 +225,20 @@ namespace MagicPodsCore
         Lock lock{ml};
         return Wait(pa_context_set_default_sink(ctx, name.c_str(),
             [](pa_context*, int success, void* userdata) { *static_cast<bool*>(userdata) = success; }, &ok)) && ok;
+    }
+
+    std::optional<std::string> PulseAudioClient::GetDefaultSink()
+    {
+        if (!Usable()) return std::nullopt;
+
+        std::optional<std::string> sink;
+        Lock lock{ml};
+        Wait(pa_context_get_server_info(ctx,
+            [](pa_context*, const pa_server_info* info, void* userdata) {
+                if (info && info->default_sink_name)
+                    *static_cast<std::optional<std::string>*>(userdata) = info->default_sink_name;
+            }, &sink));
+        return sink;
     }
 
     std::optional<double> PulseAudioClient::GetSinkVolume(const std::string &name)

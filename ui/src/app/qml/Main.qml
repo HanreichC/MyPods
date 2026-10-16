@@ -179,10 +179,12 @@ QQC2.ApplicationWindow {
         property bool current: false
         property string detail: ""
         property var device: null
+        property bool output: false // the system plays to these headphones
         Layout.fillWidth: true
         implicitHeight: Math.max(device ? 48 : 32, contentItem.implicitHeight + 12)
         Accessible.role: Accessible.PageTab
         Accessible.name: text
+        Accessible.description: output ? qsTrId("sidebar.output") : ""
 
         background: Rectangle {
             radius: MP.Theme.tileRadius
@@ -238,11 +240,19 @@ QQC2.ApplicationWindow {
                     elide: Text.ElideRight
                 }
             }
+
+            Impl.IconImage {
+                visible: sidebarItem.output
+                Layout.rightMargin: 8
+                sourceSize: Qt.size(14, 14)
+                source: MP.Theme.asset("icons/icon-speaker-wave.svg")
+                color: MP.Theme.accent
+            }
         }
     }
 
     // Navigation on the left like MyCAD's dashboard and the Mac's System Settings: the headphones that are
-    // connected (a click makes them the active ones and opens their controls), the sections, the version
+    // connected (a click makes them the active ones, plays the sound there and opens their controls), the sections, the version
     GlassBar {
         id: sidebar
         // the headphones to list: the connected ones, or the active ones before the list has come
@@ -281,12 +291,13 @@ QQC2.ApplicationWindow {
                     required property var modelData
                     readonly property bool active: modelData.address === batteryPage.currentAddress()
                     device: modelData
+                    output: modelData.output ?? false
                     text: modelData.name ?? ""
                     detail: active ? root.batteryText(batteryPage.infoData) : qsTrId("tray.popup.connected")
                     current: active && swipeView.currentIndex === 0
                     onClicked: {
-                        if (!active)
-                            cppBackend.setActiveDevice(modelData.address);
+                        // also when they are the active ones already: the sound may play elsewhere
+                        cppBackend.setActiveDevice(modelData.address);
                         swipeView.currentIndex = 0;
                     }
                 }

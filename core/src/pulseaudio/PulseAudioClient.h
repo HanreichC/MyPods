@@ -96,6 +96,8 @@ namespace MagicPodsCore{
                 return sink == part || (sink.size() > part.size() && sink.starts_with(part) && sink[part.size()] == '.');
             }
             bool SetDefaultSink(const std::string& name);
+            // The sink applications play to now (Windows: the endpoint for music); the sink event fires when it changes
+            std::optional<std::string> GetDefaultSink();
             // Sink volume averaged over its channels, 1.0 = 100 %
             std::optional<double> GetSinkVolume(const std::string& name);
             bool SetSinkVolume(const std::string& name, double volume);
@@ -116,8 +118,9 @@ namespace MagicPodsCore{
             Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }
-            // A sink appeared, changed (volume, mute, port) or went away, with its index; fired on the PulseAudio thread like the card event.
-            // Windows: an endpoint came, went, was plugged or unplugged (index 0), on Core Audio's notification thread
+            // A sink appeared, changed (volume, mute, port) or went away, with its index, or the default sink changed (server
+            // event, index of the server); fired on the PulseAudio thread like the card event.
+            // Windows: an endpoint came, went, was plugged or unplugged, or became the default (index 0), on Core Audio's notification thread
             Event<uint32_t>& GetSinkChangedEvent() {
                 return _onSinkChangedEvent;
             }

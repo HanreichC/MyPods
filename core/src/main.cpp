@@ -61,9 +61,11 @@ static void StripSecrets(nlohmann::json& container) {
 nlohmann::json MakeGetDeviceResponse(DevicesInfoFetcher& devicesInfoFetcher) {
     auto rootObject = nlohmann::json::object();
     auto jsonArray = nlohmann::json::array();
+    auto output = devicesInfoFetcher.GetOutputAddress();
     for (const auto& device : devicesInfoFetcher.GetDevices()) {
         auto deviceJson = device->GetAsJson();
         deviceJson.erase("capabilities"); // we do not need capabilities in GetDevices
+        deviceJson["output"] = device->GetAddress() == output; // the system plays to them
         jsonArray.push_back(deviceJson);
     }
     rootObject["headphones"] = jsonArray;
@@ -435,6 +437,10 @@ void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& device
     });
     devicesInfoFetcher.GetOnDeviceRemoveEvent().Subscribe([onConnectedChangedListener](size_t listenerId, auto device) {
         onConnectedChangedListener(device, false);
+    });
+    // the device list says which headphones play
+    devicesInfoFetcher.GetOnOutputChangedEvent().Subscribe([onConnectedChangedListener](size_t listenerId, bool) {
+        onConnectedChangedListener(nullptr, true);
     });
     devicesInfoFetcher.GetOnActiveDeviceChangedEvent().Subscribe([onActiveDeviceChanged](size_t listenerId, auto newDevice) {
         onActiveDeviceChanged(newDevice);

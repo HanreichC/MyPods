@@ -561,6 +561,11 @@
         <source></source>
         <translation>Nie</translation>
     </message>
+    <message id="sidebar.output">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Audioausgabe</translation>
+    </message>
     <message id="tray.popup.connected">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>

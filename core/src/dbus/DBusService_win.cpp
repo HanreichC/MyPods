@@ -79,6 +79,11 @@ namespace MagicPodsCore {
         _native->watcher.Added([this](const DeviceWatcher&, const DeviceInformation& info) {
             TryCreateDevice(winrt::to_string(info.Id())); // also replays the devices found above; those are skipped
         });
+        // Without an Updated handler the watcher reports no device paired after its first enumeration; the
+        // updates also retry a device whose services Windows hadn't read yet when it was paired
+        _native->watcher.Updated([this](const DeviceWatcher&, const DeviceInformationUpdate& update) {
+            TryCreateDevice(winrt::to_string(update.Id()));
+        });
         _native->watcher.Removed([this](const DeviceWatcher&, const DeviceInformationUpdate& update) {
             TryRemoveDevice(winrt::to_string(update.Id()));
         });
@@ -100,6 +105,10 @@ namespace MagicPodsCore {
             if (!device)
                 return;
             auto deviceInfo = std::make_shared<DBusDeviceInfo>(device.BluetoothAddress());
+            // just paired: the service list comes a moment later, with one of the device's updates
+            // ponytail: a paired device without any service is read again on each of its updates
+            if (deviceInfo->GetUuids().empty())
+                return;
             _knownDevices.emplace(id, deviceInfo);
             _pairedDevices.emplace(deviceInfo);
             _onAnyDeviceAddedEvent.FireEvent(deviceInfo);

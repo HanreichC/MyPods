@@ -377,6 +377,31 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         for (const auto& device : GetDevices())
             if (auto wired = std::dynamic_pointer_cast<WiredDevice>(device); wired && !plugged.contains(wired->GetAddress()))
                 wired->SetPlugged(false);
+        RefreshOutput();
+    }
+
+    void DevicesInfoFetcher::RefreshOutput() {
+        auto sink = _audioClient->GetDefaultSink();
+        std::string address;
+        for (const auto& device : GetDevices())
+            if (sink && device->GetConnected() &&
+                (device->HeadphonesSink() == sink || (*sink == AudioEffects::SINK_NAME && AudioEffects::Instance().PlaysInto(device->SinkPart()))))
+                address = device->GetAddress();
+        {
+            std::lock_guard lock{_devicesLock};
+            if (address == _outputAddress)
+                return;
+            _outputAddress = address;
+        }
+        // switched in Windows (taskbar, sound settings): the headphones that play become the active ones
+        if (!address.empty())
+            TrySelectNewActiveDevice(address);
+        _onOutputChangedEvent.FireEvent(true);
+    }
+
+    std::string DevicesInfoFetcher::GetOutputAddress() const {
+        std::lock_guard lock{_devicesLock};
+        return _outputAddress;
     }
 
     void DevicesInfoFetcher::ClearAndFillDevicesMap() {
