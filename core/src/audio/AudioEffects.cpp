@@ -777,20 +777,24 @@ namespace MagicPodsCore
         signal(SIGPIPE, SIG_IGN); // a dead pw-cli must not take the daemon down on the next write
         // SIGTERM stops the chain (main.cpp), but a crash or SIGKILL leaves it and pw-cli (it ignores EOF) running.
         // PR_SET_PDEATHSIG can't help: it follows the spawning worker thread, not the process.
-        std::ifstream pids(RuntimePath("mypods-fx.pid"));
-        pid_t pid;
-        while (pids >> pid)
+        for (const char *file : {"mypods-fx.pid", "mypods-hold.pid"})
         {
-            std::ifstream cmd("/proc/" + std::to_string(pid) + "/cmdline");
-            std::string cmdline((std::istreambuf_iterator<char>(cmd)), std::istreambuf_iterator<char>());
-            if (cmdline.find("mypods-fx.conf") != std::string::npos || cmdline.starts_with("pw-cli"))
-                kill(pid, SIGTERM);
+            std::ifstream pids(RuntimePath(file));
+            pid_t pid;
+            while (pids >> pid)
+            {
+                std::ifstream cmd("/proc/" + std::to_string(pid) + "/cmdline");
+                std::string cmdline((std::istreambuf_iterator<char>(cmd)), std::istreambuf_iterator<char>());
+                if (cmdline.find("mypods-fx.conf") != std::string::npos || cmdline.starts_with("pw-cli"))
+                    kill(pid, SIGTERM);
+            }
         }
     }
 
     AudioEffects::~AudioEffects()
     {
         Stop();
+        HoldSink(false);
     }
 
     std::string AudioEffects::Apply(const std::string &sink, const std::string &description, EffectsConfig config)
@@ -855,6 +859,32 @@ namespace MagicPodsCore
         Logger::Info("AudioEffects: chain started in front of %s (%s)", sink.c_str(),
                      config.limiter.empty() ? "no limiter, install swh-plugins for louder spatial audio" : "with limiter");
         return SINK_NAME;
+    }
+
+    void AudioEffects::HoldSink(bool on)
+    {
+        std::lock_guard lock{_lock};
+        if (on == (_hold > 0))
+            return;
+        if (!on)
+        {
+            Kill(_hold);
+            return;
+        }
+        int fd = -1;
+        _hold = Spawn({"env", "LC_ALL=C", "pw-cli", nullptr}, &fd);
+        std::string cmd = std::string("create-node adapter { factory.name = support.null-audio-sink node.name = ") + HOLD_SINK +
+                          " node.description = \"MyPods\" media.class = Audio/Sink audio.position = [ FL FR ] }\n";
+        bool sent = _hold > 0 && write(fd, cmd.data(), cmd.size()) == static_cast<ssize_t>(cmd.size());
+        if (fd >= 0)
+            close(fd); // pw-cli ignores EOF and keeps the node
+        if (!sent)
+        {
+            Logger::Error("AudioEffects: could not create the silent output");
+            Kill(_hold);
+            return;
+        }
+        std::ofstream(RuntimePath("mypods-hold.pid")) << _hold << "\n";
     }
 
     void AudioEffects::Stop()

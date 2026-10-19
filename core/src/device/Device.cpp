@@ -320,10 +320,29 @@ namespace MagicPodsCore {
         std::lock_guard lock{routing};
 
         auto pac = GetAudioClient();
+#ifndef _WIN32
+        // Bluetooth headphones have an output only while their card plays A2DP. The card comes a moment after the
+        // connection, with the profile WirePlumber stored last for it: also the "off" automatic switching sets when
+        // another device takes the AirPods, which WirePlumber keeps as the user's choice.
+        if (!WiredConnection() && GetConnected() && !HeadphonesSink())
+        {
+            auto card = pac->GetNameFromMac(GetAddress());
+            std::optional<CardInfo> info;
+            for (int i = 0; i < 50 && GetConnected() && !(info = pac->GetCardInfoByName(card)); i++)
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (info && !info->activeProfile.starts_with("a2dp"))
+                if (auto profile = A2dpProfile(*info); !profile.empty() && !pac->SetCardProfile(card, profile))
+                    Logger::Error("%s: could not switch %s to %s", GetName().c_str(), card.c_str(), profile.c_str());
+            for (int i = 0; i < 30 && GetConnected() && !HeadphonesSink(); i++)
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+#endif
         // a worker started by a settings change may only get here after the headphones went: no chain for them then
         auto sink = GetConnected() ? HeadphonesSink() : std::nullopt;
         if (!sink)
         {
+            if (GetConnected())
+                Logger::Info("%s: no output to route to", GetName().c_str());
             StopEffects();
             return;
         }
@@ -339,6 +358,20 @@ namespace MagicPodsCore {
 #endif
         // Windows: the effects sit on the endpoint itself; the output only changes when the user picks one (MakeDefaultOutput)
         Logger::Info("%s: audio routed to %s", GetName().c_str(), target.c_str());
+    }
+
+    std::string Device::A2dpProfile(const CardInfo &card, const std::string &preferred)
+    {
+        auto has = [&](const std::string &name) {
+            return std::ranges::any_of(card.profiles, [&](const auto &p) { return p.first == name; });
+        };
+        for (const auto &name : {preferred, std::string("a2dp-sink"), std::string("a2dp-sink-aac")})
+            if (!name.empty() && has(name))
+                return name;
+        for (const auto &p : card.profiles)
+            if (p.first.starts_with("a2dp-sink"))
+                return p.first;
+        return {};
     }
 
     void Device::MakeDefaultOutput()

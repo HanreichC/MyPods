@@ -4,6 +4,8 @@
 #pragma once
 #include "AapCapability.h"
 #include <atomic>
+#include <condition_variable>
+#include <thread>
 #include <chrono>
 #include <mutex>
 #include <optional>
@@ -27,11 +29,27 @@ namespace MagicPodsCore
         std::atomic<int> sourceType{0}; // 0 none, 1 call, 2 media (from 0x0E)
         std::atomic<bool> busy{false};
         std::atomic<bool> released{false};
+        std::atomic<bool> cardSeen{false}; // their PipeWire card since they connected
         std::atomic<int64_t> bleInEarAt{0};
         std::atomic<int64_t> takeoverAt{0};
         size_t playbackEventId{};
         size_t leEventId{};
         size_t cardEventId{};
+
+        // Nothing out of the speakers while the AirPods are worn and another device has them: the default output is
+        // a silent one (AudioEffects::HoldSink) until they play this computer, are taken out, or the user picks an
+        // output. A worker looks every second and when woken; it alone touches holding and heldOutput.
+        std::thread holdWorker;
+        std::mutex holdLock;
+        std::condition_variable holdWake;
+        bool holdExit = false;
+        bool holdKick = false;
+        bool holding = false;
+        std::string heldOutput;               // the output to give back
+        std::atomic<bool> holdBlocked{false}; // the user picked an output or a takeover failed: not again until taken out
+        void HoldWorker();
+        void UpdateHold();
+        void WakeHold();
 
         bool InEar();
         void TakeOver(bool manual);

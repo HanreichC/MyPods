@@ -458,6 +458,7 @@ namespace MagicPodsCore
     void AudioEffects::Stop() {}
     void AudioEffects::StopFor(const std::string &) {}
     bool AudioEffects::PlaysInto(const std::string &) { return false; }
+    void AudioEffects::HoldSink(bool) {}
     void AudioEffects::ApplySoundServerOptions(bool, const std::vector<std::string> &) {} // the Windows audio engine picks its own format
     void AudioEffects::StopLocked() {}
     void AudioEffects::SetYaw(double) {}

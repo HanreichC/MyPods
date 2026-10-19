@@ -5,6 +5,7 @@
 #include "media/MprisClient.h"
 #include "dbus/DBusService.h"
 #include "sdk/aap/Aes.h"
+#include <algorithm>
 #include <cstdio>
 #include <thread>
 
@@ -160,14 +161,21 @@ namespace MagicPodsCore
         // In-ear state while not connected comes from the (RPA-verified) proximity advertisement, byte 5 bits 1 and 3
         leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad)
         {
-            if (auto message = this->device.OwnProximityMessage(ad); message && ((*message)[5] & 0x0A))
-                bleInEarAt = NowMs();
+            if (auto message = this->device.OwnProximityMessage(ad))
+                bleInEarAt = ((*message)[5] & 0x0A) ? NowMs() : 0; // taken out counts at once, not 15 s later
         });
 
         cardEventId = device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &info)
         {
-            if (info.name != this->device.GetAudioClient()->GetNameFromMac(this->device.GetAddress()) || !info.activeProfile.starts_with("a2dp"))
+            if (info.name != this->device.GetAudioClient()->GetNameFromMac(this->device.GetAddress()))
                 return;
+            // A new card comes with the profile WirePlumber stored: after another device took the AirPods that is
+            // the "off" Release set, and RouteAudio switches it on. Later an "off" is the user's and stays.
+            bool appeared = !cardSeen.exchange(true);
+            bool a2dp = info.activeProfile.starts_with("a2dp");
+            if (!a2dp && !appeared)
+                return;
+            if (a2dp)
             {
                 std::lock_guard lock{stateLock};
                 lastA2dp = info.activeProfile;
@@ -177,10 +185,19 @@ namespace MagicPodsCore
             if (this->device.ownsAudio && !busy)
                 std::thread([this, keep = this->device.KeepAlive()]() { this->device.RouteAudio(); }).detach();
         });
+
+        holdWorker = std::thread([this]() { HoldWorker(); });
     }
 
     AapAudioSwitchCapability::~AapAudioSwitchCapability()
     {
+        {
+            std::lock_guard lock{holdLock};
+            holdExit = true;
+        }
+        holdWake.notify_one();
+        if (holdWorker.joinable())
+            holdWorker.join();
         MprisClient::Instance().GetOnPlaybackStartedEvent().Unsubscribe(playbackEventId);
         device.GetLeDataReceived().Unsubscribe(leEventId);
         device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
@@ -202,8 +219,91 @@ namespace MagicPodsCore
         device.ownsAudio = true;
         released = false;
         sourceType = 0;
+        cardSeen = false;
         device.StopEffects();
+        WakeHold();
         AapCapability::Reset();
+    }
+
+    void AapAudioSwitchCapability::WakeHold()
+    {
+        {
+            std::lock_guard lock{holdLock};
+            holdKick = true;
+        }
+        holdWake.notify_one();
+    }
+
+    void AapAudioSwitchCapability::HoldWorker()
+    {
+        std::unique_lock lock{holdLock};
+        while (!holdExit)
+        {
+            holdKick = false;
+            lock.unlock();
+            UpdateHold();
+            lock.lock();
+            // the BLE in-ear bits have no event of their own; a second is quick enough to be in place before anything plays
+            holdWake.wait_for(lock, seconds(1), [this] { return holdExit || holdKick; });
+        }
+        lock.unlock();
+        holdBlocked = true; // gone with the device: give the output back
+        UpdateHold();
+    }
+
+    void AapAudioSwitchCapability::UpdateHold()
+    {
+        auto pac = device.GetAudioClient();
+        bool worn = InEar();
+        if (!worn)
+            holdBlocked = false;
+        auto current = pac->GetDefaultSink().value_or("");
+        bool playsHere = device.ownsAudio && (PulseAudioClient::SinkOf(current, device.SinkPart()) ||
+                         (current == AudioEffects::SINK_NAME && AudioEffects::Instance().PlaysInto(device.SinkPart())));
+        // while this computer has them (connected, not taken by another device), the output is the user's to pick
+        bool otherHasThem = !device.ownsAudio || !device.GetConnected();
+
+        if (holding)
+        {
+            // mid-takeover the AirPods are ours before they play: giving the speakers back now would let them blare,
+            // or even switch the output back after RouteAudio; the takeover wakes this once it's done
+            if (busy)
+                return;
+            bool userPicked = current != AudioEffects::HOLD_SINK && !playsHere;
+            if (userPicked)
+                holdBlocked = true;
+            if (mode == 0 && worn && otherHasThem && !holdBlocked && !playsHere)
+                return;
+            if (current == AudioEffects::HOLD_SINK && pac->FindSink(heldOutput))
+                pac->SetDefaultSink(heldOutput);
+            AudioEffects::Instance().HoldSink(false);
+            holding = false;
+            Logger::Info("AutoSwitch: %s", playsHere ? "the AirPods play, silent output gone" : "the speakers play again");
+            return;
+        }
+
+        // speakers: a sound card output that isn't headphones on a jack or USB
+        auto isSpeakers = [&]
+        {
+            auto outputs = pac->GetOutputs();
+            auto wired = pac->GetWiredHeadphones();
+            return std::ranges::any_of(outputs, [&](const auto &o) { return o.sink == current; }) &&
+                   std::ranges::none_of(wired, [&](const auto &o) { return o.sink == current; });
+        };
+        if (mode != 0 || !worn || !otherHasThem || holdBlocked || playsHere || current.empty() || !isSpeakers())
+            return;
+        AudioEffects::Instance().HoldSink(true);
+        for (int i = 0; i < 20 && !pac->FindSink(AudioEffects::HOLD_SINK); i++)
+            std::this_thread::sleep_for(milliseconds(100));
+        if (!pac->FindSink(AudioEffects::HOLD_SINK) || !pac->SetDefaultSink(AudioEffects::HOLD_SINK))
+        {
+            AudioEffects::Instance().HoldSink(false);
+            holdBlocked = true;
+            return;
+        }
+        heldOutput = current;
+        holding = true;
+        Logger::Info("AutoSwitch: AirPods worn, %s stays silent until they play here", current.c_str());
     }
 
     bool AapAudioSwitchCapability::InEar()
@@ -223,6 +323,9 @@ namespace MagicPodsCore
         }
         if (data.size() < 6 || data[0] != 0x04 || data[1] != 0x00 || data[2] != 0x04 || data[3] != 0x00)
             return;
+
+        if (data[4] == 0x06)
+            WakeHold(); // put in or taken out
 
         // while taking over (the A2DP switch alone takes seconds) and right after, stale "someone else streams"
         // reports are still in flight; giving the audio back on them would bounce it between the devices
@@ -298,6 +401,7 @@ namespace MagicPodsCore
             MprisClient::Instance().PausePlaying();
             device.StopEffects();
             pac->SetCardProfile(card, "off");
+            WakeHold(); // the system falls back to the speakers: silent while they're worn
         }).detach();
     }
 
@@ -328,7 +432,8 @@ namespace MagicPodsCore
             // keep the first seconds off the laptop speakers
             auto paused = streaming ? std::vector<std::string>{} : MprisClient::Instance().PausePlaying();
 
-            if (!device.GetConnected())
+            bool connecting = !device.GetConnected();
+            if (connecting)
             {
                 try
                 {
@@ -337,16 +442,18 @@ namespace MagicPodsCore
                 catch (const std::exception &e)
                 {
                     Logger::Error("AutoSwitch: connect failed: %s", e.what());
+                    holdBlocked = true; // they won't play here: the speakers do
+                    WakeHold();
                     MprisClient::Instance().Play(paused);
                     busy = false;
                     return;
                 }
-                // AAP handshake, notification setup and key request go out with 300 ms spacing after connecting
-                std::this_thread::sleep_for(milliseconds(2500));
             }
 
-            // the hijack goes to the devices from the 0x2E list, which arrives shortly after the handshake
-            for (int i = 0; i < 20; i++)
+            // The hijack goes to the devices from the 0x2E list. The AirPods send it once the AAP handshake is through
+            // (its packets go out 300 ms apart after connecting), so it also says the channel is ready: measured
+            // ~2 s after the Bluetooth connection, 5 s at most here.
+            for (int i = 0; i < 50; i++)
             {
                 {
                     std::lock_guard lock{stateLock};
@@ -366,6 +473,7 @@ namespace MagicPodsCore
                         others.push_back(mac);
                 otherDevice.clear();
             }
+            Logger::Info("AutoSwitch: asking %zu other device(s) to let go", others.size());
             std::string name;
             try
             {
@@ -388,25 +496,24 @@ namespace MagicPodsCore
             _onChanged.FireEvent(*this);
 
             info = pac->GetCardInfoByName(card);
+            // just connected: PipeWire makes the card a moment later
+            for (int i = 0; i < 50 && connecting && !info && device.GetConnected(); i++)
+            {
+                std::this_thread::sleep_for(milliseconds(100));
+                info = pac->GetCardInfoByName(card);
+            }
             if (info && !info->activeProfile.starts_with("a2dp"))
             {
-                std::string profile;
+                std::string preferred;
                 {
                     std::lock_guard lock{stateLock};
-                    profile = lastA2dp;
+                    preferred = lastA2dp; // the codec in use before another device took them
                 }
-                auto has = [&](const std::string &name)
-                {
-                    for (auto &p : info->profiles)
-                        if (p.first == name)
-                            return true;
-                    return false;
-                };
-                if (profile.empty() || !has(profile))
-                    profile = has("a2dp-sink-aac") ? "a2dp-sink-aac" : "a2dp-sink";
-                pac->SetCardProfile(card, profile);
+                if (auto profile = Device::A2dpProfile(*info, preferred); !profile.empty())
+                    pac->SetCardProfile(card, profile);
             }
             device.RouteAudio();
+            WakeHold(); // they play here: the silent output goes
 
             // the AirPods pause the stream once right after switching (seen by LibrePods), so resume twice
             std::this_thread::sleep_for(milliseconds(500));
@@ -438,6 +545,7 @@ namespace MagicPodsCore
             }
             mode = selected;
             device.SaveSettingInt("autoSwitch", selected);
+            WakeHold(); // "When last connected" plays the speakers
             _onChanged.FireEvent(*this);
         }
     }

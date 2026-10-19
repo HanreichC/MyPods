@@ -538,6 +538,7 @@ int main(int argc, char** argv) {
         sigwait(&stopSignals, &signal);
         Logger::Info("Signal %d, stopping", signal);
         AudioEffects::Instance().Stop();
+        AudioEffects::Instance().HoldSink(false); // WirePlumber then falls back to the speakers
         // settings are written on every change and BlueZ ends the discovery of a client that goes away,
         // so nothing else needs an orderly shutdown
         std::_Exit(0);

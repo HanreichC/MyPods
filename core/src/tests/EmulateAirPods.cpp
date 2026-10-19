@@ -462,7 +462,12 @@ int EmulateAirPods()
         AapEarDetectionCapability ear{pods};
         FakePlayer music{"org.mpris.MediaPlayer2.spotify"};
         FakePlayer phone{"org.mpris.MediaPlayer2.kdeconnect.mpris_iphone"}; // KDE Connect's mirror of the phone's player
-        std::string speakers = Sh("pactl load-module module-null-sink sink_name=mypods_speakers");
+        // the laptop's speakers: a sound card output (device.api alsa) that isn't headphones
+        std::string speakers = Sh("pactl load-module module-null-sink sink_name=mypods_speakers sink_properties=device.api=alsa");
+        auto output = [] { return Sh("pactl get-default-sink"); };
+        auto silentOutput = [] { return !Sh("pactl list short sinks | grep " + std::string(AudioEffects::HOLD_SINK)).empty(); };
+        // the AirPods' output goes with their A2DP profile when another device takes them, the system falls back
+        auto fallBack = [] { Sh("pactl set-default-sink mypods_speakers"); };
         auto inEar = [](unsigned char primary, unsigned char secondary) { return Aap(0x06, {primary, secondary}); };
         auto source = [&](int type) { auto body = MacBytes(IPHONE, true); body.push_back(static_cast<unsigned char>(type)); return Aap(0x0E, body); };
         auto owns = [](bool yes) { return Aap(0x09, {0x06, static_cast<unsigned char>(yes ? 0x01 : 0x00), 0x00, 0x00, 0x00}); };
@@ -523,6 +528,8 @@ int EmulateAirPods()
         pods.Receive(iphoneTakes());
         Check("Pro 3: the iPhone takes them, this computer lets go", !pods.ownsAudio && pods.Sent(AapAudioSwitchCapability::OwnsConnection(false)) &&
                                                                     json()["source"] == "iPhone" && json()["owns"] == false, json().dump());
+        fallBack();
+        Check("Pro 3: worn while the iPhone has them, the speakers stay silent", WaitFor([&] { return output() == AudioEffects::HOLD_SINK; }, 3000), output());
 
         // during the takeover the AirPods still report the iPhone; that must not bounce the audio back
         pods.ClearSent();
@@ -534,11 +541,14 @@ int EmulateAirPods()
         pods.Receive(owns(false));
         WaitFor([&] { return music.plays >= before + 2; }, 6000);
         Check("Pro 3: reports during the takeover don't bounce it back", pods.ownsAudio && pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)));
+        Check("Pro 3: playing here, the silent output is gone", output() == BLUEZ_SINK && WaitFor([&] { return !silentOutput(); }, 3000), output());
         pods.Receive(owns(false));
         Check("Pro 3: nor in the 3 s after it", pods.ownsAudio);
         std::this_thread::sleep_for(std::chrono::milliseconds(3100));
         pods.Receive(owns(false));
         Check("Pro 3: the AirPods say another device owns them: let go", !pods.ownsAudio);
+        fallBack();
+        Check("Pro 3: silent again", WaitFor([&] { return output() == AudioEffects::HOLD_SINK; }, 3000), output());
 
         // Apple never steals a call
         pods.Receive(source(1));
@@ -552,14 +562,17 @@ int EmulateAirPods()
         pods.Receive(inEar(0x01, 0x01));
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         Check("Pro 3: taken out while the iPhone has them, nothing paused here", music.pauses == pauses && music.Status() == "Playing");
+        Check("Pro 3: taken out, the speakers play again", WaitFor([&] { return output() == "mypods_speakers" && !silentOutput(); }, 3000), output());
         startHere();
         Check("Pro 3: not worn, not taken", !pods.ownsAudio && !pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)));
         pods.Receive(inEar(0x00, 0x00));
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         Check("Pro 3: put back in while the iPhone has them, nothing resumed here", music.pauses == pauses);
+        Check("Pro 3: put back in, silent again", WaitFor([&] { return output() == AudioEffects::HOLD_SINK; }, 3000), output());
 
         // "When Last Connected to This Mac": only by hand
         handoff.SetFromJson({{"autoSwitch", {{"selected", 1}}}});
+        Check("Pro 3: \"When last connected\", the speakers play", WaitFor([&] { return output() == "mypods_speakers" && !silentOutput(); }, 3000), output());
         startHere();
         Check("Pro 3: switching by hand only, playback doesn't take them", !pods.ownsAudio);
         before = music.plays;
@@ -569,6 +582,11 @@ int EmulateAirPods()
         WaitFor([&] { return music.plays >= before + 2; }, 6000);
         std::this_thread::sleep_for(std::chrono::milliseconds(3100));
         pods.Receive(iphoneTakes());
+        fallBack();
+        WaitFor([&] { return output() == AudioEffects::HOLD_SINK; }, 3000);
+        fallBack(); // now the user picks the speakers
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        Check("Pro 3: the user picks the speakers, they stay", output() == "mypods_speakers" && !silentOutput(), output());
 
         // the phone's own player, mirrored by KDE Connect, is the iPhone playing: neither a takeover nor paused
         pods.ClearSent();

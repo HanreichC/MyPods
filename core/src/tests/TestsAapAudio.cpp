@@ -37,6 +37,14 @@ TestsAapAudio::TestsAapAudio()
     auto source = AapAudioSwitchCapability::ParseAudioSource(StringUtils::HexStringToBytes("040004000e0066554433221102"));
     Test("ParseAudioSource", source && source->first == "11:22:33:44:55:66" && source->second == 2);
 
+    // PipeWire's Bluetooth profiles; WirePlumber may bring the card back "off"
+    CardInfo card{"bluez_card.AA", "off", {{"off", ""}, {"headset-head-unit", ""}, {"a2dp-sink-sbc", ""}, {"a2dp-sink-aac", ""}, {"a2dp-sink", ""}}};
+    CardInfo noAuto{"bluez_card.AA", "off", {{"off", ""}, {"a2dp-sink-sbc", ""}, {"a2dp-sink-aac", ""}}};
+    Test("A2DP profile: the codec used before, else PipeWire's choice, else AAC, none for a headset",
+         Device::A2dpProfile(card, "a2dp-sink-sbc") == "a2dp-sink-sbc" && Device::A2dpProfile(card) == "a2dp-sink" &&
+         Device::A2dpProfile(noAuto, "a2dp-sink-ldac") == "a2dp-sink-aac" &&
+         Device::A2dpProfile(CardInfo{"bluez_card.AA", "off", {{"off", ""}, {"headset-head-unit", ""}}}).empty());
+
     auto devices = AapAudioSwitchCapability::ParseConnectedDevices(StringUtils::HexStringToBytes("040004002e000000021122334455660101aabbccddeeff0202"));
     Test("ParseConnectedDevices", devices == std::vector<std::string>{"11:22:33:44:55:66", "AA:BB:CC:DD:EE:FF"});
 

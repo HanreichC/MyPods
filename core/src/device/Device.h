@@ -146,8 +146,12 @@ namespace MagicPodsCore {
         // Motion sensors for head-tracked spatial audio
         virtual bool HasHeadTracking() const { return false; }
         // Plays this computer's audio on the headphones: effect chain (spatial audio, EQ) in front of the
-        // bluez sink, made the default sink. Blocking PulseAudio round trips, so never call it on the PulseAudio thread.
+        // bluez sink, made the default sink. Bluetooth headphones without an output yet get it first (their card,
+        // switched to A2DP). Blocking for seconds, so never call it on the PulseAudio thread.
         void RouteAudio();
+        // The A2DP profile to switch a Bluetooth card to: `preferred` if it has it, else PipeWire's own codec
+        // choice, AAC, any other A2DP; "" if it has none
+        static std::string A2dpProfile(const CardInfo &card, const std::string &preferred = "");
         // RouteAudio on a worker thread, if this computer plays to the connected headphones
         void RouteAudioAsync();
         // The user picked these headphones: their effects, and the system's output switched to them; blocking

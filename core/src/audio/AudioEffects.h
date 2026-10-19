@@ -80,6 +80,12 @@ namespace MagicPodsCore
         // The chain runs and plays into the sink `sinkPart` names: what plays there is processed, not bit-perfect
         bool PlaysInto(const std::string &sinkPart);
 
+        // A silent output for while AirPods are worn but another device plays to them: what this computer plays meanwhile
+        // goes nowhere instead of out of the speakers. It lives as long as its pw-cli; a run that crashed leaves it to the
+        // next one, like the chain. Linux only.
+        static constexpr const char *HOLD_SINK = "mypods_hold";
+        void HoldSink(bool on);
+
         // Opt-in configuration of the user's own sound server, as drop-in files MyPods writes and removes; the user's
         // other files stay untouched. Hi-Res: the graph follows the source's rate (no resampling where the output
         // takes it) and what is still resampled gets PipeWire's best resampler. `cards` ("bluez_card.AA_BB_…"):
@@ -140,6 +146,7 @@ namespace MagicPodsCore
         std::mutex _lock;
         pid_t _chain = -1;
         pid_t _ctl = -1;
+        pid_t _hold = -1;
         int _ctlFd = -1;
         std::string _sink;
         EffectsConfig _config;
