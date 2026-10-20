@@ -5,7 +5,7 @@
 import QtQuick 2.15
 import QtQuick.Effects
 import QtQuick.Layouts 1.15
-import magicpods as MP
+import mypods as MP
 import "../components" as Components
 
 Components.ScrollPage {

@@ -6,7 +6,7 @@
 #include "sdk/aap/setters/AapSetAdaptiveAudioNoise.h"
 #include <cmath>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapAdaptiveAudioNoiseCapability::CreateJsonBody()
     {

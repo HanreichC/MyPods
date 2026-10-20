@@ -4,7 +4,7 @@
 
 #include "AapCapability.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     void AapCapability::SendData(const AapRequest &setter)
     {

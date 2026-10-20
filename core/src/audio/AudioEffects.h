@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #endif
 
-namespace MagicPodsCore
+namespace MyPods
 {
 #ifdef _WIN32
     using pid_t = int; // members only, the chain never runs on Windows

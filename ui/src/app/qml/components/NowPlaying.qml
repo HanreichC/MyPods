@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Controls.impl as Impl
 import QtQuick.Layouts
-import magicpods as MP
+import mypods as MP
 
 // Now playing and the volume, like the Mac's Control Center: cover and text across the width, the controls and
 // the volume under them. In the tray popup and beside the headphones in the window.

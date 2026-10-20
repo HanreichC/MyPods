@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 #include "Event.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class Capability
     {

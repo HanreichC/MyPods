@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 
-namespace MagicPodsCore
+namespace MyPods
 {
     static constexpr std::array<int, 10> EQ_FREQS{32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000};
     // ponytail: generic KEMAR HRTF shipped with libmysofa; Apple personalizes it from an ear scan. Swap the file for a personal SOFA to upgrade.

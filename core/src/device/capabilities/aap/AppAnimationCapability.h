@@ -14,7 +14,7 @@
 #include <vector>
 #include <mutex>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     struct bleData
     {

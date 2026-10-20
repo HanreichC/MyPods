@@ -6,7 +6,7 @@
 
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // Initialization handshake with aap service

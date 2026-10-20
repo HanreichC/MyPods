@@ -11,7 +11,7 @@
 
 #include <atomic>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     using namespace winrt::Windows::Devices::Bluetooth::Advertisement;
 

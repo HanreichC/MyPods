@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project(magicpodscore VERSION 2.0.9 LANGUAGES C CXX)
+project(mypodscore VERSION 2.0.9 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 if(NOT MSVC)
@@ -13,7 +13,7 @@ if(NOT MYPODS_VERSION) # built on its own, without the top-level project
 endif()
 configure_file(config/Config.h.in src/Config.h)
 
-add_executable(magicpodscore
+add_executable(mypodscore
     src/main.cpp
 
     src/tests/TestsSgb.cpp
@@ -118,11 +118,11 @@ add_executable(magicpodscore
 )
 add_subdirectory(dependencies)
 find_package(OpenSSL REQUIRED)
-target_include_directories(magicpodscore PRIVATE
+target_include_directories(mypodscore PRIVATE
     src
     ${PROJECT_BINARY_DIR}/src
 )
-target_link_libraries(magicpodscore PRIVATE
+target_link_libraries(mypodscore PRIVATE
     uWebSockets
     nlohmann_json::nlohmann_json
     tomlplusplus::tomlplusplus
@@ -132,7 +132,7 @@ target_link_libraries(magicpodscore PRIVATE
 # The platform layer: Bluetooth, sound server and media players. Everything above it is shared.
 if(WIN32)
     # WinRT (Bluetooth, radios, media sessions), Winsock RFCOMM, Core Audio, Equalizer APO's setup (registry, services, UAC)
-    target_sources(magicpodscore PRIVATE
+    target_sources(mypodscore PRIVATE
         src/client/Client_win.cpp
         src/dbus/DBusDeviceInfo_win.cpp
         src/dbus/DBusService_win.cpp
@@ -142,12 +142,12 @@ if(WIN32)
         src/audio/AudioEffects_win.cpp
         src/media/MprisClient_win.cpp
     )
-    target_compile_definitions(magicpodscore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
-    target_compile_options(magicpodscore PRIVATE /utf-8 /bigobj)
-    target_link_libraries(magicpodscore PRIVATE windowsapp ws2_32 ole32 bthprops advapi32 shell32)
+    target_compile_definitions(mypodscore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
+    target_compile_options(mypodscore PRIVATE /utf-8 /bigobj)
+    target_link_libraries(mypodscore PRIVATE windowsapp ws2_32 ole32 bthprops advapi32 shell32)
 else()
     # BlueZ (D-Bus, L2CAP/RFCOMM sockets), PulseAudio/PipeWire, MPRIS
-    target_sources(magicpodscore PRIVATE
+    target_sources(mypodscore PRIVATE
         src/tests/EmulateAirPods.cpp
         src/pulseaudio/PulseAudioClient.cpp
         src/media/MprisClient.cpp
@@ -158,6 +158,6 @@ else()
     )
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(PULSEAUDIO REQUIRED libpulse)
-    target_include_directories(magicpodscore PRIVATE ${PULSEAUDIO_INCLUDE_DIRS})
-    target_link_libraries(magicpodscore PRIVATE sdbus-c++ bluetooth ${PULSEAUDIO_LIBRARIES})
+    target_include_directories(mypodscore PRIVATE ${PULSEAUDIO_INCLUDE_DIRS})
+    target_link_libraries(mypodscore PRIVATE sdbus-c++ bluetooth ${PULSEAUDIO_LIBRARIES})
 endif()

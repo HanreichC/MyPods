@@ -6,7 +6,7 @@
 #include "Logger.h"
 
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     nlohmann::json BhfBatteryCapability::CreateJsonBody()

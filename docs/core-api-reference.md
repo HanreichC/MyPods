@@ -1,6 +1,6 @@
-# MagicPodsCore WebSocket JSON API
+# MyPods core WebSocket JSON API
 
-This document describes the public WebSocket API used by MagicPodsCore to communicate with the frontend.
+This document describes the public WebSocket API used by the MyPods core (mypodscore, based on MagicPodsCore) to communicate with the frontend.
 
 All messages are sent as text WebSocket frames in JSON format.
 
@@ -14,7 +14,7 @@ ws://127.0.0.1:2020/
 
 The daemon listens on loopback only and rejects connections that send an `Origin` header (browsers).
 
-After connecting to the WebSocket, MagicPodsCore sends an `init` message and then starts sending notifications about changes in `info`, `headphone`, and `defaultbluetooth` states.
+After connecting to the WebSocket, the core sends an `init` message and then starts sending notifications about changes in `info`, `headphone`, and `defaultbluetooth` states.
 
 ```json
 {
@@ -29,7 +29,7 @@ Clients should request the initial state using the `GetAll` method after connect
 
 ## Errors
 
-MagicPodsCore returns an empty string response if invalid data is received, or ignores the `SetCapabilities` method when invalid data is provided.
+The core returns an empty string response if invalid data is received, or ignores the `SetCapabilities` method when invalid data is provided.
 
 
 # Methods
@@ -1022,7 +1022,7 @@ Specifies how a call is ended. If ending a call is assigned to a single press, m
 
 ## Settings
 
-A general settings storage. Settings are stored in containers in TOML format. Container names must use only Latin characters; the names must not include magicpods or MAC addresses. Allowed separators are _, -, or camelCase. Supported types are bool, string, int, and float.
+A general settings storage. Settings are stored in containers in TOML format. Container names must use only Latin characters; the names must not include mypods or MAC addresses. Allowed separators are _, -, or camelCase. Supported types are bool, string, int, and float.
 
 Location:
 

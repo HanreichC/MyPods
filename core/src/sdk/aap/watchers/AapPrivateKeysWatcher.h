@@ -8,7 +8,7 @@
 #include "sdk/aap/structs/AapPrivateKeysArgs.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapPrivateKeysWatcher: public AapWatcher
     {

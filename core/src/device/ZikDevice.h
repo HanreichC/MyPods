@@ -10,7 +10,7 @@
 #include <deque>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class ZikDevice : public Device
     {

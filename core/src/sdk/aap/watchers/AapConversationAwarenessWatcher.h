@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapConversationAwarenessMode.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapConversationAwarenessWatcher : public AapWatcher
     {

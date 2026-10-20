@@ -9,7 +9,7 @@
 #include <mutex>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Spatial audio: off, fixed (virtual speakers in front), head tracked (speakers stay put when you turn).
     // Rendering happens on this computer (AudioEffects), so any headphones get it while connected;

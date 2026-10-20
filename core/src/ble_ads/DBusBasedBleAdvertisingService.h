@@ -12,7 +12,7 @@
 #include <map>
 #include <mutex>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
 class DBusBasedBleAdvertisingService : public BleAdvertisingService

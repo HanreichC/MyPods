@@ -17,7 +17,7 @@
 #include <mutex>
 #include <thread>
 
-namespace MagicPodsCore::BeoplayE8
+namespace MyPods::BeoplayE8
 {
     using namespace winrt::Windows::Devices::Bluetooth;
     using namespace winrt::Windows::Devices::Bluetooth::GenericAttributeProfile;

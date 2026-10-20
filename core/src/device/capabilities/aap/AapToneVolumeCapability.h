@@ -6,7 +6,7 @@
 #include "AapCapability.h"
 #include "sdk/aap/watchers/AapToneVolumeWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapToneVolumeCapability : public AapCapability
     {

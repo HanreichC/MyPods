@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapMuteMicrophoneEndCall.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009002400030000

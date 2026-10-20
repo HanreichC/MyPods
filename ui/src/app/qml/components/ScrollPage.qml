@@ -5,7 +5,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
-import magicpods as MP
+import mypods as MP
 
 // Page with a large title and a centered, scrollable column.
 QQC2.Page {

@@ -7,7 +7,7 @@
 #include "sdk/sgb/watchers/GalaxyBudsAncWatcher.h"
 #include "device/enums/DeviceAncModes.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class GalaxyBudsAncCapability : public GalaxyBudsCapability
     {

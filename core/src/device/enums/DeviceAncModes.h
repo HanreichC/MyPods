@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     //Universal parameters for UI
     enum class DeviceAncModes : unsigned char

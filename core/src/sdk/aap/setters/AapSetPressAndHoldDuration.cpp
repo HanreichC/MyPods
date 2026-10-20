@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetPressAndHoldDuration::AapSetPressAndHoldDuration(AapPressAndHoldDurationMode mode) : AapRequest{"AapSetPressAndHoldDuration"}, _mode{mode}
     {

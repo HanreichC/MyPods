@@ -5,7 +5,7 @@
 #pragma once
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     struct AapPrivateKeysArgs
     {

@@ -22,7 +22,7 @@
 #include <mutex>
 #include <functional>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     class Client {
     private:

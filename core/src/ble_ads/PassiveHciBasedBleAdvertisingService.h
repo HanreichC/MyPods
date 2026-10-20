@@ -40,7 +40,7 @@ typedef struct {
     uint8_t  data[0];
 } __attribute__ ((packed)) le_ext_advertising_info;
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
 class PassiveHciBasedBleAdvertisingService : public BleAdvertisingService

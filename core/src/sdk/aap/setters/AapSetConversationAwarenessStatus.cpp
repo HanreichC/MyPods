@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetConversationAwarenessStatus::AapSetConversationAwarenessStatus(AapConversationAwarenessMode mode) : AapRequest{"AapSetAnc"}, _mode{mode}
     {

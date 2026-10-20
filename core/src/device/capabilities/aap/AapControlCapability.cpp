@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <bit>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     static constexpr unsigned char HEARING_ASSIST = 0x33; // switched together with the hearing aid, as iOS does
 

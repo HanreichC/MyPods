@@ -31,8 +31,8 @@ message(STATUS "MyPods version ${MYPODS_VERSION}")
 add_subdirectory(core)
 add_subdirectory(ui)
 
-# Die UI sucht den Daemon unter <verzeichnis der binary>/modules/magicpodscore
-set_target_properties(magicpods PROPERTIES
+# Die UI sucht den Daemon unter <verzeichnis der binary>/modules/mypodscore
+set_target_properties(mypods PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-set_target_properties(magicpodscore PROPERTIES
+set_target_properties(mypodscore PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules")

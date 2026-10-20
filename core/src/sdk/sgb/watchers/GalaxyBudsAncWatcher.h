@@ -10,7 +10,7 @@
 #include <optional>
 #include "vector"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class GalaxyBudsAncWatcher

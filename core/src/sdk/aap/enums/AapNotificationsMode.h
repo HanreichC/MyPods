@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // Request to headphones provide notification:

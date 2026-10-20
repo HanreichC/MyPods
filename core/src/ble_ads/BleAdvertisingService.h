@@ -7,7 +7,7 @@
 #include "Event.h"
 #include "BleAdverisingData.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class BleAdvertisingService

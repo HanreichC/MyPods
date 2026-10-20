@@ -9,7 +9,7 @@
 #include <thread>
 
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     nlohmann::json CmnBluetoothCodecCapability::CreateJsonBody()

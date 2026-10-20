@@ -3,7 +3,7 @@
 
 import QtQuick
 import QtQuick.Controls as QQC2
-import magicpods as MP
+import mypods as MP
 
 // macOS overlay scroller: a thin capsule without a track, only while scrolling or under the pointer,
 // a little wider while hovered or dragged.

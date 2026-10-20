@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <sstream>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     ZikCapability::ZikCapability(const std::string &name, bool isReadOnly, ZikDevice &device)
         : Capability(name, isReadOnly), device(device)

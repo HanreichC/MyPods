@@ -2,7 +2,7 @@
 // License: GPL-3.0
 
 // Windows effects through Equalizer APO (AudioEffects.h). The MSI ships its APO in <install>\EqualizerAPO and runs
-// `magicpodscore --apo-install`, which registers it with Windows and puts it on every headphone endpoint there is.
+// `mypodscore --apo-install`, which registers it with Windows and puts it on every headphone endpoint there is.
 // Headphones that come later are put on with `--apo-register`, elevated, the first time they get effects.
 // The daemon writes MyPods.txt into Equalizer APO's config folder, included from config.txt; Equalizer APO rereads
 // it on every change. An Equalizer APO the user installed before keeps its install, its config and its devices.
@@ -26,7 +26,7 @@
 #include <sstream>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     static const std::wstring RENDER = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render";
     static const std::wstring APP = L"SOFTWARE\\EqualizerAPO";
@@ -255,7 +255,7 @@ namespace MagicPodsCore
     {
         wchar_t exe[MAX_PATH];
         GetModuleFileNameW(nullptr, exe, MAX_PATH);
-        return std::filesystem::path(exe).parent_path().parent_path() / L"EqualizerAPO"; // <install>\modules\magicpodscore.exe
+        return std::filesystem::path(exe).parent_path().parent_path() / L"EqualizerAPO"; // <install>\modules\mypodscore.exe
     }
 
     // Stops the audio service and what depends on it, then starts them again, so the endpoints load their new APOs

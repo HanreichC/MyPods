@@ -5,7 +5,7 @@
 #include "Crc16.h"
 #include <numeric>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     uint16_t Crc16::Checksum(const std::vector<unsigned char> &data)

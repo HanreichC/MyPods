@@ -10,7 +10,7 @@
 #include <mutex>
 #include <optional>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Apple's "Connect to This Mac: Automatically": the AirPods follow whichever device starts playing.
     // The AirPods relay "smart routing" messages between their sources (AAP opcode 0x10 out, 0x11 in),

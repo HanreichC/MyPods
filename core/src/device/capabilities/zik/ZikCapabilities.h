@@ -9,7 +9,7 @@
 #include <array>
 #include <optional>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class ZikCapability : public Capability
     {

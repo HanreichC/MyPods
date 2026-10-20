@@ -5,7 +5,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
-import magicpods as MP
+import mypods as MP
 import "../components" as Components
 
 Components.ScrollPage {
@@ -33,10 +33,10 @@ Components.ScrollPage {
 
     function requestSettings() {
         if (cppBackend && cppBackend.connected) {
-            cppBackend.getSetting("magicpods", "animation");
-            cppBackend.getSetting("magicpods", "theme_tray");
-            cppBackend.getSetting("magicpods", "appearance");
-            cppBackend.getSetting("magicpods", "hiRes");
+            cppBackend.getSetting("mypods", "animation");
+            cppBackend.getSetting("mypods", "theme_tray");
+            cppBackend.getSetting("mypods", "appearance");
+            cppBackend.getSetting("mypods", "hiRes");
             cppBackend.getOutputs();
         }
     }
@@ -48,14 +48,14 @@ Components.ScrollPage {
             if (json?.outputs)
                 rootPage.outputs = json.outputs;
             if (!json || Object.keys(json).length === 0) {} else if (json.settings) {
-                if (json.settings?.magicpods?.animation != null)
-                    rootPage.settingAnimation = json.settings.magicpods.animation;
-                if (json.settings?.magicpods?.hiRes != null)
-                    rootPage.settingHiRes = json.settings.magicpods.hiRes;
-                if (json.settings?.magicpods?.theme_tray != null && cppTrayIcon)
-                    cppTrayIcon.themeMode = rootPage.themeTrayStringToIndex(json.settings.magicpods.theme_tray);
-                if (json.settings?.magicpods?.appearance != null)
-                    MP.Theme.appearance = rootPage.themeTrayIndexToString(rootPage.themeTrayStringToIndex(json.settings.magicpods.appearance));
+                if (json.settings?.mypods?.animation != null)
+                    rootPage.settingAnimation = json.settings.mypods.animation;
+                if (json.settings?.mypods?.hiRes != null)
+                    rootPage.settingHiRes = json.settings.mypods.hiRes;
+                if (json.settings?.mypods?.theme_tray != null && cppTrayIcon)
+                    cppTrayIcon.themeMode = rootPage.themeTrayStringToIndex(json.settings.mypods.theme_tray);
+                if (json.settings?.mypods?.appearance != null)
+                    MP.Theme.appearance = rootPage.themeTrayIndexToString(rootPage.themeTrayStringToIndex(json.settings.mypods.appearance));
             }
         }
         function onConnectedChanged() {
@@ -88,7 +88,7 @@ Components.ScrollPage {
                     if (settingAnimation !== checked) {
                         settingAnimation = checked;
                         if (cppBackend)
-                            cppBackend.setSetting("magicpods", "animation", checked);
+                            cppBackend.setSetting("mypods", "animation", checked);
                     }
                 }
             }
@@ -150,7 +150,7 @@ Components.ScrollPage {
                 Accessible.name: qsTrId("settings.hi_res")
                 onToggled: {
                     rootPage.settingHiRes = checked;
-                    cppBackend.setSetting("magicpods", "hiRes", checked);
+                    cppBackend.setSetting("mypods", "hiRes", checked);
                 }
             }
         }
@@ -172,7 +172,7 @@ Components.ScrollPage {
                 onActivated: {
                     MP.Theme.appearance = rootPage.themeTrayIndexToString(currentIndex);
                     if (cppBackend)
-                        cppBackend.setSetting("magicpods", "appearance", MP.Theme.appearance);
+                        cppBackend.setSetting("mypods", "appearance", MP.Theme.appearance);
                 }
             }
         }
@@ -250,7 +250,7 @@ Components.ScrollPage {
                     if (cppTrayIcon)
                         cppTrayIcon.themeMode = currentIndex;
                     if (cppBackend)
-                        cppBackend.setSetting("magicpods", "theme_tray", rootPage.themeTrayIndexToString(currentIndex));
+                        cppBackend.setSetting("mypods", "theme_tray", rootPage.themeTrayIndexToString(currentIndex));
                 }
             }
         }

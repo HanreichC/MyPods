@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetVolumeSwipeLength::AapSetVolumeSwipeLength(AapVolumeSwipeLengthMode mode) : AapRequest{"AapSetVolumeSwipeLength"}, _mode{mode}
     {

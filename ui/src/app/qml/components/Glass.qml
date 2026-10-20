@@ -3,7 +3,7 @@
 
 import QtQuick
 import QtQuick.Effects
-import magicpods as MP
+import mypods as MP
 
 // Liquid Glass like MyCAD's, for the bars, the sidebar and every popup, with a soft shadow a little below
 // (a window needs room around it for that).

@@ -16,7 +16,7 @@
 
 #include <mutex>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     using namespace winrt::Windows::Devices::Bluetooth;
     using namespace winrt::Windows::Devices::Enumeration;

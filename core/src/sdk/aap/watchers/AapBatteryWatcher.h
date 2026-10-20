@@ -12,7 +12,7 @@
 #include <string>
 #include <map>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 04000400040003020164020104016301010801110201 AirPods 2

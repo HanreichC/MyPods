@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Byte 7 indicates the anc mode
     enum class AapAncMode

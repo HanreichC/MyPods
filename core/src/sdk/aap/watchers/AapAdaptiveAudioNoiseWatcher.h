@@ -7,7 +7,7 @@
 #include "Event.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapAdaptiveAudioNoiseWatcher: public AapWatcher
     {

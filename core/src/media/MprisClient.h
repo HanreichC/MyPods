@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Desktop media players over MPRIS (session bus). Used for ear-detection pause/resume and
     // as the "this computer started playing" trigger for taking the AirPods over, like a Mac does.

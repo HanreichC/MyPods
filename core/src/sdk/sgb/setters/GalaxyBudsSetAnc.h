@@ -7,7 +7,7 @@
 #include "sdk/sgb/enums/GalaxyBudsAnc.h"
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class GalaxyBudsSetAnc

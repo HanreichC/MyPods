@@ -11,7 +11,7 @@
 #include <optional>
 #include <vector>
 
-namespace MagicPodsCore::Att
+namespace MyPods::Att
 {
     // AirPods Pro 2/3 keep some settings as GATT characteristics, reached over an ATT channel on
     // L2CAP PSM 0x1F next to AAP. Handles and layouts: LibrePods (ATTManager.kt, Transparency.kt).

@@ -4,7 +4,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import magicpods as MP
+import mypods as MP
 
 // (i) beside a setting: a click (or Space, Enter) opens what it does in a few sentences. A popup rather than a
 // hover tooltip: the texts are long, and a tooltip can't be reached by keyboard or touch.

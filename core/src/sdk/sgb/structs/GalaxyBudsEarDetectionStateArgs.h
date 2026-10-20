@@ -6,7 +6,7 @@
 
 #include "sdk/sgb/enums/GalaxyBudsEarDetectionState.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     struct GalaxyBudsEarDetectionStateArgs

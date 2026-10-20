@@ -15,7 +15,7 @@
 #include <regex>
 #include <iostream>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     // The Bluetooth adapter and its paired devices. Linux: BlueZ over D-Bus. Windows: WinRT (DBusService_win.cpp).
     class DBusService {

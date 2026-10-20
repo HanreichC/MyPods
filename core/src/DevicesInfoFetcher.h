@@ -22,7 +22,7 @@
 #include <nlohmann/json.hpp>
 #include "settings/SettingsService.h"
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     class DeviceComparator {
     public:
@@ -43,7 +43,7 @@ namespace MagicPodsCore {
         size_t _sinkEventId = 0;
         size_t _cardEventId = 0;
         size_t _reconnectedEventId = 0;
-        // Hi-Res (magicpods.hiRes) and the highest Bluetooth quality per headphones (btHighQuality) as PipeWire and
+        // Hi-Res (mypods.hiRes) and the highest Bluetooth quality per headphones (btHighQuality) as PipeWire and
         // WirePlumber drop-ins (AudioEffects::ApplySoundServerOptions), on a worker
         void ApplySoundServerOptions();
         std::atomic<bool> _wiredPending{false};
@@ -51,7 +51,7 @@ namespace MagicPodsCore {
         // Blocking PulseAudio queries, never on the PulseAudio thread. `startup`: they were plugged in before the daemon
         void RefreshWired(bool startup);
         void RefreshWiredSoon();
-        // Outputs the user marked as headphones (setting magicpods.headphoneOutputs, one sink per line)
+        // Outputs the user marked as headphones (setting mypods.headphoneOutputs, one sink per line)
         std::set<std::string> MarkedOutputs();
         std::mutex _bleStateMutex{};
         void UpdateBleState();

@@ -9,7 +9,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     struct BleAdertisingData

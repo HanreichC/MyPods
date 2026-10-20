@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetPersonalizedVolume::AapSetPersonalizedVolume(AapPersonalizedVolumeMode mode) : AapRequest{"AapSetPersonalizedVolume"}, _mode{mode}
     {

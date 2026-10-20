@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetMuteMicrophoneEndCall::AapSetMuteMicrophoneEndCall(AapEndCallMode mode) : AapRequest{"AapSetMuteMicrophoneEndCall"}
     {

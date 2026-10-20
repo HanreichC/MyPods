@@ -5,7 +5,7 @@
 #include "GalaxyBudsPacket.h"
 #include "sdk/sgb/enums/GalaxyBudsMsgTypes.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     GalaxyBudsPacket::GalaxyBudsPacket(GalaxyBudsModelIds model) : model(model)

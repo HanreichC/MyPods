@@ -9,7 +9,7 @@
 #include <memory>
 #include <mutex>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     // Subscribed and fired from several threads (D-Bus, AAP reader, MPRIS, PulseAudio, WebSocket loop).
     // FireEvent calls a snapshot, so listeners may (un)subscribe while it runs. Once Unsubscribe returns, the

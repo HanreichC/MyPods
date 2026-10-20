@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetVolumeSwipe::AapSetVolumeSwipe(AapVolumeSwipeMode mode) : AapRequest{"AapSetVolumeSwipe"}, _mode{mode}
     {

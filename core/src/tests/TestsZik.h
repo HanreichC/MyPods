@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Parrot Zik framing and answer parsing. No hardware needed.
     class TestsZik

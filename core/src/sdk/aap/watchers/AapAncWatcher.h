@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapAncMode.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapAncWatcher : public AapWatcher
     {

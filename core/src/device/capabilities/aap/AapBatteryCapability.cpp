@@ -6,7 +6,7 @@
 #include "dbus/BatteryProvider.h"
 #include "AppAnimationCapability.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     nlohmann::json AapBatteryCapability::CreateJsonBody()

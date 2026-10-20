@@ -5,7 +5,7 @@
 #include "AapVolumeSwipeLengthCapability.h"
 #include "sdk/aap/setters/AapSetVolumeSwipeLength.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapVolumeSwipeLengthCapability::CreateJsonBody()
     {

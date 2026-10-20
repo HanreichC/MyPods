@@ -9,7 +9,7 @@
 #include "sdk/aap/Aes.h"
 #include "device/DeviceBattery.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AppAnimationCapability::CreateJsonBody()
     {

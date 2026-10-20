@@ -6,7 +6,7 @@
 #include "AapCapability.h"
 #include "sdk/aap/watchers/AapAdaptiveAudioNoiseWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapAdaptiveAudioNoiseCapability : public AapCapability
     {

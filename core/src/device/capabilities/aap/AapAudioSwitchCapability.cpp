@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     using namespace std::chrono;
 

@@ -22,7 +22,7 @@
 #include <condition_variable>
 #include <thread>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     class Device : public std::enable_shared_from_this<Device> {
     private:

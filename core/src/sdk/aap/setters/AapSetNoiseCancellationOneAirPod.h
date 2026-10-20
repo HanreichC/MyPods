@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009001b01000000    

@@ -5,7 +5,7 @@
 #include "AapBatteryWatcher.h"
 #include "sdk/aap/enums/AapCmd.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapBatteryWatcher::AapBatteryWatcher() : AapWatcher{"AapBatteryWatcher"}
     {

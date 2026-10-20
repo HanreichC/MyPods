@@ -1,4 +1,4 @@
-// Standalone self-check for the ANC wire path (not part of the magicpodscore build):
+// Standalone self-check for the ANC wire path (not part of the mypodscore build):
 //   g++ -std=c++20 -Icore/src -Icore/dependencies/json/include core/src/tests/AncSelfCheck.cpp \
 //       core/src/sdk/aap/setters/AapSetAnc.cpp core/src/sdk/aap/setters/AapRequest.cpp \
 //       core/src/sdk/aap/setters/AapInitExt.cpp core/src/sdk/aap/watchers/AapAncWatcher.cpp \
@@ -10,7 +10,7 @@
 #include "sdk/aap/setters/AapSetAnc.h"
 #include "sdk/aap/watchers/AapAncWatcher.h"
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 int main()
 {

@@ -6,7 +6,7 @@
 #include <iostream>
 #include "Logger.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     GalaxyBudsModelIds GalaxyBudsHelper::GetModelFromColoredModel(GalaxyBudsColoredModelIds coloredModel)

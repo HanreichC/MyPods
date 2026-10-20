@@ -10,7 +10,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // What the Beoplay E8 tells over LE (BeoplayE8.h), read-only: fed by its link while connected, cleared after
 

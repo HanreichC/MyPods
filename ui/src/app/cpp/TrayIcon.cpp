@@ -17,7 +17,7 @@
 
 namespace {
 QString iconPath(const QString &name) {
-    return QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/icons/") + name;
+    return QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/icons/") + name;
 }
 
 // Drawn for each size a panel may ask for rather than scaled: 16 px on Windows at 100 % up to 64 on a

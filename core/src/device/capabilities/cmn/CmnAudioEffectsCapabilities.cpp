@@ -10,7 +10,7 @@
 #include <thread>
 #include <utility>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     CmnSpatialAudioCapability::CmnSpatialAudioCapability(Device &device) : Capability("spatialAudio", false), device(device),
         surround(device.LoadSettingInt("surround").value_or(0) != 0), headTracking(device.HasHeadTracking())

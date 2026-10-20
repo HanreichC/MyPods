@@ -12,7 +12,7 @@
 #include <sdbus-c++/sdbus-c++.h>
 #endif
 
-namespace MagicPodsCore
+namespace MyPods
 {
     std::optional<uint8_t> BatteryProvider::Level(const std::vector<DeviceBatteryData> &battery)
     {

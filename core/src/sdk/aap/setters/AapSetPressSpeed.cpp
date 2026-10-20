@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapCmdSettings.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetPressSpeed::AapSetPressSpeed(AapPressSpeedMode mode) : AapRequest{"AapSetPressSpeed"}, _mode{mode}
     {

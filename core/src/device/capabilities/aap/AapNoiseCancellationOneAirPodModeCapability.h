@@ -6,7 +6,7 @@
 #include "AapCapability.h"
 #include "sdk/aap/watchers/AapNoiseCancellationOneAirPodWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapNoiseCancellationOneAirPodModeCapability : public AapCapability
     {

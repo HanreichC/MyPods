@@ -7,7 +7,7 @@
 #include "device/Device.h"
 #include <mutex>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class CmnBluetoothCodecCapability : public Capability
     {

@@ -12,7 +12,7 @@
 #include <mutex>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class BhfBatteryCapability : public Capability
     {

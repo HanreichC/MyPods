@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     class IRequest {
     public:

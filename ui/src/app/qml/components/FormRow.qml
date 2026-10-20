@@ -6,7 +6,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.impl as Impl
 import QtQuick.Layouts
-import magicpods as MP
+import mypods as MP
 
 // Inset-grouped list row: [icon tile] label [info] ........ control; the (i) stays with its label, like the Mac's
 // Draws a separator above itself when a visible row precedes it in the same section.

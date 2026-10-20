@@ -8,7 +8,7 @@
 #
 # Run with MyPods running:  sh tools/check_no_idle_discovery.sh
 
-pgrep -x magicpodscore >/dev/null || { echo "FAIL: magicpodscore is not running"; exit 1; }
+pgrep -x mypodscore >/dev/null || { echo "FAIL: mypodscore is not running"; exit 1; }
 
 # Apple devices report vendor 0x004c (76) via Modalias usb:v004Cp....
 for addr in $(bluetoothctl devices Paired | cut -d' ' -f2); do

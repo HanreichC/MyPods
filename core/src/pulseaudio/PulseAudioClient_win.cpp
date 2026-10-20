@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Endpoint properties (the same keys the endpoint's registry "Properties" holds); no initguid.h needed
     static constexpr PROPERTYKEY FORM_FACTOR_KEY{{0x1da5d803, 0xd492, 0x4edd, {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}}, 0};

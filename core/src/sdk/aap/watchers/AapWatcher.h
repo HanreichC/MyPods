@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {    
     // Base class to process incoming data from headphones
     class AapWatcher

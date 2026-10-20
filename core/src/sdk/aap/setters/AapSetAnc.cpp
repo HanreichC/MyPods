@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapModelIds.h"
 #include "AapInitExt.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapSetAnc::AapSetAnc(AapAncMode mode) : AapRequest{"AapSetAnc"}, _mode{mode}
     {

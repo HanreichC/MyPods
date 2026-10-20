@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <array>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     enum class GalaxyBudsColoredModelIds: unsigned short {
         Unknown = 0,

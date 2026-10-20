@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     ZikDevice::ZikDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService)
         : Device(deviceInfo, audioClient, settingsService)

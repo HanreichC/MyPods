@@ -4,7 +4,7 @@
 #include "MprisClient.h"
 #include "Logger.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     static constexpr const char *MPRIS_PATH = "/org/mpris/MediaPlayer2";
     static constexpr const char *MPRIS_PLAYER = "org.mpris.MediaPlayer2.Player";

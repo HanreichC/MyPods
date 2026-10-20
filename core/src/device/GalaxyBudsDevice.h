@@ -11,7 +11,7 @@
 #include "sdk/sgb/GalaxyBudsPacket.h"
 #include "settings/SettingsService.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class GalaxyBudsDevice : public Device
     {

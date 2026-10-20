@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <stdexcept>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     // Set once in the constructor, before any thread reads it
     static std::string adapterPath;

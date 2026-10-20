@@ -6,7 +6,7 @@
 #include <mutex>
 #include <optional>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     struct AapDeviceInfo
     {

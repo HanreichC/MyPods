@@ -5,7 +5,7 @@
 #include "AapPressSpeedCapability.h"
 #include "sdk/aap/setters/AapSetPressSpeed.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapPressSpeedCapability::CreateJsonBody()
     {

@@ -4,7 +4,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Controls.impl as Impl
-import magicpods as MP
+import mypods as MP
 
 // Rounded square, filled in the accent with a white check when on.
 QQC2.CheckBox {

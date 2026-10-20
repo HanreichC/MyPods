@@ -56,7 +56,7 @@ private:
     }
 public:
     std::string Format(LogLevel loggingLevel, const std::string& message) override {
-        return MagicPodsCore::StringUtils::Format("%s %s", LogLevelToString(loggingLevel).c_str(), message.c_str());
+        return MyPods::StringUtils::Format("%s %s", LogLevelToString(loggingLevel).c_str(), message.c_str());
     }
 };
 
@@ -82,7 +82,7 @@ public:
         std::lock_guard<std::mutex> lock{_mutex};
         if (static_cast<int>(loggingLevel) < static_cast<int>(_loggingLevel))
             return;
-        printf("%s\n", _formatter->Format(loggingLevel, MagicPodsCore::StringUtils::Format(format, args...)).c_str());
+        printf("%s\n", _formatter->Format(loggingLevel, MyPods::StringUtils::Format(format, args...)).c_str());
     }
 
     void SetLoggingLevel(LogLevel loggingLevel) {

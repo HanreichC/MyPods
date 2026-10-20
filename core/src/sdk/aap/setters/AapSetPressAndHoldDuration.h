@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapPressAndHoldDurationMode.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009001800000000

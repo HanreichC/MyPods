@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <toml++/toml.h>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
 toml::table JsonToToml(const nlohmann::json& json);
 toml::array JsonArrayToToml(const nlohmann::json& jsonArray);

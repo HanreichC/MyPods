@@ -15,7 +15,7 @@
 namespace sdbus { class IConnection; class IObject; }
 #endif
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Hands the exact battery level to BlueZ (org.bluez.BatteryProviderManager1), which publishes it as
     // the device's Battery1: the desktop's Bluetooth applet, UPower and other programs show it without

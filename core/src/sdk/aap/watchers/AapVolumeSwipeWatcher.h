@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapVolumeSwipeMode.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapVolumeSwipeWatcher: public AapWatcher
     {

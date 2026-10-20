@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Automatic ear detection like on a Mac: taking a bud out pauses what plays, putting it back resumes
     // exactly those players. Shared by AirPods and Galaxy Buds.

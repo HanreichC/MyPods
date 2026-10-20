@@ -6,7 +6,7 @@
 
 #include "Logger.h"
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     DBusDeviceInfo::DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces) : _deviceProxy{sdbus::createProxy("org.bluez", objectPath)}
     {

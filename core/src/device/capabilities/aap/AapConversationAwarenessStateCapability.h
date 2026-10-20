@@ -10,7 +10,7 @@
 #include <mutex>
 #include <optional>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Whether the wearer is speaking (Conversation Awareness). Like an iPhone, this computer lowers its
     // media volume on the AirPods while they speak and brings it back afterwards.

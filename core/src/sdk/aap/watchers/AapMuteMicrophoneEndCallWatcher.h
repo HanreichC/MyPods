@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapMuteMicrophoneEndCall.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapMuteMicrophoneEndCallWatcher: public AapWatcher
     {

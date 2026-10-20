@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cstdio>
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 TestsAapAudio::TestsAapAudio()
 {

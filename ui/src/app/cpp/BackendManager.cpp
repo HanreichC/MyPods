@@ -25,9 +25,9 @@
 namespace {
 
 #ifdef Q_OS_WIN
-const QString kBackendFile = QStringLiteral("magicpodscore.exe");
+const QString kBackendFile = QStringLiteral("mypodscore.exe");
 #else
-const QString kBackendFile = QStringLiteral("magicpodscore");
+const QString kBackendFile = QStringLiteral("mypodscore");
 #endif
 
 QString normalizedPath(const QString &path)
@@ -49,7 +49,7 @@ void appendUniquePath(QStringList &paths, const QString &path)
 
 QString backendLibraryPath()
 {
-    const QString configured = qEnvironmentVariable("MAGICPODSCORE_LIBDIR");
+    const QString configured = qEnvironmentVariable("MYPODSCORE_LIBDIR");
     if (configured.isEmpty())
         return {};
 
@@ -101,7 +101,7 @@ QString BackendManager::binaryPath() const
 {
     QStringList candidates;
 
-    const QString envOverride = qEnvironmentVariable("MAGICPODSCORE_PATH");
+    const QString envOverride = qEnvironmentVariable("MYPODSCORE_PATH");
     appendUniquePath(candidates, envOverride);
 
     QStringList roots;
@@ -119,7 +119,7 @@ QString BackendManager::binaryPath() const
         appendUniquePath(candidates, dir.filePath(QStringLiteral("../bin/modules/") + kBackendFile));
     }
 
-    appendUniquePath(candidates, QStandardPaths::findExecutable(QStringLiteral("magicpodscore")));
+    appendUniquePath(candidates, QStandardPaths::findExecutable(QStringLiteral("mypodscore")));
 
     for (const QString &path : std::as_const(candidates)) {
         const QFileInfo info(path);
@@ -161,7 +161,7 @@ bool BackendManager::isRunning() const
     return found;
 #else
     QProcess pgrep;
-    pgrep.start(QStringLiteral("pgrep"), {QStringLiteral("-x"), QStringLiteral("magicpodscore")});
+    pgrep.start(QStringLiteral("pgrep"), {QStringLiteral("-x"), QStringLiteral("mypodscore")});
     if (!pgrep.waitForFinished(2000)) {
         pgrep.kill();
         return false;
@@ -345,7 +345,7 @@ QString BackendManager::version()
 
     const QString out = QString::fromUtf8(proc.readAll()).trimmed();
     // the whole version, e.g. 0.2.0.r3.gabc1234: the commit is what tells two builds apart
-    static const QRegularExpression re(QStringLiteral(R"(magicpodscore\s+(\S+))"));
+    static const QRegularExpression re(QStringLiteral(R"(mypodscore\s+(\S+))"));
     const auto match = re.match(out);
     return match.hasMatch() ? match.captured(1) : QString{};
 }

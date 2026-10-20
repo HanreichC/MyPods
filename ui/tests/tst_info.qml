@@ -3,7 +3,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtTest
-import magicpods as MP
+import mypods as MP
 
 Item {
     width: 500

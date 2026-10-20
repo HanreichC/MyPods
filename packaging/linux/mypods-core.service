@@ -3,7 +3,7 @@ Description=MyPods daemon for AirPods and Bluetooth headphones
 After=pipewire.service pipewire-pulse.service
 
 [Service]
-ExecStart=/usr/lib/mypods/modules/magicpodscore
+ExecStart=/usr/lib/mypods/modules/mypodscore
 # exits when there is no Bluetooth adapter (yet), and comes back with the next one
 Restart=on-failure
 RestartSec=3

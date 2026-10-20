@@ -1,10 +1,10 @@
 // A new model (e.g. after a language switch) must not reset the picker to the first item.
 // Run against the sources (needs a configured build/ for the generated qmldir):
-//   d=$(mktemp -d) && mkdir $d/magicpods && sed /^prefer/d build/qml/magicpods/qmldir > $d/magicpods/qmldir \
-//     && ln -s $PWD/ui/src $d/magicpods/src && QT_QPA_PLATFORM=offscreen qmltestrunner -import $d -input ui/tests/tst_picker.qml
+//   d=$(mktemp -d) && mkdir $d/mypods && sed /^prefer/d build/qml/mypods/qmldir > $d/mypods/qmldir \
+//     && ln -s $PWD/ui/src $d/mypods/src && QT_QPA_PLATFORM=offscreen qmltestrunner -import $d -input ui/tests/tst_picker.qml
 import QtQuick
 import QtTest
-import magicpods as MP
+import mypods as MP
 
 Item {
     width: 400; height: 400

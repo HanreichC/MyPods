@@ -6,7 +6,7 @@
 
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapSetToneVolume : public AapRequest
     {

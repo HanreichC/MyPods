@@ -4,7 +4,7 @@
 #include "WiredDevice.h"
 #include "capabilities/cmn/CmnAudioEffectsCapabilities.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     WiredDevice::WiredDevice(std::shared_ptr<DBusDeviceInfo> info, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, const WiredOutput &output)
         : Device(info, audioClient, settingsService), info(info), sink(output.sink), usb(output.usb)

@@ -5,7 +5,7 @@
 #include "Capability.h"
 #include "Logger.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json Capability::CreateJsonBody()
     {

@@ -3,7 +3,7 @@
 // License: GPL-3.0
 
 import QtQuick 2.15
-import magicpods as MP
+import mypods as MP
 
 Text {
     color: MP.Theme.text

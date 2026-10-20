@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Byte-level checks for audio switching, head tracking and the effect chain. No hardware needed.
     class TestsAapAudio

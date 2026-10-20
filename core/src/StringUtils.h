@@ -12,7 +12,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     class StringUtils {
     public:

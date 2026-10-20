@@ -5,7 +5,7 @@
 #include "GalaxyBudsCapability.h"
 #include "sdk/sgb/enums/GalaxyBudsModelIds.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     void GalaxyBudsCapability::SendData(const GalaxyBudsSetAnc &setter) // TODO MAKE COMMON CLASS FOR SETTERS
     {

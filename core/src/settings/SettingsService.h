@@ -13,7 +13,7 @@
 #include "Event.h"
 #include "UpdatedSettingNotification.h"
 
-namespace MagicPodsCore {
+namespace MyPods {
 
 class SettingsService {
 private:

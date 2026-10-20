@@ -2,7 +2,7 @@
 // License: GPL-3.0
 
 import QtQuick
-import magicpods as MP
+import mypods as MP
 
 // What the effects do to the sound: dB over frequency (log axis) per ear, as the core computes it
 // (equalizer capability "response"). The right ear is drawn only where it differs (hearing profile).

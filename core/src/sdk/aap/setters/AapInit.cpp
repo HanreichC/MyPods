@@ -4,7 +4,7 @@
 
 #include "AapInit.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapInit::AapInit() : AapRequest{"AapInit"}
     {

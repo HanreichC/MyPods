@@ -5,7 +5,7 @@
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
-import magicpods as MP
+import mypods as MP
 
 // Inset-grouped section as MyCAD's settings glass: translucent over the backdrop, a light edge, lifted a little.
 Rectangle {

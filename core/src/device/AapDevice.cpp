@@ -36,7 +36,7 @@
 #include <optional>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     void AapDevice::OnResponseDataReceived(const std::vector<unsigned char> &data)
     {
@@ -49,7 +49,7 @@ namespace MagicPodsCore
         std::shared_ptr<BleAdvertisingService> bleService) : Device(deviceInfo, audioClient, settingsService), _bleService{bleService}
     {
         if (_bleService) // none in the emulator (tests/EmulateAirPods.cpp)
-            _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MagicPodsCore::BleAdertisingData& adData){
+            _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MyPods::BleAdertisingData& adData){
                 _onLeDataReceived.FireEvent(adData);
             });
     }

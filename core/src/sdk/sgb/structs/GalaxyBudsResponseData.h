@@ -12,7 +12,7 @@
 #include <sstream>
 #include <string>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     struct GalaxyBudsResponseData

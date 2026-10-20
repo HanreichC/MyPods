@@ -34,17 +34,17 @@ build() {
 }
 
 check() {
-    build/modules/magicpodscore --selftest
+    build/modules/mypodscore --selftest
 }
 
 package() {
     # the UI finds the daemon in modules/ next to its own (real) path
-    install -Dm755 build/magicpods "$pkgdir/usr/lib/mypods/magicpods"
-    install -Dm755 build/modules/magicpodscore "$pkgdir/usr/lib/mypods/modules/magicpodscore"
+    install -Dm755 build/mypods "$pkgdir/usr/lib/mypods/mypods"
+    install -Dm755 build/modules/mypodscore "$pkgdir/usr/lib/mypods/modules/mypodscore"
     install -d "$pkgdir/usr/bin"
-    ln -s /usr/lib/mypods/magicpods "$pkgdir/usr/bin/magicpods"
-    ln -s /usr/lib/mypods/modules/magicpodscore "$pkgdir/usr/bin/magicpodscore"
-    install -Dm644 MyPods/packaging/linux/app.magicpods.desktop "$pkgdir/usr/share/applications/app.magicpods.desktop"
+    ln -s /usr/lib/mypods/mypods "$pkgdir/usr/bin/mypods"
+    ln -s /usr/lib/mypods/modules/mypodscore "$pkgdir/usr/bin/mypodscore"
+    install -Dm644 MyPods/packaging/linux/app.mypods.desktop "$pkgdir/usr/share/applications/app.mypods.desktop"
     install -Dm644 MyPods/packaging/linux/mypods-core.service "$pkgdir/usr/lib/systemd/user/mypods-core.service"
-    install -Dm644 MyPods/ui/src/app/qml/assets/images/logo-512.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/magicpods.png"
+    install -Dm644 MyPods/ui/src/app/qml/assets/images/logo-512.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/mypods.png"
 }

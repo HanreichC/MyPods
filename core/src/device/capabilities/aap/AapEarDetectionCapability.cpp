@@ -4,7 +4,7 @@
 #include "AapEarDetectionCapability.h"
 #include "media/EarDetectionPause.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     static constexpr unsigned char EAR_DETECTION_CONFIG = 0x0A;
 

@@ -5,7 +5,7 @@
 #include "JsonToTomlConverter.h"
 #include <stdexcept>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
 toml::array JsonArrayToToml(const nlohmann::json& jsonArray) {
     toml::array tomlArray;

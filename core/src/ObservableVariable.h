@@ -8,7 +8,7 @@
 
 #include <mutex>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     // Set on a D-Bus (or WinRT) thread, read from any other: values are handed out as copies
     template<typename DataType>

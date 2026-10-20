@@ -6,7 +6,7 @@
 #include "sdk/aap/enums/AapVolumeSwipeMode.h"
 #include "sdk/aap/setters/AapSetVolumeSwipe.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapVolumeSwipeCapability::CreateJsonBody()
     {    

@@ -6,7 +6,7 @@
 #include "device/capabilities/zik/ZikCapabilities.h"
 #include "Logger.h"
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 // A Zik answer frame as it comes over the air: header, 01 01, length again, XML
 static std::vector<unsigned char> Answer(const std::string &xml)

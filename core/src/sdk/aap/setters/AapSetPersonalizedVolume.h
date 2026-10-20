@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapPersonalizedVolumeMode.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009002602000000

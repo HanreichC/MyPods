@@ -5,7 +5,7 @@
 #include "GalaxyBudsBatteryCapability.h"
 #include "dbus/BatteryProvider.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json GalaxyBudsBatteryCapability::CreateJsonBody()
     {

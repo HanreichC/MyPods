@@ -7,7 +7,7 @@
 #include "sdk/aap/watchers/AapBatteryWatcher.h"
 #include "device/DeviceBattery.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapBatteryCapability : public AapCapability
     {

@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapPressAndHoldDurationMode.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapPressAndHoldDurationWatcher: public AapWatcher
     {

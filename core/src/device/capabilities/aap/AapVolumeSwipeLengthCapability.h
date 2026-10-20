@@ -7,7 +7,7 @@
 #include "sdk/aap/watchers/AapVolumeSwipeLengthWatcher.h"
 #include "sdk/aap/enums/AapVolumeSwipeLengthMode.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapVolumeSwipeLengthCapability : public AapCapability
     {

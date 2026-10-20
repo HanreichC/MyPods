@@ -8,7 +8,7 @@
 #include "capabilities/cmn/CmnAudioEffectsCapabilities.h"
 #include "capabilities/beo/BeoplayE8Capabilities.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     void BhfDevice::OnResponseDataReceived(const std::vector<unsigned char> &data){}
 

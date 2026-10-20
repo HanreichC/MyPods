@@ -8,7 +8,7 @@
 #include "device/enums/DeviceBatteryStatus.h"
 #include <algorithm>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     struct DeviceBatteryData
     {

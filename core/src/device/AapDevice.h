@@ -15,7 +15,7 @@
 #include <chrono>
 #include <deque>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapDevice : public Device
     {

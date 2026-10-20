@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Client lifecycle, send queue, settings file, AAP device info and rename. No hardware needed.
     class TestsCore

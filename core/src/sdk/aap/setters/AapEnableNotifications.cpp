@@ -5,7 +5,7 @@
 #include "AapEnableNotifications.h"
 #include "sdk/aap/enums/AapCmd.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapEnableNotifications::AapEnableNotifications(AapNotificationsMode mode) : AapRequest{"AapEnableNotifications"}, _mode{mode}
     {

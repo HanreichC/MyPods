@@ -8,7 +8,7 @@
 #include <array>
 #include <cstdint>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class Crc16

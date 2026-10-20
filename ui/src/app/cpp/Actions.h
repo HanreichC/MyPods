@@ -10,7 +10,7 @@
 
 #include <iterator>
 
-// Keyboard shortcuts: `magicpods --action <name>` changes the active headphones through the daemon and
+// Keyboard shortcuts: `mypods --action <name>` changes the active headphones through the daemon and
 // exits. Every desktop can bind a command to a key (KDE: System Settings > Shortcuts, GNOME: Settings >
 // Keyboard > Custom Shortcuts), on X11 and Wayland alike, so MyPods needs no global hotkey code of its own.
 namespace Actions {

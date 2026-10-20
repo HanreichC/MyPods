@@ -20,7 +20,7 @@
 #include <sdbus-c++/sdbus-c++.h>
 #endif
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     // Reply of an asynchronous Bluetooth call: nullptr on success, the error message otherwise.
     using BtCallback = std::function<void(const std::string* error)>;

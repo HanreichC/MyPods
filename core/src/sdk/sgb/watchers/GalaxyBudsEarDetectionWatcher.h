@@ -13,7 +13,7 @@
 #include <sstream>
 #include <optional>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class GalaxyBudsEarDetectionWatcher

@@ -5,7 +5,7 @@
 
 #include "Device.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Headphones on a jack or USB: no Bluetooth and no control channel, only the effects that run on this computer
     // (equalizer, on Linux also spatial audio without head tracking). One per output, keyed by its sink (Windows:

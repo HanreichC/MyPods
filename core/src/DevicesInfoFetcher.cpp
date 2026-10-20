@@ -27,7 +27,7 @@
 #include <sstream>
 #include <thread>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     bool DevicesInfoFetcher::ShouldScan(bool animation, bool supportsL2CAP, bool anyAap, bool anyAapConnected, bool anyAutoSwitch)
     {
@@ -46,7 +46,7 @@ namespace MagicPodsCore {
     {
         std::lock_guard<std::mutex> lock(_bleStateMutex);
 
-        bool animation = _settingsService->GetValue<bool>("magicpods", "animation").value_or(true);
+        bool animation = _settingsService->GetValue<bool>("mypods", "animation").value_or(true);
         bool anyAap = false, anyConnected = false, anyAutoSwitch = false;
         for (const auto& device : GetDevices()) {
             auto aap = std::dynamic_pointer_cast<AapDevice>(device);
@@ -83,12 +83,12 @@ namespace MagicPodsCore {
 #endif
         _onSettingsChangeId = _settingsService->GetOnSettingUpdateEvent().Subscribe([this](size_t id, const UpdatedSettingNotification& notification){
             // the scan serves the popup and automatic switching
-            if ((notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "animation") ||
+            if ((notification.GetContainerName() == "mypods" && notification.GetSettingName() == "animation") ||
                 notification.GetSettingName() == "autoSwitch")
                 UpdateBleState();
-            if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "headphoneOutputs")
+            if (notification.GetContainerName() == "mypods" && notification.GetSettingName() == "headphoneOutputs")
                 RefreshWiredSoon();
-            if ((notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "hiRes") ||
+            if ((notification.GetContainerName() == "mypods" && notification.GetSettingName() == "hiRes") ||
                 notification.GetSettingName() == "btHighQuality")
                 ApplySoundServerOptions();
         });
@@ -159,7 +159,7 @@ namespace MagicPodsCore {
 
     void DevicesInfoFetcher::ApplySoundServerOptions()
     {
-        bool hiRes = _settingsService->GetValue<bool>("magicpods", "hiRes").value_or(false);
+        bool hiRes = _settingsService->GetValue<bool>("mypods", "hiRes").value_or(false);
         std::vector<std::string> cards;
         for (const auto& device : GetDevices())
             if (!device->WiredConnection() && device->LoadSettingInt("btHighQuality").value_or(0) != 0)
@@ -298,7 +298,7 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
 
     std::set<std::string> DevicesInfoFetcher::MarkedOutputs() {
         std::set<std::string> marked;
-        std::istringstream lines(_settingsService->GetValue<std::string>("magicpods", "headphoneOutputs").value_or(""));
+        std::istringstream lines(_settingsService->GetValue<std::string>("mypods", "headphoneOutputs").value_or(""));
         for (std::string line; std::getline(lines, line);)
             if (!line.empty())
                 marked.insert(line);
@@ -326,7 +326,7 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         std::string text;
         for (const auto& m : marked)
             text += m + "\n";
-        _settingsService->SaveSetting("magicpods", "headphoneOutputs", text); // the setting event refreshes the devices
+        _settingsService->SaveSetting("mypods", "headphoneOutputs", text); // the setting event refreshes the devices
     }
 
     void DevicesInfoFetcher::RefreshWired(bool startup) {

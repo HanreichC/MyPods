@@ -3,7 +3,7 @@
 // License: GPL-3.0
 
 import QtQuick
-import magicpods as MP
+import mypods as MP
 
 // Render of the device from its info: exact color, then the model, then a generic pair.
 Image {

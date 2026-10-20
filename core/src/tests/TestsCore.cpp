@@ -29,7 +29,7 @@
 #include <filesystem>
 #include <fstream>
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 #ifndef _WIN32
 namespace
@@ -110,6 +110,13 @@ TestsCore::TestsCore()
         SettingsService reloaded{path};
         auto irk = reloaded.GetValue<std::string>("AA_BB", "irk");
         Test("Settings persist, no temp file left", irk == "00112233" && !std::filesystem::exists(path + ".tmp"));
+
+        // from when MyPods was called MagicPods: its own table moves to the new name, the headphones' stay
+        auto oldPath = (dir / "old.toml").string();
+        std::ofstream(oldPath) << "[magicpods]\nhiRes = true\n[AA_BB]\nirk = \"00\"\n";
+        SettingsService migrated{oldPath};
+        Test("Settings: [magicpods] becomes [mypods]", migrated.GetValue<bool>("mypods", "hiRes") == true &&
+             migrated.GetSettings("magicpods").empty() && migrated.GetValue<std::string>("AA_BB", "irk") == "00");
 #ifndef _WIN32
         auto perms = std::filesystem::status(path).permissions();
         Test("Settings file private (0600)", perms == (std::filesystem::perms::owner_read | std::filesystem::perms::owner_write));

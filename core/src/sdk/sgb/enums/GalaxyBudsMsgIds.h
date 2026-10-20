@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     enum class GalaxyBudsMsgIds : unsigned char

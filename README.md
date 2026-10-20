@@ -153,7 +153,7 @@ MyPods uses both.
    no connection needed                                needs a classic connection
                  │                                                         │
                  ▼                                                         ▼
- ┌───────────────────────────────── magicpodscore (daemon) ─────────────────────────────────┐
+ ┌───────────────────────────────── mypodscore (daemon) ─────────────────────────────────┐
  │  lid state, coarse battery,       │  exact battery, ANC, ear detection, settings,       │
  │  AES-decrypted exact battery,     │  IRK/ENC key exchange, smart routing (handoff),     │
  │  RPA check → popup trigger        │  head tracking                                      │
@@ -163,7 +163,7 @@ MyPods uses both.
  └───────────────────────────────────────┬──────────────────────────────────────────────────┘
                                          │ WebSocket, JSON, port 2020
                                          ▼
-                        ┌──────── magicpods (Qt 6 / QML UI) ────────┐
+                        ┌──────── mypods (Qt 6 / QML UI) ────────┐
                         │ tray icon, device pages, settings,        │
                         │ lid-open popup animation                  │
                         │ starts the daemon on launch               │
@@ -260,7 +260,7 @@ To build it yourself: `podman run --rm -v "$PWD:/workspace:Z" -w /workspace dock
 
 [packaging/arch/PKGBUILD](packaging/arch/PKGBUILD) builds a `mypods-git` package from the latest
 commit on GitHub (AUR style), not from your local checkout. It installs to `/usr/lib/mypods`, with
-`magicpods` and `magicpodscore` in `/usr/bin`, a start menu entry and the daemon's systemd user unit.
+`mypods` and `mypodscore` in `/usr/bin`, a start menu entry and the daemon's systemd user unit.
 
 ```bash
 cd packaging/arch && makepkg -si
@@ -284,12 +284,12 @@ No root required.
 
 | What | Where |
 |------|-------|
-| UI binary | `~/.local/opt/mypods/magicpods` |
-| Daemon binary | `~/.local/opt/mypods/modules/magicpodscore` |
-| Start menu entry | `~/.local/share/applications/app.magicpods.desktop` |
-| Autostart entry (starts hidden in the tray) | `~/.config/autostart/app.magicpods.desktop` |
+| UI binary | `~/.local/opt/mypods/mypods` |
+| Daemon binary | `~/.local/opt/mypods/modules/mypodscore` |
+| Start menu entry | `~/.local/share/applications/app.mypods.desktop` |
+| Autostart entry (starts hidden in the tray) | `~/.config/autostart/app.mypods.desktop` |
 | Daemon as systemd user service | `~/.config/systemd/user/mypods-core.service` |
-| Icon | `~/.local/share/icons/magicpods.png` |
+| Icon | `~/.local/share/icons/mypods.png` |
 
 The daemon runs as a systemd user service, independent of the tray app: ear detection, automatic
 switching and the effects keep working after you quit the tray app, and systemd restarts the daemon
@@ -304,12 +304,12 @@ Run the script again to update. It stops the running instance, reinstalls and st
 
 ```bash
 systemctl --user disable --now mypods-core.service
-pkill -x magicpods; pkill -x magicpodscore
+pkill -x mypods; pkill -x mypodscore
 rm -rf ~/.local/opt/mypods \
-       ~/.local/share/applications/app.magicpods.desktop \
-       ~/.config/autostart/app.magicpods.desktop \
+       ~/.local/share/applications/app.mypods.desktop \
+       ~/.config/autostart/app.mypods.desktop \
        ~/.config/systemd/user/mypods-core.service \
-       ~/.local/share/icons/magicpods.png
+       ~/.local/share/icons/mypods.png
 systemctl --user daemon-reload
 rm -rf ~/.config/mypods   # optional: settings and stored AirPods keys
 ```
@@ -394,17 +394,17 @@ Then reconnect the AirPods once. `install.sh` reminds you if the line is missing
 Command-line options:
 
 ```bash
-magicpods --hidden            # start minimized to the tray (used by autostart)
-magicpodscore --version       # print daemon version
-magicpodscore --selftest      # run the built-in byte-level checks, no hardware needed
+mypods --hidden            # start minimized to the tray (used by autostart)
+mypodscore --version       # print daemon version
+mypodscore --selftest      # run the built-in byte-level checks, no hardware needed
 ```
 
-Starting `magicpods` a second time brings the existing window to the front instead of launching
+Starting `mypods` a second time brings the existing window to the front instead of launching
 another instance.
 
 ### Keyboard shortcuts
 
-`magicpods --action <name>` changes the connected headphones through the daemon and exits, without
+`mypods --action <name>` changes the connected headphones through the daemon and exits, without
 opening a window. Bind it to a key in your desktop's shortcut settings (KDE: *System Settings →
 Keyboard → Shortcuts → Add New → Command*, GNOME: *Settings → Keyboard → Custom Shortcuts*); that
 works on X11 and Wayland alike.
@@ -430,7 +430,7 @@ Settings are stored by the daemon in TOML:
 ${XDG_CONFIG_HOME:-~/.config}/mypods/config.toml
 ```
 
-Most options are set through the UI. Global options live in the `[magicpods]` table:
+Most options are set through the UI. Global options live in the `[mypods]` table:
 
 | Key | Default | Meaning |
 |-----|---------|---------|
@@ -491,10 +491,10 @@ podman run --rm -v "$PWD:/workspace" -w /workspace mypods-dev \
 
 Output:
 
-- `build/magicpods` — the UI
-- `build/modules/magicpodscore` — the daemon
+- `build/mypods` — the UI
+- `build/modules/mypodscore` — the daemon
 
-Run `./build/magicpods` on the host. The UI looks for the daemon in `modules/` next to its own
+Run `./build/mypods` on the host. The UI looks for the daemon in `modules/` next to its own
 binary and starts it.
 
 For a debug build, use `-DCMAKE_BUILD_TYPE=Debug`. This enables debug logging and runs the
@@ -510,7 +510,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
     -DCMAKE_PREFIX_PATH=C:\Qt\6.9.3\msvc2022_64 `
     -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
 cmake --build build
-build\modules\magicpodscore.exe --selftest
+build\modules\mypodscore.exe --selftest
 ```
 
 vcpkg installs OpenSSL, libuv and zlib from [vcpkg.json](vcpkg.json). The MSI is built by
@@ -545,7 +545,7 @@ sh tools/run_checks.sh build
 # Daemon: AAP battery/ANC parsing, BLE advertisement decoding, smart routing packets, control
 # commands, ATT settings, audio effect chain, signal path, settings file, events across threads,
 # Galaxy Buds and Parrot Zik protocol. Also worth running in a build with -fsanitize=address,undefined.
-./build/modules/magicpodscore --selftest
+./build/modules/mypodscore --selftest
 
 # Emulated AirPods Max through the real audio path (spatial audio, head tracking, EQ, tone, limiter,
 # loudness, hearing profile, A/B, 7.1, routing, a sound server restart, Hi-Res with a 96 kHz source
@@ -554,7 +554,7 @@ sh tools/run_checks.sh build
 # setting they report. Needs PipeWire, no Bluetooth; briefly switches the default sink to a fake
 # headphones sink. Best in the container: it restarts PipeWire, writes the Hi-Res drop-ins and
 # owns org.bluez on the container's system bus.
-./build/modules/magicpodscore --emulate-airpods
+./build/modules/mypodscore --emulate-airpods
 # The same in the dev container, against its own PipeWire (leaves the host's audio alone)
 podman run --rm -v "$PWD:/workspace" -w /workspace <dev image> sh tools/emulate_in_container.sh build
 
@@ -720,7 +720,7 @@ device, and only MPRIS players trigger it.
 
 **The UI says it cannot reach the daemon.**
 Something else might be using port 2020 on `127.0.0.1`, or an old daemon is still running:
-`systemctl --user restart mypods-core` (or `pkill -x magicpodscore` without the service) and start
+`systemctl --user restart mypods-core` (or `pkill -x mypodscore` without the service) and start
 MyPods again. `journalctl --user -u mypods-core` shows the daemon's log.
 
 **The About page shows different versions.**

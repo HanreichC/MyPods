@@ -5,7 +5,7 @@
 // AAP packets fed straight into the capabilities, everything after that is the daemon's own code.
 // Then emulated AirPods Pro 3 switching between this computer and an iPhone, with MPRIS players on the session
 // bus and a fake BlueZ adapter on the system bus (the container's; on a desktop org.bluez is taken).
-// Needs a running PipeWire, no Bluetooth. magicpodscore --emulate-airpods
+// Needs a running PipeWire, no Bluetooth. mypodscore --emulate-airpods
 
 #include "device/AapDevice.h"
 #include "device/BhfDevice.h"
@@ -27,7 +27,7 @@
 #include <functional>
 #include <thread>
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 namespace
 {

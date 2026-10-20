@@ -4,7 +4,7 @@
 
 import QtQuick
 import QtQuick.Shapes
-import magicpods as MP
+import mypods as MP
 
 // Apple-widget style battery ring.
 Column {

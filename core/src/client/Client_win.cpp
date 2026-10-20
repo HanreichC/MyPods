@@ -11,7 +11,7 @@
 #include <winsock2.h>
 #include <ws2bth.h>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     namespace {
         void EnsureWinsock() {

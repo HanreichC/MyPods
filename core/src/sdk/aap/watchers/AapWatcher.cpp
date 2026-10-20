@@ -4,7 +4,7 @@
 
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     AapWatcher::AapWatcher(std::string tag) : _tag{std::move(tag)}

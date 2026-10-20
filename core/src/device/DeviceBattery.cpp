@@ -6,7 +6,7 @@
 #include "device/enums/DeviceBatteryType.h"
 #include "device/enums/DeviceBatteryStatus.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     DeviceBattery::DeviceBattery(bool cached) : _cached(cached)

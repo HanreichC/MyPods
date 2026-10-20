@@ -3,7 +3,7 @@
 
 #include "BeoplayE8.h"
 
-namespace MagicPodsCore::BeoplayE8
+namespace MyPods::BeoplayE8
 {
     bool Is(const std::string &name)
     {

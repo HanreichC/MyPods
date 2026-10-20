@@ -6,7 +6,7 @@
 #include "device/AapDevice.h"
 #include <chrono>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Spatial audio with head tracking: the head orientation streams from the AirPods (AAP 0x17).
     class AapSpatialAudioCapability : public CmnSpatialAudioCapability

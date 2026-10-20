@@ -6,7 +6,7 @@
 #include "sdk/aap/Att.h"
 #include <mutex>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Settings AirPods Pro 2/3 keep as GATT characteristics (AapDevice::AttRead/AttWrite). Shown once
     // their value has been read, so they stay hidden when the ATT channel can't be opened.

@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapPressSpeedMode.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009001700000000    

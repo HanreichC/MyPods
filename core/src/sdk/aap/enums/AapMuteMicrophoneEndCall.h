@@ -5,7 +5,7 @@
 #pragma once
 #include <string>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Byte 7 indicates the packet type
     enum class AapEndCallMode : unsigned char

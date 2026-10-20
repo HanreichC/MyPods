@@ -18,7 +18,7 @@
 #include <thread>
 #include "Event.h"
 
-namespace MagicPodsCore{
+namespace MyPods{
 
     struct CardInfo {
         std::string name;

@@ -7,7 +7,7 @@ import QtQuick.Controls.impl as Impl
 import QtQuick.Controls.Material
 import QtQuick.Effects
 import QtQuick.Layouts
-import magicpods as MP
+import mypods as MP
 import "components" as Components
 
 // Menu bar extra: opens under the tray icon on a single click, like the AirPods module in the

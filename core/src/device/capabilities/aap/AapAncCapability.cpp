@@ -5,7 +5,7 @@
 #include "AapAncCapability.h"
 #include "sdk/aap/setters/AapSetAnc.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapAncMode AapAncCapability::DeviceAncModesToAapAncMode(DeviceAncModes mode)
     {

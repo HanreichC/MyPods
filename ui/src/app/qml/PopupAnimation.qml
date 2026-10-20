@@ -6,7 +6,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Controls.Material
-import magicpods as MP
+import mypods as MP
 
 QQC2.ApplicationWindow {
     id: osdDialog
@@ -328,7 +328,7 @@ QQC2.ApplicationWindow {
                     height: Layout.preferredHeight
 
                     Sprite {
-                        source: `qrc:/qt/qml/magicpods/src/app/qml/assets/animations/${popupRoot.selectedAnim.source}`
+                        source: `qrc:/qt/qml/mypods/src/app/qml/assets/animations/${popupRoot.selectedAnim.source}`
                         frameWidth: popupRoot.selectedAnim.frameWidth
                         frameHeight: popupRoot.selectedAnim.frameHeight
                         frameCount: popupRoot.selectedAnim.frameCount

@@ -2,7 +2,7 @@
 // after the lid was closed, and a second pair's lid never closes the one shown. Run like tst_picker.qml.
 import QtQuick
 import QtTest
-import magicpods as MP
+import mypods as MP
 
 Item {
     MP.PopupAnimation {

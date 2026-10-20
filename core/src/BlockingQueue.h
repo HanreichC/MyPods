@@ -11,7 +11,7 @@
 #include "Logger.h"
 #include <optional>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     template<typename TDataType>
     class BlockingQueue

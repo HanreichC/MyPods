@@ -1,4 +1,4 @@
-// Standalone self-check for the AAP battery path (not part of the magicpodscore build):
+// Standalone self-check for the AAP battery path (not part of the mypodscore build):
 //   g++ -std=c++20 -Icore/src -Icore/dependencies/json/include core/src/tests/BatterySelfCheck.cpp \
 //       core/src/sdk/aap/watchers/AapBatteryWatcher.cpp core/src/sdk/aap/watchers/AapWatcher.cpp \
 //       core/src/device/DeviceBattery.cpp -o /tmp/battery && /tmp/battery
@@ -8,7 +8,7 @@
 #include "device/DeviceBattery.h"
 #include "sdk/aap/watchers/AapBatteryWatcher.h"
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 int main()
 {

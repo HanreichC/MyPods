@@ -6,7 +6,7 @@
 #include "sdk/aap/enums/AapCmd.h"
 #include "sdk/aap/enums/AapCmdSettings.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapMuteMicrophoneEndCallWatcher::AapMuteMicrophoneEndCallWatcher() : AapWatcher{"AapMuteMicrophoneEndCallWatcher"}
     {

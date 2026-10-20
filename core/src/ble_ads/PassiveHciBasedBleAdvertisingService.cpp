@@ -5,7 +5,7 @@
 #include "PassiveHciBasedBleAdvertisingService.h"
 #include <iostream>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
 PassiveHciBasedBleAdvertisingService::PassiveHciBasedBleAdvertisingService(DBusService& dbusService, int deviceId)

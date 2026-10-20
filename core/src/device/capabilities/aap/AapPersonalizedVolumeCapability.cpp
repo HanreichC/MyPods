@@ -6,7 +6,7 @@
 #include "sdk/aap/enums/AapPersonalizedVolumeMode.h"
 #include "sdk/aap/setters/AapSetPersonalizedVolume.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapPersonalizedVolumeCapability::CreateJsonBody()
     {    

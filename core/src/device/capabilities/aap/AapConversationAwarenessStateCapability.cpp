@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <thread>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     bool AapConversationAwarenessStateCapability::AapConversationAwarenessStateToBoolean(AapConversationAwarenessState mode)
     {

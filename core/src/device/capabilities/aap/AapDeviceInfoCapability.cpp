@@ -3,7 +3,7 @@
 
 #include "AapDeviceInfoCapability.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     std::optional<AapDeviceInfo> AapDeviceInfoCapability::Parse(const std::vector<unsigned char> &data)
     {

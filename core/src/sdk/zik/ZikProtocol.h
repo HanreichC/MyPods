@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace MagicPodsCore::Zik
+namespace MyPods::Zik
 {
     inline constexpr const char *ServiceUuid = "8b6814d3-6ce7-4498-9700-9312c1711f63";
     inline constexpr unsigned char OpenSession = 0x00;

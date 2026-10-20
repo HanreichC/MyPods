@@ -4,7 +4,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Effects
-import magicpods as MP
+import mypods as MP
 
 // Apple slider: thin capsule track filled in the accent up to a white knob with a soft shadow.
 // The knob's center sits padding + 10.5 px from the ends (the equalizer's scale labels line up with it).

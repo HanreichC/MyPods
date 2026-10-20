@@ -17,7 +17,7 @@ else
     QMLTEST=$(command -v qmltestrunner6 || command -v qmltestrunner || echo /usr/lib/qt6/bin/qmltestrunner)
 fi
 
-"$BUILD/modules/magicpodscore" --selftest
+"$BUILD/modules/mypodscore" --selftest
 python3 tools/sniff.py --selftest
 python3 tools/check_translations.py
 
@@ -44,9 +44,9 @@ $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/DesktopCheck.cpp $QTCORE -o "$OU
 "$OUT/desktop"
 
 # QML: the picker against the sources, with the qmldir the build generated
-mkdir -p "$OUT/qml/magicpods"
-sed /^prefer/d "$BUILD/qml/magicpods/qmldir" > "$OUT/qml/magicpods/qmldir"
-ln -s "$PWD/ui/src" "$OUT/qml/magicpods/src"
+mkdir -p "$OUT/qml/mypods"
+sed /^prefer/d "$BUILD/qml/mypods/qmldir" > "$OUT/qml/mypods/qmldir"
+ln -s "$PWD/ui/src" "$OUT/qml/mypods/src"
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_picker.qml
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_popup.qml
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_info.qml

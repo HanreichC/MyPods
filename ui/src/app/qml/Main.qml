@@ -10,7 +10,7 @@ import QtQuick.Effects
 import QtQuick.Layouts
 import "pages"
 import "components" as Components
-import magicpods as MP
+import mypods as MP
 
 QQC2.ApplicationWindow {
     id: root

@@ -5,7 +5,7 @@
 #include "AapCapability.h"
 #include <atomic>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // A setting that is a single AAP control command: 04 00 04 00 09 00 <id> <data1> <data2> 00 00.
     // The AirPods report each of their settings once notifications are on, so a setting only shows up

@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     using namespace winrt::Windows::Media::Control;
 

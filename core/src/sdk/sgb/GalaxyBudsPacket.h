@@ -11,7 +11,7 @@
 #include <optional>
 #include <iostream>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class GalaxyBudsPacket

@@ -9,7 +9,7 @@
 #include "device/structs/DeviceBatteryData.h"
 #include <nlohmann/json.hpp>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class DeviceBattery
     {

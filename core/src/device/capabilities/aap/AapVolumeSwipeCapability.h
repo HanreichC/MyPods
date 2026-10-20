@@ -6,7 +6,7 @@
 #include "AapCapability.h"
 #include "sdk/aap/watchers/AapVolumeSwipeWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapVolumeSwipeCapability : public AapCapability
     {

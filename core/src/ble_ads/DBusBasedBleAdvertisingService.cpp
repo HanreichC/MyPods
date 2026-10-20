@@ -5,7 +5,7 @@
 #include "DBusBasedBleAdvertisingService.h"
 #include <iostream>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
 DBusBasedBleAdvertisingService::DBusBasedBleAdvertisingService(DBusService& dbusService)

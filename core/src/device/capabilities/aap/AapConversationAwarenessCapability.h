@@ -6,7 +6,7 @@
 #include "AapCapability.h"
 #include "sdk/aap/watchers/AapConversationAwarenessWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapConversationAwarenessCapability : public AapCapability
     {

@@ -7,7 +7,7 @@
 #include "StringUtils.h"
 #include "Logger.h"
 
-namespace MagicPodsCore{
+namespace MyPods{
 
     bool Aes::VerifyRPA(const std::string &address, const std::string &irk)
     {

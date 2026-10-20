@@ -8,7 +8,7 @@
 #include "sdk/aap/setters/AapRequest.h"
 #include "device/AapDevice.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapCapability : public Capability
     {

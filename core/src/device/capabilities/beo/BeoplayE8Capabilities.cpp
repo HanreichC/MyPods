@@ -3,7 +3,7 @@
 
 #include "BeoplayE8Capabilities.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json BeoplayE8AncCapability::CreateJsonBody()
     {

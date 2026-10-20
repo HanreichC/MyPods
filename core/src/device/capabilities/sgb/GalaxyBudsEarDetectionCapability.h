@@ -6,7 +6,7 @@
 #include "sdk/sgb/watchers/GalaxyBudsEarDetectionWatcher.h"
 #include "media/EarDetectionPause.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Taking a bud out pauses, putting it back resumes, as with AirPods. The Buds report where each bud is
     // (worn, idle, case) in their status updates; on/off is stored locally, the Buds have no such switch.

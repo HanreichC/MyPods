@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 
-namespace MagicPodsCore {
+namespace MyPods {
     // A channel the headphones keep closing (another tool holds it, firmware quirk) isn't retried forever
     static constexpr int MAX_RESTARTS_PER_CONNECTION = 5;
 

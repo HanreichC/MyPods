@@ -4,7 +4,7 @@
 #include "AapAttCapabilities.h"
 #include <algorithm>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapAttCapability::AapAttCapability(const std::string &name, unsigned char handle, AapDevice &device)
         : AapCapability(name, false, device), handle(handle)

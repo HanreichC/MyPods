@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <sstream>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class GalaxyBudsHelper
     {

@@ -6,7 +6,7 @@
 #include "sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h"
 #include "sdk/aap/setters/AapSetNoiseCancellationOneAirPod.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapNoiseCancellationOneAirPodModeCapability::CreateJsonBody()
     {    

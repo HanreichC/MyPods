@@ -53,21 +53,21 @@ jobs:
           }
 
       - name: Self-test
-        run: build\modules\magicpodscore.exe --selftest
+        run: build\modules\mypodscore.exe --selftest
 
       - name: Deploy
         run: |
           New-Item -ItemType Directory deploy\modules | Out-Null
-          Copy-Item build\magicpods.exe deploy\
-          Copy-Item build\modules\magicpodscore.exe deploy\modules\
-          windeployqt --release --qmldir ui\src\app\qml --no-system-d3d-compiler --no-opengl-sw deploy\magicpods.exe
+          Copy-Item build\mypods.exe deploy\
+          Copy-Item build\modules\mypodscore.exe deploy\modules\
+          windeployqt --release --qmldir ui\src\app\qml --no-system-d3d-compiler --no-opengl-sw deploy\mypods.exe
           # App-local VC++ runtime for both executables, so no separate redistributable install is needed
           $crt = Get-ChildItem "$env:VCToolsRedistDir\x64\Microsoft.VC*.CRT" | Select-Object -First 1
           Copy-Item "$crt\*.dll" deploy\
           Copy-Item "$crt\*.dll" deploy\modules\
 
       # Equalizer APO's engine (GPL-2.0-or-later), the effects on Windows: unpacked from its installer, which never runs.
-      # The MSI registers it (magicpodscore --apo-install), so nothing else is downloaded or installed.
+      # The MSI registers it (mypodscore --apo-install), so nothing else is downloaded or installed.
       - name: Equalizer APO
         run: |
           curl.exe -sSL -o eapo.exe https://sourceforge.net/projects/equalizerapo/files/1.4.2/EqualizerAPO-x64-1.4.2.exe/download

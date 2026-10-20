@@ -6,7 +6,7 @@
 #include "sdk/sgb/enums/GalaxyBudsLegacyEarDetectionState.h"
 #include "sdk/sgb/enums/GalaxyBudsEarDetectionState.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     std::optional<GalaxyBudsEarDetectionStateArgs> GalaxyBudsEarDetectionWatcher::ExtractState(unsigned char b)

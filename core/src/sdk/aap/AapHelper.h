@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapHelper
     {

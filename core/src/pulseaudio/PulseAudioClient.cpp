@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     namespace
     {
@@ -61,7 +61,7 @@ namespace MagicPodsCore
             pa_context_disconnect(ctx);
             pa_context_unref(ctx);
         }
-        ctx = pa_context_new(pa_threaded_mainloop_get_api(ml), "MagicPodsCore");
+        ctx = pa_context_new(pa_threaded_mainloop_get_api(ml), "MyPods");
         pa_context_set_state_callback(ctx, [](pa_context *c, void *userdata) {
             auto *self = static_cast<PulseAudioClient*>(userdata);
             auto state = pa_context_get_state(c);

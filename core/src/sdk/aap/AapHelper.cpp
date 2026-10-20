@@ -6,7 +6,7 @@
 #include "sdk/aap/enums/AapModelIds.h"
 #include "BtVendorIds.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     bool AapHelper::IsAapDevice(unsigned short vendorId, unsigned short productId)
     {

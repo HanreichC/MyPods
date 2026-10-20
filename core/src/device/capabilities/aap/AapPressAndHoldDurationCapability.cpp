@@ -5,7 +5,7 @@
 #include "AapPressAndHoldDurationCapability.h"
 #include "sdk/aap/setters/AapSetPressAndHoldDuration.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapPressAndHoldDurationCapability::CreateJsonBody()
     {

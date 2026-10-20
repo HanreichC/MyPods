@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapConversationAwarenessMode.h"
 #include "sdk/aap/setters/AapSetConversationAwarenessStatus.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapConversationAwarenessCapability::CreateJsonBody()
     {    

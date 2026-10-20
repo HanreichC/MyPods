@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapPressSpeedMode.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapPressSpeedWatcher: public AapWatcher
     {

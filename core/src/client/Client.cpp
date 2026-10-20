@@ -22,7 +22,7 @@
 #include <bluetooth/sdp_lib.h>
 #endif
 
-namespace MagicPodsCore {
+namespace MyPods {
     Client::Client(const std::string& address, unsigned short port, ClientConnectionType connectionType)
         : _address{address}, _port{port}, _connectionType{connectionType} {}
 

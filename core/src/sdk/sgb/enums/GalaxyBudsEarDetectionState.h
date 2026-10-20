@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     enum class GalaxyBudsEarDetectionState: unsigned char{
         Disconnected = 0,

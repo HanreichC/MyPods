@@ -8,7 +8,7 @@
 #include "Device.h"
 #include "BeoplayE8.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class BhfDevice : public Device

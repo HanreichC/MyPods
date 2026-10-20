@@ -7,7 +7,7 @@
 #include "../dbus/DBusService.h"
 #include <memory>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Windows counterpart of DBusBasedBleAdvertisingService: BluetoothLEAdvertisementWatcher. Windows shares
     // the radio between scanning and paired LE devices itself, so there is no discovery filter to be careful with.

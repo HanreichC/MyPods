@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h"
 #include "AapWatcher.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapNoiseCancellationOneAirPodWatcher: public AapWatcher
     {

@@ -6,7 +6,7 @@
 #include "sdk/aap/enums/AapPrivateKeysType.h"
 #include "StringUtils.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {    
     AapPrivateKeysWatcher::AapPrivateKeysWatcher() : AapWatcher{"AapPrivateKeysWatcher"}
     {

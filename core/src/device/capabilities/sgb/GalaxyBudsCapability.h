@@ -9,7 +9,7 @@
 #include "sdk/sgb/structs/GalaxyBudsResponseData.h"
 #include "sdk/sgb/setters/GalaxyBudsSetAnc.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     class GalaxyBudsCapability : public Capability

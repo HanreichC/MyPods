@@ -3,7 +3,7 @@
 
 #include "GalaxyBudsEarDetectionCapability.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     GalaxyBudsEarDetectionCapability::GalaxyBudsEarDetectionCapability(GalaxyBudsDevice &device)
         : GalaxyBudsCapability("earDetection", false, device), watcher(static_cast<GalaxyBudsModelIds>(device.GetProductId()))

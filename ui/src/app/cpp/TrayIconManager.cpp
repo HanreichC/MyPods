@@ -447,5 +447,5 @@ void TrayIconManager::addEffectsActions(const QString &address, const QVariantMa
 
 QIcon TrayIconManager::iconFromAppAssets(const QString &fileName) const
 {
-    return QIcon(QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/icons/") + fileName);
+    return QIcon(QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/icons/") + fileName);
 }

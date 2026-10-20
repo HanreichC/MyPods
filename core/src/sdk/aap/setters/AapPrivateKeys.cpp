@@ -5,7 +5,7 @@
 #include "AapPrivateKeys.h"
 #include "sdk/aap/enums/AapCmd.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapPrivateKeys::AapPrivateKeys() : AapRequest{"AapPrivateKeys"}
     {

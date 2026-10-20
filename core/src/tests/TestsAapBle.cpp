@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 TestsAapBle::TestsAapBle()
 {

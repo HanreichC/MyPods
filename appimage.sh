@@ -24,18 +24,18 @@ QT=$QT CXX=g++-12 sh tools/run_checks.sh $BUILD
 
 cd $BUILD
 rm -rf AppDir && mkdir -p AppDir/usr/bin/modules AppDir/usr/plugins
-cp modules/magicpodscore AppDir/usr/bin/modules/
+cp modules/mypodscore AppDir/usr/bin/modules/
 # Das Qt-Plugin von linuxdeploy vergisst die Wayland-EGL-Integration -> ohne sie kein OpenGL unter Wayland
 cp -r $QT/plugins/wayland-graphics-integration-client AppDir/usr/plugins/
-cp "$OLDPWD/ui/src/app/qml/assets/images/logo-512.png" magicpods.png
-cat > magicpods.desktop <<EOF
+cp "$OLDPWD/ui/src/app/qml/assets/images/logo-512.png" mypods.png
+cat > mypods.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=MyPods
 Comment=The control center for your Bluetooth headphones
 Comment[de]=Die Kontrollzentrale für deine Bluetooth-Kopfhörer
-Exec=magicpods
-Icon=magicpods
+Exec=mypods
+Icon=mypods
 Terminal=false
 Categories=Utility;
 StartupWMClass=MyPods
@@ -49,8 +49,8 @@ done
 export APPIMAGE_EXTRACT_AND_RUN=1 QMAKE=$QT/bin/qmake LD_LIBRARY_PATH=$QT/lib \
     QML_SOURCES_PATHS="$OLDPWD/ui/src/app/qml" EXTRA_PLATFORM_PLUGINS=libqwayland-generic.so \
     LDAI_OUTPUT="$OLDPWD/MyPods-x86_64.AppImage"
-./linuxdeploy-x86_64.AppImage --appdir AppDir -e magicpods \
-    --deploy-deps-only AppDir/usr/bin/modules/magicpodscore \
+./linuxdeploy-x86_64.AppImage --appdir AppDir -e mypods \
+    --deploy-deps-only AppDir/usr/bin/modules/mypodscore \
     --deploy-deps-only AppDir/usr/plugins/wayland-graphics-integration-client \
     -l /usr/lib/x86_64-linux-gnu/libssl.so.3 \
-    -d magicpods.desktop -i magicpods.png --plugin qt --output appimage
+    -d mypods.desktop -i mypods.png --plugin qt --output appimage

@@ -5,7 +5,7 @@
 #include "AapMuteMicrophoneEndCallCapability.h"
 #include "sdk/aap/setters/AapSetMuteMicrophoneEndCall.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapMuteMicrophoneEndCallCapability::CreateJsonBody()
     {

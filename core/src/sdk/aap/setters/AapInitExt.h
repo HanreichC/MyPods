@@ -6,7 +6,7 @@
 
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // Initialize extended features anc adaptive mode for AirPods Pro 2

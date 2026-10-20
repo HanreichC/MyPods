@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Byte 4 indicates the packet type
     enum class AapCmd : unsigned char

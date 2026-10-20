@@ -7,7 +7,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Controls.impl as Impl
 import QtQuick.Controls.Material
 import QtQuick.Layouts
-import magicpods as MP
+import mypods as MP
 
 // HIG pop-up button for list rows: borderless, secondary value text, subtle fill on hover.
 // Its menu is a glass panel with a checkmark on the current item.

@@ -3,7 +3,7 @@
 
 import QtQuick
 import QtQuick.Controls as QQC2
-import magicpods as MP
+import mypods as MP
 
 // Capsule button like MyCAD's: highlighted = the prominent action (accent, white text), otherwise a quiet fill.
 QQC2.Button {

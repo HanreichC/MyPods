@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapVolumeSwipeLengthMode.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009002300000000

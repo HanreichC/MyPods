@@ -32,7 +32,7 @@
 #include <pthread.h>
 #endif
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 int EmulateAirPods(); // tests/EmulateAirPods.cpp
 
@@ -397,7 +397,7 @@ void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& device
 
     auto onAnimationTriggered = [&app, &settingsService](nlohmann::json newValue) {
         // the BLE scan may also run for automatic switching, so the popup setting is checked here
-        if (!settingsService.GetValue<bool>("magicpods", "animation").value_or(true))
+        if (!settingsService.GetValue<bool>("mypods", "animation").value_or(true))
             return;
         Logger::Info("onAnimationTriggered Broadcast was triggered");
         app.getLoop()->defer([&app, newValue]() {
@@ -477,8 +477,8 @@ bool TryToParseArguments(int argc, char** argv) {
         }
         else if (argument == "--help" || argument == "-help" || argument == "-h") {
             Logger::Info(
-                "Help is under development. For more information and to contact us, please visit magicpods.app.\n"
-                "Developed by Aleksandr Maslov<MagicPods@outlook.com> and Andrei Litvintsev<a.a.litvintsev@gmail.com>");
+                "MyPods core: --version, --selftest, --emulate-airpods; see https://github.com/HanreichC/MyPods.\n"
+                "Based on MagicPodsCore by Aleksandr Maslov and Andrei Litvintsev (magicpods.app).");
             return true;
         }
     }
@@ -491,12 +491,12 @@ void StartListeningLogSettings(SettingsService &settingsService) {
     return;
     #endif
 
-    if (auto currentSettingsLogLevel = settingsService.GetValue<int64_t>("magicpods", "logLevel")) {
+    if (auto currentSettingsLogLevel = settingsService.GetValue<int64_t>("mypods", "logLevel")) {
         Logger::SetLoggingLevelForGlobalLogger(*currentSettingsLogLevel);
     }
 
     settingsService.GetOnSettingUpdateEvent().Subscribe([](size_t listenerId, const UpdatedSettingNotification& notification) {
-        if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "logLevel") {
+        if (notification.GetContainerName() == "mypods" && notification.GetSettingName() == "logLevel") {
             if (notification.GetValue().is_integer()) {
                 Logger::SetLoggingLevelForGlobalLogger(notification.GetValue().as_integer()->get());
             }
@@ -508,7 +508,7 @@ int main(int argc, char** argv) {
     if (TryToParseArguments(argc, argv))
         return 0;
 
-    // Byte-level self-checks without hardware: magicpodscore --selftest
+    // Byte-level self-checks without hardware: mypodscore --selftest
     if (argc > 1 && std::string{argv[1]} == "--selftest") {
         int failures = TestsSgb{}.failures + TestsAapBle{}.failures + TestsAapAudio{}.failures + TestsZik{}.failures + TestsCore{}.failures;
         Logger::Info("Selftest: %d failure(s)", failures);
@@ -521,7 +521,7 @@ int main(int argc, char** argv) {
         return AudioEffects::SetupApo(argv[1], argc > 2 ? argv[2] : "");
 #endif
 #ifndef _WIN32
-    // Emulated AirPods Max through the real audio path, needs PipeWire: magicpodscore --emulate-airpods
+    // Emulated AirPods Max through the real audio path, needs PipeWire: mypodscore --emulate-airpods
     if (argc > 1 && std::string{argv[1]} == "--emulate-airpods")
         return EmulateAirPods();
 

@@ -10,10 +10,15 @@
 
 #include "Logger.h"
 
-namespace MagicPodsCore {
+namespace MyPods {
 
 SettingsService::SettingsService(const std::string& filePath) : _filePath(filePath), _onSettingUpdate{} {
     LoadFromFile();
+    // MyPods was called MagicPods: its own settings move to the new name once
+    if (auto old = _settings["magicpods"].as_table(); old && !_settings.contains("mypods")) {
+        _settings.insert_or_assign("mypods", *old);
+        _settings.erase("magicpods");
+    }
     MergeDefaults(_settings, GetDefaults());
     WriteToFile();
 }
@@ -68,12 +73,12 @@ bool SettingsService::WriteToFile() {
 }
 
 toml::table SettingsService::GetDefaults() {
-    toml::table magicpods{};
-    magicpods.insert_or_assign("animation", true);
-    magicpods.insert_or_assign("logLevel", static_cast<int>(LogLevel::Info));
+    toml::table mypods{};
+    mypods.insert_or_assign("animation", true);
+    mypods.insert_or_assign("logLevel", static_cast<int>(LogLevel::Info));
 
     toml::table defaults{};
-    defaults.insert_or_assign("magicpods", std::move(magicpods));
+    defaults.insert_or_assign("mypods", std::move(mypods));
     return defaults;
 }
 

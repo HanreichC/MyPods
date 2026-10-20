@@ -8,7 +8,7 @@
 #include "sdk/aap/enums/AapAncMode.h"
 #include "device/enums/DeviceAncModes.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class AapAncCapability : public AapCapability
     {

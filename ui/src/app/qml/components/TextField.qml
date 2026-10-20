@@ -3,7 +3,7 @@
 
 import QtQuick
 import QtQuick.Controls as QQC2
-import magicpods as MP
+import mypods as MP
 
 // Rounded field on a quiet fill like MyCAD's, the accent ring while typing.
 QQC2.TextField {

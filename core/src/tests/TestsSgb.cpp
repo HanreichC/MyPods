@@ -21,14 +21,14 @@
 #include <future>
 #include "Logger.h"
 
-using namespace MagicPodsCore;
+using namespace MyPods;
 
 // 6102086464010111000000ff22000054015401070004dd0004041000010000110200000000000000000000000000000100000200010000ff010100540f
 bool TestsSgb::TestChecksum1()
 {
     std::vector<unsigned char> raw = {97, 2, 8, 100, 100, 1, 1, 17, 0, 0, 0, 255, 34, 0, 0, 84, 1, 84, 1, 7, 0, 4, 221, 0, 4, 4, 16, 0, 1, 0, 0, 17, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 255, 1, 1, 0, 84, 15};
 
-    MagicPodsCore::Crc16 crc16;
+    MyPods::Crc16 crc16;
     uint16_t crc = crc16.Checksum(raw);
 
     return crc == 0;
@@ -39,8 +39,8 @@ bool TestsSgb::TestChecksum2()
 {
     std::vector<unsigned char> raw = {3};
 
-    MagicPodsCore::Crc16 crc16;
-    std::vector<unsigned char> checksum = crc16.Checksum(MagicPodsCore::GalaxyBudsMsgIds::NOISE_CONTROLS, raw);
+    MyPods::Crc16 crc16;
+    std::vector<unsigned char> checksum = crc16.Checksum(MyPods::GalaxyBudsMsgIds::NOISE_CONTROLS, raw);
     return checksum[0] == 147 && checksum[1] == 177;
 }
 
@@ -544,7 +544,7 @@ void TestsSgb::Test(const char *name, bool b)
     }
 }
 
-MagicPodsCore::TestsSgb::TestsSgb()
+MyPods::TestsSgb::TestsSgb()
 {
     Test("CRC16.Checksum1", TestChecksum1());
     Test("CRC16.Checksum2", TestChecksum2());

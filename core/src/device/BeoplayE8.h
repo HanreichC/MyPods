@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Bang & Olufsen Beoplay E8 (1st gen, 2017), next to its audio, over Bluetooth LE (docs/beoplay-e8.md): the
     // standard Device Information service, and in B&O's service 0xFE89 the state characteristic 4446cf5f…, whose

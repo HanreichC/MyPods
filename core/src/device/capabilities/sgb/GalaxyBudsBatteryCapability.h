@@ -7,7 +7,7 @@
 #include "sdk/sgb/watchers/GalaxyBudsBatteryWatcher.h"
 #include "device/DeviceBattery.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class GalaxyBudsBatteryCapability : public GalaxyBudsCapability
     {

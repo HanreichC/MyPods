@@ -7,7 +7,7 @@
 #include "sdk/aap/enums/AapAncMode.h"
 #include "AapRequest.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // ---------------------------------------------------------------------------
     // 0400040009000d01000000

@@ -7,7 +7,7 @@
 #include "device/enums/DeviceBatteryType.h"
 #include "device/enums/DeviceBatteryStatus.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     bool GalaxyBudsBatteryWatcher::IsCaseBatterySupport(GalaxyBudsModelIds model)

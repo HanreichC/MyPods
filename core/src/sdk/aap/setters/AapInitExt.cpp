@@ -5,7 +5,7 @@
 #include "AapInitExt.h"
 #include "sdk/aap/enums/AapModelIds.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapInitExt::AapInitExt() : AapRequest{"AapInitExt"}
     {

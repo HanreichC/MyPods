@@ -7,7 +7,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Controls.impl as Impl
 import QtQuick.Layouts
 import QtQuick.Effects
-import magicpods as MP
+import mypods as MP
 
 // Noise control segmented control plus the name of the current mode, shared by the device page
 // and the tray popup.

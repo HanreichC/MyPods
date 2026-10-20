@@ -7,7 +7,7 @@
 #include <string>
 #include <toml++/toml.h>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
 // Owns a copy of the new value: it is fired after the settings lock is released, when the table may change again
 struct UpdatedSettingNotification {

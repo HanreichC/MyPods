@@ -5,7 +5,7 @@
 #include "AapCapability.h"
 #include "media/EarDetectionPause.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Automatic ear detection like on a Mac: taking a pod out pauses, putting it back resumes.
     // AAP: 04 00 04 00 06 00 <primary> <secondary> (00 in ear, 01 out, 02 in case); on/off is control command 0x0A.

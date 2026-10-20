@@ -6,7 +6,7 @@
 #include "sdk/sgb/setters/GalaxyBudsSetAnc.h"
 #include "sdk/sgb/GalaxyBudsPacket.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     GalaxyBudsAnc GalaxyBudsAncCapability::DeviceAncModesToGalaxyBudsAnc(DeviceAncModes mode)
     {

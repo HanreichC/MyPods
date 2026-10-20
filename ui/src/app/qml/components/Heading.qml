@@ -3,7 +3,7 @@
 // License: GPL-3.0
 
 import QtQuick
-import magicpods as MP
+import mypods as MP
 
 // Desktop text styles like MyCAD's: 1 = page title, 2 = title, 3 = headline, 4 = body emphasized,
 // 5 = section header (small caps in grey, like MyCAD's LIBRARY)

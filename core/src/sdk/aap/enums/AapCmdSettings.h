@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace MagicPodsCore
+namespace MyPods
 {
     // Byte 6 indicates the setting type
     enum class AapCmdSettings : unsigned char

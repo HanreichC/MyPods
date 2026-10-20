@@ -12,12 +12,20 @@
 #include <QDebug>
 
 DesktopManager::DesktopManager(QObject *parent)
-    : QObject(parent) {}
+    : QObject(parent)
+{
+    // MyPods was called MagicPods: a menu entry made then moves to the new name
+    const QString data = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    if (QFile::remove(data + "/applications/app.magicpods.desktop")) {
+        QFile::remove(data + "/icons/magicpods.png");
+        createDesktopFile();
+    }
+}
 
 static QString iconInstallPath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
-           + "/icons/magicpods.png";
+           + "/icons/mypods.png";
 }
 
 static bool installIcon()
@@ -31,7 +39,7 @@ static bool installIcon()
     if (QFile::exists(dest))
         QFile::remove(dest);
 
-    return QFile::copy(":/qt/qml/magicpods/src/app/qml/assets/images/logo-512.png", dest);
+    return QFile::copy(":/qt/qml/mypods/src/app/qml/assets/images/logo-512.png", dest);
 }
 
 bool DesktopManager::createDesktopFile()
@@ -53,7 +61,7 @@ bool DesktopManager::createDesktopFile()
     if (!QDir().mkpath(dirPath))
         return false;
 
-    const QString filePath = dirPath + "/app.magicpods.desktop";
+    const QString filePath = dirPath + "/app.mypods.desktop";
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
         return false;
@@ -78,7 +86,7 @@ StartupWMClass=MyPods
 QString DesktopManager::desktopFilePath() const
 {
     const QString path = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
-                         + "/applications/app.magicpods.desktop";
+                         + "/applications/app.mypods.desktop";
     return QFileInfo::exists(path) ? path : QString{};
 }
 

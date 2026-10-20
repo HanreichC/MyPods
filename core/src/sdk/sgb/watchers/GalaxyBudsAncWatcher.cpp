@@ -6,7 +6,7 @@
 #include "sdk/sgb/enums/GalaxyBudsMsgIds.h"
 
 // Galaxy Buds Live were disabled due to user feedback that the ANC switch does not work.
-namespace MagicPodsCore
+namespace MyPods
 {
 
     std::optional<GalaxyBudsAnc> GalaxyBudsAncWatcher::ExtractState(unsigned char b)

@@ -1,7 +1,7 @@
 <!--
   MyPods MSI (WiX v5). Built by .github/workflows/windows.yml:
     wix build packaging/windows/MyPods.wxs -arch x64 -d Version=1.0.N -d DeployDir=deploy -o MyPods-x64.msi
-  1.0.N is the version the app shows (CMakeLists.txt). DeployDir is magicpods.exe after windeployqt, with the daemon in modules\.
+  1.0.N is the version the app shows (CMakeLists.txt). DeployDir is mypods.exe after windeployqt, with the daemon in modules\.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <!-- The UpgradeCode never changes: it is how a newer MSI finds and replaces an older install -->
@@ -12,7 +12,7 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of MyPods is already installed." Schedule="afterInstallExecute" />
     <MediaTemplate EmbedCab="yes" />
 
-    <Icon Id="MyPodsIcon" SourceFile="ui\src\app\magicpods.ico" />
+    <Icon Id="MyPodsIcon" SourceFile="ui\src\app\mypods.ico" />
     <Property Id="ARPPRODUCTICON" Value="MyPodsIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/HanreichC/MyPods" />
 
@@ -36,7 +36,7 @@
         <!-- Starts hidden in the tray at login, like the autostart entry install.sh writes on Linux -->
         <Component Id="Autostart">
           <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="MyPods"
-                         Type="string" Value="&quot;[INSTALLFOLDER]magicpods.exe&quot; --hidden" KeyPath="yes" />
+                         Type="string" Value="&quot;[INSTALLFOLDER]mypods.exe&quot; --hidden" KeyPath="yes" />
         </Component>
       </Directory>
     </StandardDirectory>
@@ -44,7 +44,7 @@
     <StandardDirectory Id="ProgramMenuFolder">
       <Component Id="StartMenuShortcut">
         <Shortcut Id="MyPodsShortcut" Name="MyPods" Description="The control center for your Bluetooth headphones"
-                  Target="[INSTALLFOLDER]magicpods.exe" WorkingDirectory="INSTALLFOLDER" Icon="MyPodsIcon" />
+                  Target="[INSTALLFOLDER]mypods.exe" WorkingDirectory="INSTALLFOLDER" Icon="MyPodsIcon" />
         <RegistryValue Root="HKLM" Key="Software\MyPods" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>
@@ -52,10 +52,15 @@
     <!-- Equalizer APO on the headphone endpoints, and off them again (AudioEffects_win.cpp). Without it MyPods
          still works, only without effects, so a failure doesn't stop the install. An upgrade keeps it on. -->
     <CustomAction Id="ApoInstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
-                  ExeCommand="&quot;[INSTALLFOLDER]modules\magicpodscore.exe&quot; --apo-install" />
+                  ExeCommand="&quot;[INSTALLFOLDER]modules\mypodscore.exe&quot; --apo-install" />
     <CustomAction Id="ApoUninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
-                  ExeCommand="&quot;[INSTALLFOLDER]modules\magicpodscore.exe&quot; --apo-uninstall" />
+                  ExeCommand="&quot;[INSTALLFOLDER]modules\mypodscore.exe&quot; --apo-uninstall" />
+    <!-- MyPods ends before its files change (also the magicpods*.exe it was called before): the daemon has no window
+         that Windows could ask to close, and a running one would keep the port the new one needs -->
+    <CustomAction Id="StopMyPods" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
+                  ExeCommand="&quot;[System64Folder]taskkill.exe&quot; /F /IM mypods.exe /IM mypodscore.exe /IM magicpods.exe /IM magicpodscore.exe" />
     <InstallExecuteSequence>
+      <Custom Action="StopMyPods" Before="InstallFiles" />
       <Custom Action="ApoInstall" Before="InstallFinalize" Condition="NOT REMOVE" />
       <Custom Action="ApoUninstall" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>

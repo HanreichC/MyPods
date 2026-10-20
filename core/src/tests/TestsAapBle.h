@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class TestsAapBle
     {

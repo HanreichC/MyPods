@@ -5,7 +5,7 @@
 #pragma once
 #include <string>
 
-namespace MagicPodsCore {
+namespace MyPods {
 
     enum class GalaxyBudsAnc: unsigned char{
         Off = 0,

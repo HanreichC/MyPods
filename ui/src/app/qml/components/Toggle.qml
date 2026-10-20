@@ -5,7 +5,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Effects
-import magicpods as MP
+import mypods as MP
 
 // Switch at desktop size like MyCAD's: 38x22 capsule, white knob, system green when on.
 QQC2.Switch {

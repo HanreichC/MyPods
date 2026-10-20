@@ -65,7 +65,7 @@ static void ensureEnvDefaults() {
 
 }
 
-// magicpods --action <name>, for keyboard shortcuts (Actions.h): asks the daemon for the active
+// mypods --action <name>, for keyboard shortcuts (Actions.h): asks the daemon for the active
 // headphones, sends the change and exits. Needs no running window or tray.
 static int runAction(int argc, char *argv[], const QString &action) {
     QCoreApplication app(argc, argv);
@@ -126,14 +126,12 @@ int main(int argc, char *argv[]) {
     QQuickStyle::setStyle("Material");
     app.setApplicationName("MyPods");
     app.setApplicationDisplayName("MyPods");
-    app.setApplicationVersion(MAGICPODS_VERSION);
+    app.setApplicationVersion(MYPODS_VERSION);
     app.setOrganizationName("MyPods");
-    app.setOrganizationDomain("magicpods.app");
-    app.setDesktopFileName("app.magicpods");
+    app.setDesktopFileName("app.mypods");
     app.setQuitOnLastWindowClosed(false);
 
-    const QString serverName = QString("magicpods_%1_%2")
-                                   .arg(app.organizationDomain(), app.applicationName());
+    const QString serverName = QStringLiteral("mypods_") + app.applicationName();
     QLocalSocket socket;
     socket.connectToServer(serverName);
     if (socket.waitForConnected(150)) {
@@ -180,11 +178,11 @@ int main(int argc, char *argv[]) {
     }
 
     QIcon appIcon;
-    appIcon.addFile(QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/images/logo-16.png"),  QSize(16, 16));
-    appIcon.addFile(QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/images/logo-32.png"),  QSize(32, 32));
-    appIcon.addFile(QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/images/logo-48.png"),  QSize(48, 48));
-    appIcon.addFile(QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/images/logo-256.png"), QSize(256, 256));
-    appIcon.addFile(QStringLiteral(":/qt/qml/magicpods/src/app/qml/assets/images/logo-512.png"), QSize(512, 512));
+    appIcon.addFile(QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/images/logo-16.png"),  QSize(16, 16));
+    appIcon.addFile(QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/images/logo-32.png"),  QSize(32, 32));
+    appIcon.addFile(QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/images/logo-48.png"),  QSize(48, 48));
+    appIcon.addFile(QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/images/logo-256.png"), QSize(256, 256));
+    appIcon.addFile(QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/images/logo-512.png"), QSize(512, 512));
     app.setWindowIcon(appIcon);
 
     QTranslator englishTranslation;
@@ -238,7 +236,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("startHidden", app.arguments().contains(QStringLiteral("--hidden")));
     backendManager.start();
     backend.connectSocket();
-    engine.loadFromModule("magicpods", "Main");
+    engine.loadFromModule("mypods", "Main");
 
     if (engine.rootObjects().isEmpty()) {
         return -1;
@@ -246,7 +244,7 @@ int main(int argc, char *argv[]) {
 
     QQmlComponent popupAnimationComponent(
         &engine,
-        QUrl(QStringLiteral("qrc:/qt/qml/magicpods/src/app/qml/PopupAnimation.qml"))
+        QUrl(QStringLiteral("qrc:/qt/qml/mypods/src/app/qml/PopupAnimation.qml"))
     );
     if (popupAnimationComponent.isError()) {
         qWarning() << popupAnimationComponent.errors();
@@ -257,7 +255,7 @@ int main(int argc, char *argv[]) {
         qWarning() << popupAnimationComponent.errors();
     }
 
-    QQmlComponent trayPopupComponent(&engine, QUrl(QStringLiteral("qrc:/qt/qml/magicpods/src/app/qml/TrayPopup.qml")));
+    QQmlComponent trayPopupComponent(&engine, QUrl(QStringLiteral("qrc:/qt/qml/mypods/src/app/qml/TrayPopup.qml")));
     QScopedPointer<QObject> trayPopupObject(trayPopupComponent.create(engine.rootContext()));
     auto *trayPopup = qobject_cast<QWindow *>(trayPopupObject.get());
     if (!trayPopup) {

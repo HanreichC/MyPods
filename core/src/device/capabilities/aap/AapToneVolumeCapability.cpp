@@ -6,7 +6,7 @@
 #include "sdk/aap/setters/AapSetToneVolume.h"
 #include <cmath>
 
-namespace MagicPodsCore
+namespace MyPods
 {
     nlohmann::json AapToneVolumeCapability::CreateJsonBody()
     {

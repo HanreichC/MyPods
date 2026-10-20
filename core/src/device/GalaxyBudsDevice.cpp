@@ -12,7 +12,7 @@
 #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
 #include "capabilities/cmn/CmnAudioEffectsCapabilities.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     void GalaxyBudsDevice::OnResponseDataReceived(const std::vector<unsigned char> &data)
     {

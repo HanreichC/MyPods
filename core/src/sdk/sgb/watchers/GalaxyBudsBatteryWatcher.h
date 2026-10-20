@@ -10,7 +10,7 @@
 #include "device/structs/DeviceBatteryData.h"
 #include "vector"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     class GalaxyBudsBatteryWatcher
     {

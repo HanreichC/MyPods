@@ -1,7 +1,7 @@
 # Arch-Basis, damit die gebauten Binaries auch auf dem CachyOS-Host laufen.
 FROM docker.io/library/archlinux:base-devel
 
-# pipewire … swh-plugins: für `magicpodscore --emulate-airpods` (Effektkette gegen ein echtes PipeWire)
+# pipewire … swh-plugins: für `mypodscore --emulate-airpods` (Effektkette gegen ein echtes PipeWire)
 RUN pacman -Syu --noconfirm \
         cmake git pkgconf python \
         qt6-base qt6-declarative qt6-tools qt6-websockets qt6-svg layer-shell-qt kwindowsystem qt6-shadertools \

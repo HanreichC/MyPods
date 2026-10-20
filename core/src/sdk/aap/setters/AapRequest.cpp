@@ -5,7 +5,7 @@
 #include "AapRequest.h"
 #include "StringUtils.h"
 
-namespace MagicPodsCore
+namespace MyPods
 {
     AapRequest::AapRequest(std::string tag) : _tag{std::move(tag)}
     {

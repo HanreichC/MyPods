@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace MagicPodsCore
+namespace MyPods
 {
 
     // Base class to get request that will be send to headphones
