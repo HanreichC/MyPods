@@ -14,7 +14,7 @@ namespace MyPods
             return;
         option = device.LoadSettingInt("earDetection").value_or(1) != 0;
         // byte 5 of the proximity message: bit 1 this pod in ear, bit 3 the other one
-        leEventId = device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad)
+        leEventId = device.GetLeDataReceived().Subscribe([this](size_t, const BleAdvertisingData &ad)
         {
             if (!this->device.GetConnected())
                 return;

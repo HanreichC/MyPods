@@ -22,7 +22,7 @@ namespace MyPods
         GetConnectedPropertyChangedEvent().Unsubscribe(beoplayConnectedId);
         beoplayLink.reset();
         Shutdown(); // the capabilities' workers stop while this class is still whole
-        GetAudioClient()->GatAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
+        GetAudioClient()->GetAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
     }
 
     std::unique_ptr<BhfDevice> BhfDevice::Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService)
@@ -68,7 +68,7 @@ namespace MyPods
         // No audio handover like AirPods have, so the saved effects follow the headphones' A2DP sink from here:
         // put in front of it when it (re)appears, taken away when the headphones go.
         auto *raw = device.get();
-        device->cardEventId = audioClient->GatAudioCardPropertyChangedEvent().Subscribe([raw](size_t, const CardInfo &info)
+        device->cardEventId = audioClient->GetAudioCardPropertyChangedEvent().Subscribe([raw](size_t, const CardInfo &info)
         {
             if (info.name != raw->GetAudioClient()->GetNameFromMac(raw->GetAddress()) || !info.activeProfile.starts_with("a2dp"))
                 return;

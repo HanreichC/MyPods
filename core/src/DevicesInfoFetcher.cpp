@@ -97,7 +97,7 @@ namespace MyPods {
         RefreshWired(true);
         // PulseAudio thread (Windows: Core Audio's): the queries run on a worker
         _sinkEventId = _audioClient->GetSinkChangedEvent().Subscribe([this](size_t, const uint32_t &) { RefreshWiredSoon(); });
-        _cardEventId = _audioClient->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &) { RefreshWiredSoon(); });
+        _cardEventId = _audioClient->GetAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &) { RefreshWiredSoon(); });
         // PipeWire restarted (an update, the Hi-Res option): the effect chain went with it, half alive; a new one
         // goes in front of the headphones playing now (Bluetooth ones also route themselves on their card)
         _reconnectedEventId = _audioClient->GetReconnectedEvent().Subscribe([this](size_t, bool) {
@@ -172,7 +172,7 @@ namespace MyPods {
 DevicesInfoFetcher::~DevicesInfoFetcher()
 {
     _audioClient->GetSinkChangedEvent().Unsubscribe(_sinkEventId);
-    _audioClient->GatAudioCardPropertyChangedEvent().Unsubscribe(_cardEventId);
+    _audioClient->GetAudioCardPropertyChangedEvent().Unsubscribe(_cardEventId);
     _audioClient->GetReconnectedEvent().Unsubscribe(_reconnectedEventId);
     if (_bleScanActive)
         _bleService->StopScan();
@@ -225,16 +225,8 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
             device->SetCapabilities(arguments.at("capabilities"));
     }
 
-    void DevicesInfoFetcher::EnableBluetoothAdapter() {
-        _dbusService.EnableBluetoothAdapter();
-    }
-
     void DevicesInfoFetcher::EnableBluetoothAdapterAsync(BtCallback&& callback) {
         _dbusService.EnableBluetoothAdapterAsync(std::move(callback));
-    }
-
-    void DevicesInfoFetcher::DisableBluetoothAdapter() {
-        _dbusService.DisableBluetoothAdapter();
     }
 
     void DevicesInfoFetcher::DisableBluetoothAdapterAsync(BtCallback&& callback) {

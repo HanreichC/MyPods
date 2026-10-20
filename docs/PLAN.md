@@ -2,7 +2,11 @@
 
 Ziel: AirPods Pro 3 auf CachyOS (und Windows) so nutzen, wie sie sich an einem Mac anfühlen —
 inklusive Deckel-auf-Popup mit Animation, exaktem Akkustand, ANC-Steuerung, Ohrerkennung
-und automatischem Audio-Routing. Nur AirPods Pro 3 (A3063/A3064/A3065), nichts anderes.
+und automatischem Audio-Routing.
+
+> **Heute** (Stand 2026-10-20, Abschnitt 3.9) ist der Umfang breiter als dieser ursprüngliche Plan: alle AirPods
+> und Beats, Parrot Zik 2.0, Galaxy Buds, Beoplay E8, beliebige Headsets und Kabelkopfhörer, Linux **und** Windows
+> (MSI). Die Abschnitte 1–3.8 bleiben als Herleitung stehen; was gilt, steht im README.
 
 Stand: 2026-09-20. Alles unten ist aus öffentlichem Reverse Engineering + den vier lokalen Repos
 belegt; alles was mit **(H)** markiert ist, muss an echter Hardware verifiziert werden.
@@ -200,7 +204,7 @@ Auto-Pause über MPRIS, Audio-Routing über PipeWire.
 16. Low-Battery-Notifications, Hotkeys, Light/Dark, i18n (de/en).
 17. Packaging für CachyOS: PKGBUILD (AUR-tauglich) + AppImage als Fallback.
 
-**P4 — Windows: zurückgestellt**
+**P4 — Windows: zurückgestellt** *(überholt: umgesetzt, siehe Nachtrag und 3.9)*
 Bewusst gestrichen (Entscheidung 2026-09-20). Begründung bleibt im Plan, falls es später
 doch kommt: Windows hat **keine Userspace-L2CAP-API**, AAP ginge nur über einen
 KMDF-Profiltreiber (Vorlage: Microsoft `bthecho`, Referenz: nefarius/BthPS3) inklusive
@@ -250,7 +254,7 @@ Umgesetzt im Daemon, ohne neue Abhängigkeit (MPRIS über sdbus-c++, PipeWire al
 * `AapEarDetectionCapability` — `0x06` → Pause/Weiter, Schalter = Control `0x0A`.
 * `CmnSpatialAudioCapability` / `CmnEqualizerCapability` (auch generische Kopfhörer, `BhfDevice`), `AapSpatialAudioCapability` fürs Head-Tracking + `audio/AudioEffects` — filter-chain
   (EQ-Biquads → SOFA-Spatializer), Head-Tracking dreht die virtuellen Lautsprecher über `pw-cli`.
-* Check: `magicpodscore --selftest` (Smart-Routing-Bytes gegen LibrePods, Parser, Chain-Aufbau).
+* Check: `mypodscore --selftest` (damals `magicpodscore`) (Smart-Routing-Bytes gegen LibrePods, Parser, Chain-Aufbau).
 
 **(H)** an echter Hardware offen: Übernahme mit iPhone (braucht DeviceID), Vorzeichen/Skalierung
 der Kopfbewegung, ob die Pro 3 den Head-Tracking-Start von LibrePods akzeptieren.
@@ -258,7 +262,7 @@ der Kopfbewegung, ob die Pro 3 den Head-Tracking-Start von LibrePods akzeptieren
 ### 3.7 Stand 2026-09-24: Robustheit und P2/P3-Rest
 
 * P2 #14 erledigt: CA senkt die Lautstärke beim Sprechen auf 30 % (Level 1/2 → runter, 6/8/9 → zurück, wie LibrePods).
-* P3 #16/#17 erledigt: Tastenkürzel als `magicpods --action …` (bindet jede Desktop-Umgebung selbst),
+* P3 #16/#17 erledigt: Tastenkürzel als `mypods --action …` (damals `magicpods`) (bindet jede Desktop-Umgebung selbst),
   PKGBUILD (`packaging/arch`), jeder Push auf `main` ist ein Release `vX.Y.N`.
 * Neu: Modi für Drücken-und-Halten (`0x1A`) + „Aus“ erlauben (`0x34`), Mikrofon (`0x01`), Hörgerät (`0x2C`/`0x33`),
   Loud Sound Reduction und angepasste Transparenz über ATT (L2CAP PSM `0x1F`, Handles `0x1B`/`0x18`),
@@ -287,7 +291,7 @@ Ohne Hardware geprüft (`--selftest`, `--emulate-airpods` im Container, Popup ge
 
 **Ablauf am Abend** (Schritt für Schritt, Erwartung → wo nachsehen, wenn nicht):
 
-1. Vorher: `sh install.sh`; in `~/.config/mypods/config.toml` unter `[magicpods]` `logLevel = 0` (Trace: jedes
+1. Vorher: `sh install.sh`; in `~/.config/mypods/config.toml` unter `[mypods]` (früher `[magicpods]`) `logLevel = 0` (Trace: jedes
    AAP-Paket als `r:…`), dann `journalctl --user -u mypods-core -f` mitlaufen lassen. Das Trace-Log enthält
    IRK/ENC: nicht veröffentlichen, danach wieder `logLevel = 20`.
 2. Vor dem Koppeln: `python3 tools/sniff.py --log captures/pro3.txt --seconds 120`, Deckel mehrmals auf/zu,
@@ -318,6 +322,26 @@ Ohne Hardware geprüft (`--selftest`, `--emulate-airpods` im Container, Popup ge
 8. Audio: Codec AAC auf der Geräteseite; „Höchste Bluetooth-Qualität“ (AAC VBR) zehn Minuten auf Aussetzer
    hören, sonst wieder aus. EQ-Presets, Spatial Audio fest/kopfgeführt (Kopf drehen → Klang bleibt im Raum;
    Richtung falsch → Vorzeichen in `AapSpatialAudioCapability::Yaw`), Signalweg zeigt „AAC kodiert“.
+
+### 3.9 Stand 2026-10-20: ein Name, eine Linie
+
+* **MagicPods heißt überall MyPods**: `mypods`, `mypodscore`, QML-Modul `mypods`, `app.mypods.desktop`, Namespace
+  `MyPods`. Migration: `[magicpods]` in der config wird einmal zu `[mypods]`; `install.sh` räumt die alten Dateien
+  weg; der Linux-Menüeintrag zieht um; das MSI beendet MyPods (auch unter den alten Namen), bevor es Dateien
+  ersetzt. Die Herkunft (MagicPodsCore, MagicPodsLinux) steht weiter in den Dateiköpfen und in CREDITS.md.
+* **Ausgabe**: Klick in der Seitenleiste spielt dort, ein Lautsprecher-Symbol zeigt, wo es spielt; das Tray-Popup
+  listet alle Ausgaben (auch Lautsprecher und Monitor) mit Haken; Kürzel `output-next`. Unter Windows folgt
+  MyPods auch einem Wechsel in der Taskleiste.
+* **Einstellungen** in Allgemein / Darstellung / Audio; „MyPods öffnen“ statt „Einstellungen“, wo sich das
+  Fenster öffnet; Labels ohne Doppelpunkt.
+* **Diagnose**: `core.log` und `ui.log` (`%LOCALAPPDATA%\MyPods\logs`, `~/.local/state/mypods`), unter „Über“
+  Protokolle, Equalizer APO, iPhone. Anlass: das iPhone-Problem vom 16.10. (Windows-GATT-Cache ohne AMS) war
+  ohne Logs nur mühsam zu finden.
+* **Windows**: Update-Hinweis aus den GitHub-Releases, Tastenkürzel Strg+Alt+Umschalt+N/O/H, kein
+  0xc0000142-Popup mehr beim Herunterfahren (die Über-Seite startete den Core bei Verbindungsabbruch).
+* **Akku**: Restlaufzeit im Tray-Tooltip (grobe Schätzung, `BatteryEstimate.h`).
+* **(H)** offen: alles Windows-Spezifische von heute ist nur über die CI gebaut, nicht auf dem Laptop getestet
+  (Kürzel, Update-Hinweis, MSI-Upgrade von einer MagicPods-benannten Installation).
 
 ---
 

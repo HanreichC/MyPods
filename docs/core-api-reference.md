@@ -20,10 +20,13 @@ After connecting to the WebSocket, the core sends an `init` message and then sta
 {
   "init": {
     "api": 0,
-    "version": "2.0.7"
+    "version": "1.0.50",
+    "effects": true
   }
 }
 ```
+
+`effects` (MyPods): the effects that run on this computer can run; false on Windows while Equalizer APO is missing.
 
 Clients should request the initial state using the `GetAll` method after connection.
 
@@ -121,7 +124,8 @@ Response:
       "vendor": 76,
       "model": 8207,
       "color": 0,
-      "connected": false
+      "connected": false,
+      "output": false
     },
     {
       "name": "Galaxy Buds 3",
@@ -210,7 +214,8 @@ Response:
       "vendor": 76,
       "model": 8207,
       "color": 0,
-      "connected": false
+      "connected": false,
+      "output": false
     },
     {
       "name": "Galaxy Buds 3",
@@ -359,6 +364,33 @@ Response to both:
 ```json
 { "outputs": [ { "sink": "{0.0.0.00000000}.{d10eb956-9728-4171-8665-8d746bffc83f}", "name": "OMEN 27i IPS", "headphones": true, "automatic": false } ] }
 ```
+
+### GetPlaybackOutputs, SetPlaybackOutput, NextPlaybackOutput (MyPods)
+
+Every output the sound can go to, Bluetooth headphones included, for picking one. `address` names the connected
+headphones an output belongs to (they go by their name), empty for speakers and monitors. `default` marks the one
+playing; headphones also count while they play through the effect chain (Linux). `SetPlaybackOutput` switches
+headphones through `SetActiveDevice`, so their effects come along, and anything else directly. `NextPlaybackOutput`
+plays on the output after the current one (the keyboard shortcut `output-next`).
+
+```json
+{ "method": "GetPlaybackOutputs" }
+{ "method": "SetPlaybackOutput", "arguments": { "sink": "{0.0.0.00000000}.{d10eb956-9728-4171-8665-8d746bffc83f}" } }
+{ "method": "NextPlaybackOutput" }
+```
+
+Response to all three:
+
+```json
+{ "playbackOutputs": [
+    { "sink": "{0.0.0.00000000}.{d10eb956-9728-4171-8665-8d746bffc83f}", "name": "OMEN 27i IPS", "address": "", "default": false },
+    { "sink": "{0.0.0.00000000}.{5c1e0f4a-3b9d-4d61-9a41-2f1d7c0e8b73}", "name": "HW-BT", "address": "A0:14:3D:1F:0B:E1", "default": true }
+] }
+```
+
+`GetDevices` and its broadcast say the same per device: `output` is true for the headphones playing now. The list
+is pushed again whenever that changes, also when the output is picked elsewhere (the taskbar, the desktop's sound
+settings).
 
 ### GetAll
 

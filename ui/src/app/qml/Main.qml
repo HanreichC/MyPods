@@ -20,7 +20,7 @@ QQC2.ApplicationWindow {
     minimumHeight: gameScopeMode ? 0 : 480
     width: gameScopeMode ? Screen.width : 800
     height: gameScopeMode ? Screen.height : 720
-    // Nur visibility setzen: zusammen mit visible gewinnt visibility und --hidden waere wirkungslos
+    // visibility only: set together with visible, visibility wins and --hidden would do nothing
     visibility: startHidden ? Window.Hidden : gameScopeMode ? Window.FullScreen : Window.Windowed
     // Rounded like the popups: the corners outside the backdrop stay see-through
     color: gameScopeMode ? MP.Theme.base : "transparent"

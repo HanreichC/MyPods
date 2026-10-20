@@ -6,7 +6,7 @@
 
 #include "BleAdvertisingService.h"
 #include "../dbus/DBusService.h"
-#include "BleAdverisingData.h"
+#include "BleAdvertisingData.h"
 #include <memory>
 #include <atomic>
 #include <map>

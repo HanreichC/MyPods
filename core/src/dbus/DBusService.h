@@ -64,9 +64,7 @@ namespace MyPods {
             return _isBluetoothAdapterPowered;
         }
 
-        void EnableBluetoothAdapter();
         void EnableBluetoothAdapterAsync(BtCallback&& callback);
-        void DisableBluetoothAdapter();
         void DisableBluetoothAdapterAsync(BtCallback&& callback);
 
 #ifndef _WIN32

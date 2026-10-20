@@ -23,7 +23,7 @@ namespace MyPods
         std::shared_ptr<BleAdvertisingService> _bleService{};
         size_t _getOnAdReceivedEventId = 0;
         Event<const std::vector<unsigned char>> _onResponseDataRecived{};
-        Event<const BleAdertisingData> _onLeDataReceived{};        
+        Event<const BleAdvertisingData> _onLeDataReceived{};        
         Event<const nlohmann::json> _onAnimationTriggered{};
         void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
 
@@ -50,7 +50,7 @@ namespace MyPods
             return _onResponseDataRecived;
         }
 
-        Event<const BleAdertisingData> &GetLeDataReceived()
+        Event<const BleAdvertisingData> &GetLeDataReceived()
         {
             return _onLeDataReceived;
         }
@@ -83,9 +83,9 @@ namespace MyPods
 
         // Whether `ad` comes from these AirPods: its rotating address resolves with the IRK. Without AAP
         // (Windows) no IRK can be fetched unless it was imported, then the nearby ad of the same model counts.
-        bool IsOwnAdvertisement(const BleAdertisingData &ad, const std::string &irk) const;
+        bool IsOwnAdvertisement(const BleAdvertisingData &ad, const std::string &irk) const;
         // Their proximity message (Apple type 0x07) in `ad`, nullptr if there is none
-        const std::vector<uint8_t> *OwnProximityMessage(const BleAdertisingData &ad);
+        const std::vector<uint8_t> *OwnProximityMessage(const BleAdvertisingData &ad);
         static std::unique_ptr<AapDevice> Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<BleAdvertisingService> bleService);
     };
 }

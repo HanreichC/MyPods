@@ -42,7 +42,7 @@ namespace MyPods
                           unsigned(a >> 40) & 0xFF, unsigned(a >> 32) & 0xFF, unsigned(a >> 24) & 0xFF,
                           unsigned(a >> 16) & 0xFF, unsigned(a >> 8) & 0xFF, unsigned(a) & 0xFF);
             std::string addressString{address};
-            _onAdReceivedEvent.FireEvent(BleAdertisingData(addressString, static_cast<int8_t>(args.RawSignalStrengthInDBm()), std::move(manufacturerData)));
+            _onAdReceivedEvent.FireEvent(BleAdvertisingData(addressString, static_cast<int8_t>(args.RawSignalStrengthInDBm()), std::move(manufacturerData)));
         });
 
         // The watcher aborts when the radio goes off and does not come back on its own

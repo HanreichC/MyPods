@@ -200,7 +200,7 @@ void DBusBasedBleAdvertisingService::EmitAd(
     std::string address = deviceInfo->GetAddress();
     auto rssi = static_cast<int8_t>(deviceInfo->GetRssi().GetValue());
 
-    _onAdReceivedEvent.FireEvent(BleAdertisingData(address, rssi, manufacturerData));
+    _onAdReceivedEvent.FireEvent(BleAdvertisingData(address, rssi, manufacturerData));
 }
 
 void DBusBasedBleAdvertisingService::RemoveDeviceSubscriptions(const std::string& address)

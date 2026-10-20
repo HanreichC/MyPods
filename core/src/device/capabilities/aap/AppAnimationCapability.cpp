@@ -35,7 +35,7 @@ namespace MyPods
         if (settingColor.has_value())
             hasColor = true;
 
-        leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t id, const BleAdertisingData& adData){
+        leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t id, const BleAdvertisingData& adData){
 
             std::string irk, enc; // copies: the AAP reader replaces the members when new keys arrive
             {

@@ -98,16 +98,8 @@ namespace MyPods {
         return _pairedDevices;
     }
 
-    void DBusService::EnableBluetoothAdapter() {
-        _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(true).uponReplyInvoke([this](const sdbus::Error* err) {});
-    }
-
     void DBusService::EnableBluetoothAdapterAsync(BtCallback&& callback) {
         _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(true).uponReplyInvoke(ToSdbusCallback(std::move(callback)));
-    }
-
-    void DBusService::DisableBluetoothAdapter() {
-        _defaultBluetoothAdapterProxy->setPropertyAsync("Powered").onInterface("org.bluez.Adapter1").toValue(false).uponReplyInvoke([this](const sdbus::Error* err) {});
     }
 
     void DBusService::DisableBluetoothAdapterAsync(BtCallback&& callback) {

@@ -167,16 +167,8 @@ namespace MyPods {
         }).detach();
     }
 
-    void DBusService::EnableBluetoothAdapter() {
-        SetRadio(_native->radio, RadioState::On, {});
-    }
-
     void DBusService::EnableBluetoothAdapterAsync(BtCallback&& callback) {
         SetRadio(_native->radio, RadioState::On, std::move(callback));
-    }
-
-    void DBusService::DisableBluetoothAdapter() {
-        SetRadio(_native->radio, RadioState::Off, {});
     }
 
     void DBusService::DisableBluetoothAdapterAsync(BtCallback&& callback) {

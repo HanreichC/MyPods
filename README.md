@@ -320,7 +320,9 @@ rm -rf ~/.config/mypods   # optional: settings and stored AirPods keys
 
 Download `MyPods-x64.msi` from the [latest release](https://github.com/HanreichC/MyPods/releases/latest)
 and install it. It installs to `C:\Program Files\MyPods`, adds a Start menu entry and starts MyPods
-hidden in the tray at login. Settings live in `%APPDATA%\mypods\config.toml`.
+hidden in the tray at login. Settings live in `%APPDATA%\mypods\config.toml`, the logs in
+`%LOCALAPPDATA%\MyPods\logs`. MyPods says under *About* when a newer release is out (switch: *Settings →
+General → Check for Updates*); the MSI updates in place and ends a running MyPods first.
 
 Windows only lets kernel-mode drivers open L2CAP channels, and every AirPods setting travels over
 L2CAP (AAP). MyPods ships no Bluetooth driver, so on Windows it does what user space allows:
@@ -341,6 +343,8 @@ L2CAP (AAP). MyPods ships no Bluetooth driver, so on Windows it does what user s
 | Automatic switching with the iPhone ("Move here") | No, needs AAP |
 | Equalizer, headphone correction, hearing profile, loudness, crossfeed | Yes, for Bluetooth and wired headphones, through Equalizer APO's engine, which the MSI brings along and puts on the headphone outputs. Headphones that come later ask once for administrator rights. An Equalizer APO you installed yourself is used as it is. |
 | Headphones on a monitor's jack | Yes, once marked under *Settings → Headphones on these outputs*: monitors don't tell Windows whether something is plugged in |
+| Picking the output (sidebar, tray popup's *Output*) | Yes, Windows' default output for music, calls and system sounds |
+| Keyboard shortcuts | Yes, under *Settings → General*: Ctrl+Alt+Shift+N noise control, +O next output, +H move here |
 | Spatial audio | No, Linux only so far |
 | Signal path, Hi-Res playback, highest Bluetooth quality | No, Windows' audio engine picks the format itself |
 | Codec display and switching | No, Windows exposes neither |
@@ -382,12 +386,15 @@ Then reconnect the AirPods once. `install.sh` reminds you if the line is missing
    the daemon by itself.
 3. **Open the case** near your computer. The popup appears with the animation and battery levels.
 4. **Click the tray icon** for the popup: battery, noise control, Conversation Awareness, what's
-   playing with media controls, and the volume. It closes on a second click, Esc or a click
+   playing with media controls, the volume, and *Output*: every output, the one playing ticked, a
+   click plays there. Hovering over the icon shows the battery and, once it can tell, about how long
+   it lasts. It closes on a second click, Esc or a click
    elsewhere. Without connected headphones, a click opens the window instead, unless a paired
    iPhone is playing: then the popup shows the iPhone's music, and its volume slider moves the
    iPhone's volume.
-5. **Double-click the tray icon** (or choose **MyPods Settings…** in the popup) for the full
-   window: ear detection, automatic switching, spatial audio, equalizer and all device-specific
+5. **Double-click the tray icon** (or choose **Open MyPods** in the popup) for the full
+   window. A click on headphones in the sidebar makes them the ones controlled and plays the sound
+   there; a speaker symbol marks the ones playing. Then: ear detection, automatic switching, spatial audio, equalizer and all device-specific
    settings. Right-click opens the context menu with connect/disconnect and Exit. The (i) beside a
    setting explains what it does.
 
@@ -417,6 +424,7 @@ works on X11 and Wayland alike.
 | `move-here` | Take the AirPods over from the iPhone ("Move here") |
 | `eq-next` | Next equalizer preset |
 | `effects-bypass` | Compare with and without effects (A/B) on/off |
+| `output-next` | Play on the next output (speakers, monitor, headphones), with or without headphones connected |
 
 It exits with status 1 and a message when the daemon isn't running or the headphones can't do it.
 
@@ -679,6 +687,12 @@ The full reference with request and response examples is in
 ---
 
 ## Troubleshooting
+
+**Where are the logs?**
+The daemon writes `core.log`, the UI `ui.log`, in `~/.local/state/mypods` (Linux) or
+`%LOCALAPPDATA%\MyPods\logs` (Windows); *About → Diagnostics → Logs* opens the folder. Past 1 MB a file
+moves to `.1` at the next start. The diagnostics also say whether Equalizer APO is there (Windows) and
+whether the paired iPhone is reachable.
 
 **The popup does not appear.**
 Check that the `animation` setting is enabled and that Bluetooth is on. Run

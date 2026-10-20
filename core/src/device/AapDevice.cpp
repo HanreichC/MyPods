@@ -49,7 +49,7 @@ namespace MyPods
         std::shared_ptr<BleAdvertisingService> bleService) : Device(deviceInfo, audioClient, settingsService), _bleService{bleService}
     {
         if (_bleService) // none in the emulator (tests/EmulateAirPods.cpp)
-            _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MyPods::BleAdertisingData& adData){
+            _getOnAdReceivedEventId = _bleService->GetOnAdReceivedEvent().Subscribe([this](size_t id,  const MyPods::BleAdvertisingData& adData){
                 _onLeDataReceived.FireEvent(adData);
             });
     }
@@ -199,7 +199,7 @@ namespace MyPods
         _onAnimationTriggered.FireEvent(json);
     }
 
-    bool AapDevice::IsOwnAdvertisement(const BleAdertisingData &ad, const std::string &irk) const
+    bool AapDevice::IsOwnAdvertisement(const BleAdvertisingData &ad, const std::string &irk) const
     {
         if (!irk.empty())
             return Aes::VerifyRPA(ad.GetAddress(), irk);
@@ -208,7 +208,7 @@ namespace MyPods
         return !Client::SupportsL2CAP() && ad.GetRssi() >= -60;
     }
 
-    const std::vector<uint8_t> *AapDevice::OwnProximityMessage(const BleAdertisingData &ad)
+    const std::vector<uint8_t> *AapDevice::OwnProximityMessage(const BleAdvertisingData &ad)
     {
         for (const auto &[company, bytes] : ad.GetManufacturerData())
             if (company == GetVendorId() && bytes.size() >= 27 && bytes[0] == 0x07 &&

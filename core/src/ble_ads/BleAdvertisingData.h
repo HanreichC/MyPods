@@ -12,7 +12,7 @@
 namespace MyPods
 {
 
-    struct BleAdertisingData
+    struct BleAdvertisingData
     {
     private:
         std::string _address;
@@ -20,7 +20,7 @@ namespace MyPods
         std::map<uint16_t, std::vector<uint8_t>> _manufacturerData;
 
     public:
-        BleAdertisingData(std::string &address, int8_t rssi, std::map<uint16_t, std::vector<uint8_t>> manufacturerData) : _address(std::move(address)), _rssi(rssi), _manufacturerData(std::move(manufacturerData))
+        BleAdvertisingData(std::string &address, int8_t rssi, std::map<uint16_t, std::vector<uint8_t>> manufacturerData) : _address(std::move(address)), _rssi(rssi), _manufacturerData(std::move(manufacturerData))
         {
         }
 

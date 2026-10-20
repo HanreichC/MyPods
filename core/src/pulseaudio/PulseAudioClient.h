@@ -116,7 +116,7 @@ namespace MyPods{
             // The endpoint is wired headphones: a headphone or headset form factor that isn't Bluetooth
             static std::optional<WiredOutput> WiredHeadphones(const AudioEndpoint& endpoint);
 #endif
-            Event<CardInfo>& GatAudioCardPropertyChangedEvent() {
+            Event<CardInfo>& GetAudioCardPropertyChangedEvent() {
                 return _onAudioCardPropertyChangedEvent;
             }
             // A sink appeared, changed (volume, mute, port) or went away, with its index, or the default sink changed (server

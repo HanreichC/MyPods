@@ -26,12 +26,12 @@ if(GIT_FOUND)
 endif()
 message(STATUS "MyPods version ${MYPODS_VERSION}")
 
-# core/ = Daemon (AAP ueber L2CAP + BLE-Advertisements, WebSocket-API auf :2020)
-# ui/   = Qt6/QML-Oberflaeche, startet den Daemon und spricht ihn ueber WebSocket an
+# core/ = the daemon (AAP over L2CAP, BLE advertisements, WebSocket API on :2020)
+# ui/   = the Qt 6 / QML UI, which starts the daemon and talks to it over the WebSocket
 add_subdirectory(core)
 add_subdirectory(ui)
 
-# Die UI sucht den Daemon unter <verzeichnis der binary>/modules/mypodscore
+# The UI looks for the daemon in modules/mypodscore next to its own binary
 set_target_properties(mypods PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set_target_properties(mypodscore PROPERTIES

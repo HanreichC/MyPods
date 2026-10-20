@@ -107,9 +107,7 @@ namespace MyPods {
         bool IsBluetoothAdapterPowered() {
             return _dbusService.IsBluetoothAdapterPowered().GetValue();
         }
-        void EnableBluetoothAdapter(); // TODO: выпилить?
         void EnableBluetoothAdapterAsync(BtCallback&& callback);
-        void DisableBluetoothAdapter(); // TODO: выпилить?
         void DisableBluetoothAdapterAsync(BtCallback&& callback);
 
         Event<std::shared_ptr<Device>>& GetOnActiveDeviceChangedEvent() {

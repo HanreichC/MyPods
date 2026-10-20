@@ -1,6 +1,6 @@
 #!/bin/sh
-# Baut MyPods-x86_64.AppImage. Laeuft in Ubuntu 22.04 (alte glibc -> AppImage startet auf den
-# meisten Distros), Qt 6.9 kommt per aqtinstall, weil Ubuntu nur Qt 6.2 hat.
+# Builds MyPods-x86_64.AppImage. Runs in Ubuntu 22.04 (an old glibc, so the AppImage starts on most
+# distributions); Qt 6.9 comes through aqtinstall, as Ubuntu only has Qt 6.2.
 #   podman run --rm -v "$PWD:/workspace:Z" -w /workspace docker.io/library/ubuntu:22.04 ./appimage.sh
 set -eu
 QT_VERSION=6.9.3
@@ -25,7 +25,7 @@ QT=$QT CXX=g++-12 sh tools/run_checks.sh $BUILD
 cd $BUILD
 rm -rf AppDir && mkdir -p AppDir/usr/bin/modules AppDir/usr/plugins
 cp modules/mypodscore AppDir/usr/bin/modules/
-# Das Qt-Plugin von linuxdeploy vergisst die Wayland-EGL-Integration -> ohne sie kein OpenGL unter Wayland
+# linuxdeploy's Qt plugin forgets the Wayland EGL integration, and without it there is no OpenGL on Wayland
 cp -r $QT/plugins/wayland-graphics-integration-client AppDir/usr/plugins/
 cp "$OLDPWD/ui/src/app/qml/assets/images/logo-512.png" mypods.png
 cat > mypods.desktop <<EOF
@@ -45,7 +45,7 @@ for t in linuxdeploy linuxdeploy-plugin-qt; do
     wget -q -N "https://github.com/linuxdeploy/$t/releases/download/continuous/$t-x86_64.AppImage"
     chmod +x "$t-x86_64.AppImage"
 done
-# Kein FUSE im Container
+# no FUSE in the container
 export APPIMAGE_EXTRACT_AND_RUN=1 QMAKE=$QT/bin/qmake LD_LIBRARY_PATH=$QT/lib \
     QML_SOURCES_PATHS="$OLDPWD/ui/src/app/qml" EXTRA_PLATFORM_PLUGINS=libqwayland-generic.so \
     LDAI_OUTPUT="$OLDPWD/MyPods-x86_64.AppImage"

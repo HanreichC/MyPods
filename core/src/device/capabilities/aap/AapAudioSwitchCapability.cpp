@@ -159,13 +159,13 @@ namespace MyPods
         });
 
         // In-ear state while not connected comes from the (RPA-verified) proximity advertisement, byte 5 bits 1 and 3
-        leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad)
+        leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdvertisingData &ad)
         {
             if (auto message = this->device.OwnProximityMessage(ad))
                 bleInEarAt = ((*message)[5] & 0x0A) ? NowMs() : 0; // taken out counts at once, not 15 s later
         });
 
-        cardEventId = device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &info)
+        cardEventId = device.GetAudioClient()->GetAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &info)
         {
             if (info.name != this->device.GetAudioClient()->GetNameFromMac(this->device.GetAddress()))
                 return;
@@ -200,7 +200,7 @@ namespace MyPods
             holdWorker.join();
         MprisClient::Instance().GetOnPlaybackStartedEvent().Unsubscribe(playbackEventId);
         device.GetLeDataReceived().Unsubscribe(leEventId);
-        device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
+        device.GetAudioClient()->GetAudioCardPropertyChangedEvent().Unsubscribe(cardEventId);
     }
 
     nlohmann::json AapAudioSwitchCapability::CreateJsonBody()

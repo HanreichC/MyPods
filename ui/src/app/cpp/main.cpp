@@ -267,7 +267,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("cppMedia", &mediaController);
     engine.rootContext()->setContextProperty("gameScopeMode", gameScopeMode);
     engine.rootContext()->setContextProperty("trayAvailable", QSystemTrayIcon::isSystemTrayAvailable());
-    // Kein Tray-Check: beim Anmelden ist das Tray oft noch nicht bereit; erneutes Starten holt das Fenster ueber den LocalServer hervor
+    // No tray check: at login the tray is often not ready yet; starting again brings the window up through the LocalServer
     engine.rootContext()->setContextProperty("startHidden", app.arguments().contains(QStringLiteral("--hidden")));
     backendManager.start();
     backend.connectSocket();

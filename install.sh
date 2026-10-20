@@ -1,7 +1,6 @@
 #!/bin/sh
-# Baut MyPods im Podman-Container und installiert es fuer den aktuellen Benutzer:
-# Programm nach ~/.local/opt/mypods, Startmenue-Eintrag, Autostart. Kein root noetig.
-# Erneut ausfuehren = Update.
+# Builds MyPods in the Podman container and installs it for the current user: the program in
+# ~/.local/opt/mypods, a start menu entry, autostart. No root needed. Run it again to update.
 set -eu
 cd "$(dirname "$0")"
 
@@ -29,29 +28,29 @@ install -m755 build/mypods "$DEST/"
 install -m755 build/modules/mypodscore "$DEST/modules/"
 install -m644 ui/src/app/qml/assets/images/logo-512.png "$DATA/icons/mypods.png"
 
-# Desktop-Eintrag und Unit sind dieselben wie im Paket (packaging/linux), nur mit den Pfaden unter $DEST.
-# Gleicher Dateiname wie DesktopManager, damit der Schalter in den Einstellungen ihn erkennt
+# The desktop entry and the unit are the package's (packaging/linux), with the paths under $DEST.
+# The same file name as DesktopManager's, so the switch in the settings recognizes it
 sed -e "s|/usr/lib/mypods|$DEST|" -e "s|^Icon=.*|Icon=$DATA/icons/mypods.png|" \
     packaging/linux/app.mypods.desktop > "$DATA/applications/app.mypods.desktop"
 sed "s|^Exec=.*|& --hidden|" "$DATA/applications/app.mypods.desktop" > "$AUTOSTART/app.mypods.desktop"
 
-# Der Daemon laeuft als User-Service, unabhaengig von der Oberflaeche: Ohrerkennung und Umschalten
-# bleiben aktiv, wenn das Tray-Programm beendet wird, und systemd startet ihn nach einem Absturz neu.
-# Die UI startet ihn ueber systemctl (BackendManager), statt ihn selbst zu starten.
+# The daemon runs as a user service, apart from the UI: ear detection and switching keep working
+# when the tray app quits, and systemd restarts it after a crash. The UI starts it through systemctl
+# (BackendManager) instead of starting it itself.
 sed "s|/usr/lib/mypods|$DEST|" packaging/linux/mypods-core.service > "$UNITS/mypods-core.service"
 if systemctl --user daemon-reload 2>/dev/null; then
     systemctl --user enable --now mypods-core.service
 else
-    rm -f "$UNITS/mypods-core.service" # kein systemd: die UI startet den Daemon wie bisher selbst
+    rm -f "$UNITS/mypods-core.service" # no systemd: the UI starts the daemon itself
 fi
 
 grep -qE '^[[:space:]]*DeviceID[[:space:]]*=[[:space:]]*bluetooth:004C' /etc/bluetooth/main.conf 2>/dev/null || cat <<'HINT'
 
-Fuer automatisches Umschalten zwischen iPhone und diesem Laptop muss sich BlueZ als Apple-Geraet
-melden (einmalig, braucht root):
+For automatic switching between the iPhone and this computer, BlueZ has to present itself as an
+Apple device (once, needs root):
   sudo sed -i '/^\[General\]/a DeviceID = bluetooth:004C:0000:0000' /etc/bluetooth/main.conf
   sudo systemctl restart bluetooth
 HINT
 
 setsid -f "$DEST/mypods" >/dev/null 2>&1
-echo "MyPods installiert und gestartet. Startet ab jetzt automatisch beim Anmelden."
+echo "MyPods is installed and running. From now on it starts at login."

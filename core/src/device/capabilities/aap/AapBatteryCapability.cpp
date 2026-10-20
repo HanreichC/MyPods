@@ -44,7 +44,7 @@ namespace MyPods
 
         // No AAP battery without L2CAP: the advertisement's stands in (1 % steps with the ENC key, 10 % without)
         if (!Client::SupportsL2CAP())
-            leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdertisingData &ad){
+            leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdvertisingData &ad){
                 if (!this->device.GetConnected())
                     return;
                 if (auto message = this->device.OwnProximityMessage(ad))

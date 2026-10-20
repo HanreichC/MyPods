@@ -110,7 +110,7 @@ namespace MyPods
     CmnBluetoothCodecCapability::CmnBluetoothCodecCapability(Device& device) : Capability("bluetoothCodec", false),
                                                                     device(device)
     {
-        onAudioCardPropertyChangedId = device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Subscribe([this](size_t id, const CardInfo& info){
+        onAudioCardPropertyChangedId = device.GetAudioClient()->GetAudioCardPropertyChangedEvent().Subscribe([this](size_t id, const CardInfo& info){
             if (info.name == this->device.GetAudioClient()->GetNameFromMac(this->device.GetAddress())){
                 this->UpdateCardInfo(info);
             }
@@ -177,7 +177,7 @@ void CmnBluetoothCodecCapability::SetFromJson(const nlohmann::json &json)
 
     CmnBluetoothCodecCapability::~CmnBluetoothCodecCapability()
     {
-        device.GetAudioClient()->GatAudioCardPropertyChangedEvent().Unsubscribe(onAudioCardPropertyChangedId);
+        device.GetAudioClient()->GetAudioCardPropertyChangedEvent().Unsubscribe(onAudioCardPropertyChangedId);
         device.GetConnectedPropertyChangedEvent().Unsubscribe(onConnectedPropertyChangedId);
     }
 }

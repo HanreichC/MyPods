@@ -5,7 +5,7 @@
 #pragma once
 
 #include "Event.h"
-#include "BleAdverisingData.h"
+#include "BleAdvertisingData.h"
 
 namespace MyPods
 {
@@ -13,13 +13,13 @@ namespace MyPods
     class BleAdvertisingService
     {
     protected:
-        Event<BleAdertisingData> _onAdReceivedEvent{};
+        Event<BleAdvertisingData> _onAdReceivedEvent{};
 
     public:
         BleAdvertisingService() = default;
         virtual ~BleAdvertisingService() = default;
 
-        Event<BleAdertisingData> &GetOnAdReceivedEvent()
+        Event<BleAdvertisingData> &GetOnAdReceivedEvent()
         {
             return _onAdReceivedEvent;
         }

@@ -77,7 +77,7 @@ void PassiveHciBasedBleAdvertisingService::ParseExtendedAdvertisingReport(const 
 
         if (!manufacturerData.empty())
         {
-            _onAdReceivedEvent.FireEvent(BleAdertisingData(address, rssi, manufacturerData));
+            _onAdReceivedEvent.FireEvent(BleAdvertisingData(address, rssi, manufacturerData));
         }
 
         // Go to next data
@@ -106,7 +106,7 @@ void PassiveHciBasedBleAdvertisingService::ParseAdvertisingReport(const uint8_t*
 
         if (!manufacturerData.empty())
         {
-            _onAdReceivedEvent.FireEvent(BleAdertisingData(address, rssi, manufacturerData));
+            _onAdReceivedEvent.FireEvent(BleAdvertisingData(address, rssi, manufacturerData));
         }
 
         // Go to next data

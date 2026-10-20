@@ -132,10 +132,10 @@ namespace MyPods {
         }
 
 
-        void Connect(); // TODO: может полностью перейти на Async?
+        void Connect(); // TODO: Async only?
         void ConnectAsync(BtCallback&& callback);
 
-        void Disconnect(); // TODO: может полностью перейти на Async?
+        void Disconnect(); // TODO: Async only?
         void DisconnectAsync(BtCallback&& callback);
 
         void SetCapabilities(const nlohmann::json &json);

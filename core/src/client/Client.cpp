@@ -156,7 +156,7 @@ namespace MyPods {
             if (attemptsNumber <= 0 || isConnected || !_isStarted) {
                 break;
             }
-            std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO: вероятно delay можно выставить для connect()
+            std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO: maybe a timeout on connect() would do instead
         }
         return isConnected;
     }
