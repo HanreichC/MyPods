@@ -57,6 +57,8 @@ const winrt::guid AmsService{0x89D3502B, 0x0F36, 0x433A, {0x8E, 0xF4, 0xC5, 0x02
 const winrt::guid AmsRemoteCommand{0x9B3C81D8, 0x57B1, 0x4A8A, {0xB8, 0xDF, 0x0E, 0x56, 0xF7, 0xCA, 0x51, 0xC2}};
 const winrt::guid AmsEntityUpdate{0x2F7CABCE, 0x808D, 0x411F, {0x9A, 0x0C, 0xBB, 0x92, 0xBA, 0x96, 0xC1, 0x02}};
 const winrt::guid AmsEntityAttribute{0xC6B2F38C, 0x23AB, 0x46D8, {0xA6, 0xAB, 0xA3, 0xA8, 0x70, 0xBB, 0xD5, 0xD7}};
+// Apple's Continuity service, which iPhones, iPads and Macs show on every connection
+const winrt::guid AppleContinuity{0xD0611E78, 0xBBB4, 0x4591, {0xA5, 0xF8, 0x48, 0x79, 0x10, 0xAE, 0x43, 0x66}};
 
 IBuffer bytes(std::initializer_list<uint8_t> values)
 {
@@ -234,10 +236,21 @@ private:
                 bt::BluetoothLEDevice::GetDeviceSelectorFromPairingState(true)).get();
             std::vector<bt::BluetoothLEDevice> phones;
             for (const auto &info : paired) {
-                auto device = bt::BluetoothLEDevice::FromIdAsync(info.Id()).get();
-                // from the cache, so paired mice and keyboards aren't woken up for this
-                if (device && device.GetGattServicesForUuidAsync(AmsService, bt::BluetoothCacheMode::Cached).get().Services().Size() > 0)
-                    phones.push_back(device);
+                try {
+                    auto device = bt::BluetoothLEDevice::FromIdAsync(info.Id()).get();
+                    auto offers = [&](const winrt::guid &service, bt::BluetoothCacheMode mode) {
+                        return device.GetGattServicesForUuidAsync(service, mode).get().Services().Size() > 0;
+                    };
+                    // From the cache, so paired mice and keyboards aren't woken up for this. The cache holds what the
+                    // last connection showed, and an iPhone shows AMS only on an encrypted one: without it there, an
+                    // Apple device (Continuity service) is asked itself, or it would never be connected to refresh it.
+                    // ponytail: while no iPhone is found, every search (30 s) asks the paired Macs and absent iPhones again
+                    if (device && (offers(AmsService, bt::BluetoothCacheMode::Cached) ||
+                                   (offers(AppleContinuity, bt::BluetoothCacheMode::Cached) && offers(AmsService, bt::BluetoothCacheMode::Uncached))))
+                        phones.push_back(device);
+                } catch (const winrt::hresult_error &) {
+                    // out of range: not this time
+                }
             }
             bool follow = false;
             {
