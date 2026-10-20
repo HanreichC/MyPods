@@ -226,7 +226,7 @@ QQC2.ApplicationWindow {
 
                     Text {
                         Layout.fillWidth: true
-                        text: qsTrId("battery.conversation_awareness").replace(/:\s*$/, "") // a label, not a form field
+                        text: qsTrId("battery.conversation_awareness")
                         color: MP.Theme.text
                         font.pixelSize: 13
                         font.weight: Font.Medium

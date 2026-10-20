@@ -14,7 +14,6 @@
 #include <QApplication>
 #include <QIcon>
 #include <QMenu>
-#include <QRegularExpression>
 #include <QStringList>
 #include <QtGlobal>
 #include <algorithm>
@@ -209,7 +208,7 @@ void TrayIconManager::rebuildMenu()
         menu->addSeparator();
     }
 
-    QAction *settingsAction = menu->addAction(qtTrId("menu.settings"));
+    QAction *settingsAction = menu->addAction(qtTrId("tray.popup.open_app"));
     connect(settingsAction, &QAction::triggered, this, [this]() {
         if (openSettings) {
             openSettings();
@@ -411,12 +410,10 @@ void TrayIconManager::addAncAction(const QString &address,
 
 void TrayIconManager::addEffectsActions(const QString &address, const QVariantMap &equalizer)
 {
-    // the row labels without their trailing colon
-    const auto title = [](const char *id) { return qtTrId(id).remove(QRegularExpression(QStringLiteral(":\\s*$"))); };
     const bool readonly = equalizer.value(QStringLiteral("readonly")).toBool();
     const QString selected = equalizer.value(QStringLiteral("selected")).toString();
 
-    equalizerMenu = menu->addMenu(title("battery.equalizer"));
+    equalizerMenu = menu->addMenu(qtTrId("battery.equalizer"));
     equalizerMenu->setEnabled(!readonly);
     auto *presets = new QActionGroup(equalizerMenu);
     for (const QVariant &option : equalizer.value(QStringLiteral("options")).toList()) {
@@ -434,7 +431,7 @@ void TrayIconManager::addEffectsActions(const QString &address, const QVariantMa
 
     // HIG: no menu item for a command the device never has (the Zik's equalizer runs in the headphones)
     if (equalizer.contains(QStringLiteral("bypass"))) {
-        QAction *bypass = menu->addAction(title("battery.bypass"));
+        QAction *bypass = menu->addAction(qtTrId("battery.bypass"));
         bypass->setCheckable(true);
         bypass->setChecked(equalizer.value(QStringLiteral("bypass")).toBool());
         bypass->setEnabled(!readonly);

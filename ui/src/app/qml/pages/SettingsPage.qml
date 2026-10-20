@@ -70,11 +70,10 @@ Components.ScrollPage {
         level: 5
         Layout.topMargin: MP.Units.mediumSpacing
         Layout.leftMargin: MP.Units.largeSpacing
-        text: qsTrId("settings.popup")
+        text: qsTrId("settings.group.general")
     }
 
     Components.Card {
-
         MP.FormRow {
             iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
             iconColor: "#AF52DE"
@@ -91,106 +90,6 @@ Components.ScrollPage {
                             cppBackend.setSetting("mypods", "animation", checked);
                     }
                 }
-            }
-        }
-    }
-
-    // Headphones that no system can see: on a monitor's jack, or a jack that shares the speakers' output.
-    // Marked, an output becomes headphones with their own equalizer, to pick like any other pair.
-    MP.Heading {
-        visible: rootPage.outputs.length > 0
-        level: 5
-        Layout.topMargin: MP.Units.mediumSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
-        text: qsTrId("settings.outputs")
-    }
-
-    Components.Card {
-        visible: rootPage.outputs.length > 0
-
-        Repeater {
-            model: rootPage.outputs
-
-            MP.FormRow {
-                Layout.fillWidth: true
-                iconSource: MP.Theme.asset(modelData.headphones ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
-                iconColor: "#007AFF"
-                label: modelData.name
-                info: qsTrId("settings.outputs.info") + (modelData.automatic ? "\n\n" + qsTrId("settings.outputs.automatic") : "")
-
-                Components.Toggle {
-                    checked: modelData.headphones
-                    enabled: (cppBackend?.connected ?? false) && !modelData.automatic
-                    onToggled: cppBackend.setOutputHeadphones(modelData.sink, checked)
-                }
-            }
-        }
-    }
-
-    MP.Heading {
-        level: 5
-        Layout.topMargin: MP.Units.mediumSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
-        text: qsTrId("settings.other")
-    }
-
-    Components.Card {
-
-        // PipeWire follows the source's rate (a drop-in the daemon writes); Windows' audio engine picks its own format
-        MP.FormRow {
-            visible: Qt.platform.os !== "windows"
-            iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
-            iconColor: MP.Theme.purple
-            label: qsTrId("settings.hi_res")
-            info: qsTrId("settings.hi_res.info")
-
-            Components.Toggle {
-                checked: rootPage.settingHiRes
-                enabled: cppBackend?.connected ?? false
-                Accessible.name: qsTrId("settings.hi_res")
-                onToggled: {
-                    rootPage.settingHiRes = checked;
-                    cppBackend.setSetting("mypods", "hiRes", checked);
-                }
-            }
-        }
-
-        MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-theme.svg")
-            iconColor: MP.Theme.indigo
-            label: qsTrId("settings.appearance")
-            info: qsTrId("settings.appearance.info")
-
-            Components.Picker {
-                enabled: cppBackend?.connected ?? false
-                model: [
-                    qsTrId("settings.tray_icon_theme.auto"),
-                    qsTrId("settings.tray_icon_theme.light"),
-                    qsTrId("settings.tray_icon_theme.dark")
-                ]
-                currentIndex: rootPage.themeTrayStringToIndex(MP.Theme.appearance)
-                onActivated: {
-                    MP.Theme.appearance = rootPage.themeTrayIndexToString(currentIndex);
-                    if (cppBackend)
-                        cppBackend.setSetting("mypods", "appearance", MP.Theme.appearance);
-                }
-            }
-        }
-
-        MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-globe.svg")
-            iconColor: MP.Theme.accent
-            label: qsTrId("settings.language")
-            info: qsTrId("settings.language.info")
-
-            // Index 0 follows the system; each language is named in itself (HIG)
-            Components.Picker {
-                model: [qsTrId("settings.language.system")].concat(availableLanguages.map(code => {
-                    const name = code === "en" ? "English" : Qt.locale(code).nativeLanguageName;
-                    return name.charAt(0).toUpperCase() + name.slice(1);
-                }))
-                currentIndex: availableLanguages.indexOf(Qt.uiLanguage) + 1
-                onActivated: Qt.uiLanguage = currentIndex > 0 ? availableLanguages[currentIndex - 1] : ""
             }
         }
 
@@ -231,6 +130,37 @@ Components.ScrollPage {
                 Component.onCompleted: refreshState()
             }
         }
+    }
+
+    MP.Heading {
+        level: 5
+        Layout.topMargin: MP.Units.mediumSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("settings.group.appearance")
+    }
+
+    Components.Card {
+        MP.FormRow {
+            iconSource: MP.Theme.asset("icons/icon-theme.svg")
+            iconColor: MP.Theme.indigo
+            label: qsTrId("settings.appearance")
+            info: qsTrId("settings.appearance.info")
+
+            Components.Picker {
+                enabled: cppBackend?.connected ?? false
+                model: [
+                    qsTrId("settings.tray_icon_theme.auto"),
+                    qsTrId("settings.tray_icon_theme.light"),
+                    qsTrId("settings.tray_icon_theme.dark")
+                ]
+                currentIndex: rootPage.themeTrayStringToIndex(MP.Theme.appearance)
+                onActivated: {
+                    MP.Theme.appearance = rootPage.themeTrayIndexToString(currentIndex);
+                    if (cppBackend)
+                        cppBackend.setSetting("mypods", "appearance", MP.Theme.appearance);
+                }
+            }
+        }
 
         MP.FormRow {
             iconSource: MP.Theme.asset("icons/icon-battery-fill.svg")
@@ -251,6 +181,85 @@ Components.ScrollPage {
                         cppTrayIcon.themeMode = currentIndex;
                     if (cppBackend)
                         cppBackend.setSetting("mypods", "theme_tray", rootPage.themeTrayIndexToString(currentIndex));
+                }
+            }
+        }
+
+        MP.FormRow {
+            iconSource: MP.Theme.asset("icons/icon-globe.svg")
+            iconColor: MP.Theme.accent
+            label: qsTrId("settings.language")
+            info: qsTrId("settings.language.info")
+
+            // Index 0 follows the system; each language is named in itself (HIG)
+            Components.Picker {
+                model: [qsTrId("settings.language.system")].concat(availableLanguages.map(code => {
+                    const name = code === "en" ? "English" : Qt.locale(code).nativeLanguageName;
+                    return name.charAt(0).toUpperCase() + name.slice(1);
+                }))
+                currentIndex: availableLanguages.indexOf(Qt.uiLanguage) + 1
+                onActivated: Qt.uiLanguage = currentIndex > 0 ? availableLanguages[currentIndex - 1] : ""
+            }
+        }
+    }
+
+    // PipeWire's own options (drop-ins the daemon writes); Windows' audio engine picks its own format
+    MP.Heading {
+        visible: Qt.platform.os !== "windows"
+        level: 5
+        Layout.topMargin: MP.Units.mediumSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("settings.group.audio")
+    }
+
+    Components.Card {
+        visible: Qt.platform.os !== "windows"
+
+        MP.FormRow {
+            iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
+            iconColor: MP.Theme.purple
+            label: qsTrId("settings.hi_res")
+            info: qsTrId("settings.hi_res.info")
+
+            Components.Toggle {
+                checked: rootPage.settingHiRes
+                enabled: cppBackend?.connected ?? false
+                Accessible.name: qsTrId("settings.hi_res")
+                onToggled: {
+                    rootPage.settingHiRes = checked;
+                    cppBackend.setSetting("mypods", "hiRes", checked);
+                }
+            }
+        }
+    }
+
+    // Headphones that no system can see: on a monitor's jack, or a jack that shares the speakers' output.
+    // Marked, an output becomes headphones with their own equalizer, to pick like any other pair.
+    MP.Heading {
+        visible: rootPage.outputs.length > 0
+        level: 5
+        Layout.topMargin: MP.Units.mediumSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("settings.outputs")
+    }
+
+    Components.Card {
+        visible: rootPage.outputs.length > 0
+
+        Repeater {
+            model: rootPage.outputs
+
+            MP.FormRow {
+                Layout.fillWidth: true
+                iconSource: MP.Theme.asset(modelData.headphones ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
+                iconColor: "#007AFF"
+                label: modelData.name
+                info: qsTrId("settings.outputs.info") + (modelData.automatic ? "\n\n" + qsTrId("settings.outputs.automatic") : "")
+
+                Components.Toggle {
+                    checked: modelData.headphones
+                    enabled: (cppBackend?.connected ?? false) && !modelData.automatic
+                    onToggled: cppBackend.setOutputHeadphones(modelData.sink, checked)
                 }
             }
         }

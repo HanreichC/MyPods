@@ -96,6 +96,21 @@ Components.ScrollPage {
     ]
 
     // A Zik setting as a row: a switch, or a list of choices
+    // A plain switch the AirPods report (core: AapControlCapability Toggle)
+    component ControlSwitch: MP.FormRow {
+        id: control
+        property string key
+        property var capability: null
+        Layout.fillWidth: true
+        visible: capability !== null
+
+        Components.Toggle {
+            checked: control.capability?.selected ?? false
+            enabled: !(control.capability?.readonly ?? true)
+            onToggled: cppBackend.setCapability(control.key, rootPage.currentAddress(), checked)
+        }
+    }
+
     component ZikSwitch: MP.FormRow {
         id: row
         required property var modelData
@@ -1009,29 +1024,8 @@ Components.ScrollPage {
             }
         }
 
-        Repeater {
-            // plain switches the AirPods report (core: AapControlCapability Toggle)
-            model: [
-                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
-                { icon: "icon-moon.svg", key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
-                { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
-            ].filter(m => m.key === "sleepDetection")
-            delegate: MP.FormRow {
-                required property var modelData
-                Layout.fillWidth: true
-                visible: modelData.data !== null
-                label: modelData.label
-                iconSource: MP.Theme.asset("icons/" + modelData.icon)
-                iconColor: MP.Theme.groupDetection
-                info: modelData.info ?? ""
-
-                Components.Toggle {
-                    checked: modelData.data?.selected ?? false
-                    enabled: !(modelData.data?.readonly ?? true)
-                    onToggled: cppBackend.setCapability(modelData.key, rootPage.currentAddress(), checked)
-                }
-            }
-        }
+        ControlSwitch { key: "sleepDetection"; capability: rootPage.sleepDetectionData; label: qsTrId("battery.sleep_detection"); info: qsTrId("battery.sleep_detection.info")
+                        iconSource: MP.Theme.asset("icons/icon-moon.svg"); iconColor: MP.Theme.groupDetection }
     }
 
     Section {
@@ -1122,29 +1116,8 @@ Components.ScrollPage {
             }
         }
 
-        Repeater {
-            // plain switches the AirPods report (core: AapControlCapability Toggle)
-            model: [
-                { icon: "icon-crown.svg", key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
-                { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
-                { key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
-            ].filter(m => m.key === "crownReversed")
-            delegate: MP.FormRow {
-                required property var modelData
-                Layout.fillWidth: true
-                visible: modelData.data !== null
-                label: modelData.label
-                iconSource: MP.Theme.asset("icons/" + modelData.icon)
-                iconColor: MP.Theme.groupControls
-                info: modelData.info ?? ""
-
-                Components.Toggle {
-                    checked: modelData.data?.selected ?? false
-                    enabled: !(modelData.data?.readonly ?? true)
-                    onToggled: cppBackend.setCapability(modelData.key, rootPage.currentAddress(), checked)
-                }
-            }
-        }
+        ControlSwitch { key: "crownReversed"; capability: rootPage.crownReversedData; label: qsTrId("battery.crown_reversed"); info: qsTrId("battery.crown_reversed.info")
+                        iconSource: MP.Theme.asset("icons/icon-crown.svg"); iconColor: MP.Theme.groupControls }
 
         MP.FormRow {
             Layout.fillWidth: true
@@ -1359,29 +1332,8 @@ Components.ScrollPage {
             }
         }
 
-        Repeater {
-            // plain switches the AirPods report (core: AapControlCapability Toggle)
-            model: [
-                { key: "crownReversed", data: rootPage.crownReversedData, label: qsTrId("battery.crown_reversed"), info: qsTrId("battery.crown_reversed.info") },
-                { key: "sleepDetection", data: rootPage.sleepDetectionData, label: qsTrId("battery.sleep_detection"), info: qsTrId("battery.sleep_detection.info") },
-                { icon: "icon-link.svg", key: "autoConnect", data: rootPage.autoConnectData, label: qsTrId("battery.auto_connect"), info: qsTrId("battery.auto_connect.info") }
-            ].filter(m => m.key === "autoConnect")
-            delegate: MP.FormRow {
-                required property var modelData
-                Layout.fillWidth: true
-                visible: modelData.data !== null
-                label: modelData.label
-                iconSource: MP.Theme.asset("icons/" + modelData.icon)
-                iconColor: MP.Theme.groupConnection
-                info: modelData.info ?? ""
-
-                Components.Toggle {
-                    checked: modelData.data?.selected ?? false
-                    enabled: !(modelData.data?.readonly ?? true)
-                    onToggled: cppBackend.setCapability(modelData.key, rootPage.currentAddress(), checked)
-                }
-            }
-        }
+        ControlSwitch { key: "autoConnect"; capability: rootPage.autoConnectData; label: qsTrId("battery.auto_connect"); info: qsTrId("battery.auto_connect.info")
+                        iconSource: MP.Theme.asset("icons/icon-link.svg"); iconColor: MP.Theme.groupConnection }
 
         Repeater {
             model: rootPage.zikSwitches.filter(z => z.group === "connection")

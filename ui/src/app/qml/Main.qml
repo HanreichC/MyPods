@@ -150,8 +150,8 @@ QQC2.ApplicationWindow {
                     maskThresholdMin: 0.0
                 }
 
-                BatteryPage { id: batteryPage }
-                HeadphonesPage {}
+                DevicePage { id: devicePage }
+                BluetoothPage {}
                 SettingsPage {}
                 AboutPage {}
             }
@@ -256,8 +256,8 @@ QQC2.ApplicationWindow {
     GlassBar {
         id: sidebar
         // the headphones to list: the connected ones, or the active ones before the list has come
-        readonly property var devices: batteryPage.connectedHeadphones.length > 0 ? batteryPage.connectedHeadphones
-                                       : batteryPage.hasInfo ? [batteryPage.infoData] : []
+        readonly property var devices: devicePage.connectedHeadphones.length > 0 ? devicePage.connectedHeadphones
+                                       : devicePage.hasInfo ? [devicePage.infoData] : []
         x: 12
         y: 12
         width: 232
@@ -289,11 +289,11 @@ QQC2.ApplicationWindow {
                 model: sidebar.devices
                 delegate: SidebarItem {
                     required property var modelData
-                    readonly property bool active: modelData.address === batteryPage.currentAddress()
+                    readonly property bool active: modelData.address === devicePage.currentAddress()
                     device: modelData
                     output: modelData.output ?? false
                     text: modelData.name ?? ""
-                    detail: active ? root.batteryText(batteryPage.infoData) : qsTrId("tray.popup.connected")
+                    detail: active ? root.batteryText(devicePage.infoData) : qsTrId("tray.popup.connected")
                     current: active && swipeView.currentIndex === 0
                     onClicked: {
                         // also when they are the active ones already: the sound may play elsewhere

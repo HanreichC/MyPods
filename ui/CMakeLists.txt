@@ -92,8 +92,8 @@ qt_add_qml_module(mypods
         src/app/qml/components/ScrollBar.qml
         src/app/qml/components/NowPlaying.qml
         src/app/qml/pages/AboutPage.qml
-        src/app/qml/pages/BatteryPage.qml
-        src/app/qml/pages/HeadphonesPage.qml
+        src/app/qml/pages/DevicePage.qml
+        src/app/qml/pages/BluetoothPage.qml
         src/app/qml/pages/SettingsPage.qml
         src/app/qml/pages/ColorSample.qml
     RESOURCES

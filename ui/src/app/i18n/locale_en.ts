@@ -31,7 +31,7 @@
     <message id="headphones.item.bluetooth">
         <location filename="../qml/pages/HeadphonesPage.qml" line="91"/>
         <source></source>
-        <translation>Bluetooth:</translation>
+        <translation>Bluetooth</translation>
     </message>
     <message id="headphones.iphones">
         <location filename="../qml/pages/HeadphonesPage.qml" line="0"/>
@@ -131,27 +131,27 @@
     <message id="battery.conversation_awareness">
         <location filename="../qml/pages/BatteryPage.qml" line="399"/>
         <source></source>
-        <translation>Conversation awareness:</translation>
+        <translation>Conversation awareness</translation>
     </message>
     <message id="battery.personalized_volume">
         <location filename="../qml/pages/BatteryPage.qml" line="415"/>
         <source></source>
-        <translation>Personalized volume:</translation>
+        <translation>Personalized volume</translation>
     </message>
     <message id="battery.adaptive_audio_noise">
         <location filename="../qml/pages/BatteryPage.qml" line="431"/>
         <source></source>
-        <translation>Adaptive mode:</translation>
+        <translation>Adaptive mode</translation>
     </message>
     <message id="battery.anc_one_airpod">
         <location filename="../qml/pages/BatteryPage.qml" line="464"/>
         <source></source>
-        <translation>ANC with one AirPod:</translation>
+        <translation>ANC with one AirPod</translation>
     </message>
     <message id="battery.press_and_hold_duration">
         <location filename="../qml/pages/BatteryPage.qml" line="480"/>
         <source></source>
-        <translation>Press and hold duration:</translation>
+        <translation>Press and hold duration</translation>
     </message>
     <message id="battery.press_and_hold_duration.default">
         <location filename="../qml/pages/BatteryPage.qml" line="484"/>
@@ -171,7 +171,7 @@
     <message id="battery.press_speed">
         <location filename="../qml/pages/BatteryPage.qml" line="498"/>
         <source></source>
-        <translation>Press speed:</translation>
+        <translation>Press speed</translation>
     </message>
     <message id="battery.press_speed.default">
         <location filename="../qml/pages/BatteryPage.qml" line="502"/>
@@ -191,17 +191,17 @@
     <message id="battery.tone_volume">
         <location filename="../qml/pages/BatteryPage.qml" line="516"/>
         <source></source>
-        <translation>Tone volume:</translation>
+        <translation>Tone volume</translation>
     </message>
     <message id="battery.volume_swipe">
         <location filename="../qml/pages/BatteryPage.qml" line="543"/>
         <source></source>
-        <translation>Volume swipe:</translation>
+        <translation>Volume swipe</translation>
     </message>
     <message id="battery.volume_swipe_length">
         <location filename="../qml/pages/BatteryPage.qml" line="560"/>
         <source></source>
-        <translation>Volume swipe length:</translation>
+        <translation>Volume swipe length</translation>
     </message>
     <message id="battery.volume_swipe_length.default">
         <location filename="../qml/pages/BatteryPage.qml" line="564"/>
@@ -221,7 +221,7 @@
     <message id="battery.end_call">
         <location filename="../qml/pages/BatteryPage.qml" line="578"/>
         <source></source>
-        <translation>End call:</translation>
+        <translation>End call</translation>
     </message>
     <message id="battery.end_call.twice">
         <location filename="../qml/pages/BatteryPage.qml" line="582"/>
@@ -238,7 +238,7 @@
     <message id="battery.mute_unmute">
         <location filename="../qml/pages/BatteryPage.qml" line="596"/>
         <source></source>
-        <translation>Mute and unmute:</translation>
+        <translation>Mute and unmute</translation>
     </message>
     <message id="battery.bluetooth_codec.off">
         <location filename="../qml/pages/BatteryPage.qml" line="70"/>
@@ -253,7 +253,7 @@
     <message id="battery.bluetooth_codec">
         <location filename="../qml/pages/BatteryPage.qml" line="337"/>
         <source></source>
-        <translation>Bluetooth codec:</translation>
+        <translation>Bluetooth codec</translation>
     </message>
     <message id="Error.service_api_wrong">
         <location filename="../qml/main.qml" line="56"/>
@@ -313,22 +313,32 @@
     <message id="about.item.issue">
         <location filename="../qml/pages/AboutPage.qml" line="114"/>
         <source></source>
-        <translation>Report issue:</translation>
+        <translation>Report issue</translation>
     </message>
     <message id="about.item.community">
         <location filename="../qml/pages/AboutPage.qml" line="123"/>
         <source></source>
-        <translation>Community:</translation>
-    </message>
-    <message id="settings.other">
-        <location filename="../qml/pages/SettingsPage.qml" line="114"/>
-        <source></source>
-        <translation>Other</translation>
+        <translation>Community</translation>
     </message>
     <message id="settings.add_shortcut_to_menu">
         <location filename="../qml/pages/SettingsPage.qml" line="173"/>
         <source></source>
-        <translation>Add shortcut to menu:</translation>
+        <translation>Add shortcut to menu</translation>
+    </message>
+    <message id="settings.group.general">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>General</translation>
+    </message>
+    <message id="settings.group.appearance">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Appearance</translation>
+    </message>
+    <message id="settings.group.audio">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Audio</translation>
     </message>
     <message id="settings.appearance">
         <location filename="../qml/pages/SettingsPage.qml" line="1"/>
@@ -338,7 +348,7 @@
     <message id="settings.tray_icon_theme">
         <location filename="../qml/pages/SettingsPage.qml" line="97"/>
         <source></source>
-        <translation>Tray icon theme:</translation>
+        <translation>Tray icon theme</translation>
     </message>
     <message id="settings.tray_icon_theme.auto">
         <location filename="../qml/pages/SettingsPage.qml" line="103"/>
@@ -355,15 +365,10 @@
         <source></source>
         <translation>Dark</translation>
     </message>
-    <message id="settings.popup">
-        <location filename="../qml/pages/SettingsPage.qml" line="75"/>
-        <source></source>
-        <translation>Pop-ups</translation>
-    </message>
     <message id="settings.headphones_animation">
         <location filename="../qml/pages/SettingsPage.qml" line="81"/>
         <source></source>
-        <translation>Headphones animation:</translation>
+        <translation>Headphones animation</translation>
     </message>
     <message id="tray.socket_error_tooltip">
         <location filename="../cpp/TrayIconManager.cpp" line="206"/>
@@ -400,7 +405,7 @@
     </message>
     <message id="battery.spatial_audio">
         <source></source>
-        <translation>Spatial audio:</translation>
+        <translation>Spatial audio</translation>
     </message>
     <message id="battery.spatial_audio.off">
         <source></source>
@@ -416,35 +421,35 @@
     </message>
     <message id="battery.equalizer">
         <source></source>
-        <translation>Equalizer:</translation>
+        <translation>Equalizer</translation>
     </message>
     <message id="battery.headphone_correction">
         <source></source>
-        <translation>Headphone correction:</translation>
+        <translation>Headphone correction</translation>
     </message>
     <message id="battery.crossfeed">
         <source></source>
-        <translation>Crossfeed:</translation>
+        <translation>Crossfeed</translation>
     </message>
     <message id="battery.surround">
         <source></source>
-        <translation>Surround (7.1):</translation>
+        <translation>Surround (7.1)</translation>
     </message>
     <message id="battery.loudness">
         <source></source>
-        <translation>Loudness compensation:</translation>
+        <translation>Loudness compensation</translation>
     </message>
     <message id="battery.hearing_profile">
         <source></source>
-        <translation>Hearing profile:</translation>
+        <translation>Hearing profile</translation>
     </message>
     <message id="battery.audiogram_left">
         <source></source>
-        <translation>Audiogram left (dB HL):</translation>
+        <translation>Audiogram left (dB HL)</translation>
     </message>
     <message id="battery.audiogram_right">
         <source></source>
-        <translation>Audiogram right (dB HL):</translation>
+        <translation>Audiogram right (dB HL)</translation>
     </message>
     <message id="battery.audiogram.placeholder">
         <source></source>
@@ -452,11 +457,11 @@
     </message>
     <message id="battery.bypass">
         <source></source>
-        <translation>Compare without effects (A/B):</translation>
+        <translation>Compare without effects (A/B)</translation>
     </message>
     <message id="battery.auto_switch">
         <source></source>
-        <translation>Connect to this computer:</translation>
+        <translation>Connect to this computer</translation>
     </message>
     <message id="battery.auto_switch.automatically">
         <source></source>
@@ -468,7 +473,7 @@
     </message>
     <message id="battery.ear_detection">
         <source></source>
-        <translation>Automatic ear detection:</translation>
+        <translation>Automatic ear detection</translation>
     </message>
     <message id="battery.moved">
         <source></source>
@@ -484,7 +489,7 @@
     </message>
     <message id="battery.noise_level">
         <source></source>
-        <translation>Noise control strength:</translation>
+        <translation>Noise control strength</translation>
     </message>
     <message id="battery.noise_level.normal">
         <source></source>
@@ -496,11 +501,11 @@
     </message>
     <message id="battery.concert_hall">
         <source></source>
-        <translation>Parrot Concert Hall:</translation>
+        <translation>Parrot Concert Hall</translation>
     </message>
     <message id="battery.concert_hall_room">
         <source></source>
-        <translation>Room:</translation>
+        <translation>Room</translation>
     </message>
     <message id="battery.concert_hall_room.silent">
         <source></source>
@@ -520,27 +525,27 @@
     </message>
     <message id="battery.concert_hall_angle">
         <source></source>
-        <translation>Speaker angle:</translation>
+        <translation>Speaker angle</translation>
     </message>
     <message id="battery.smart_audio_tune">
         <source></source>
-        <translation>Smart audio tune:</translation>
+        <translation>Smart audio tune</translation>
     </message>
     <message id="battery.anc_phone_mode">
         <source></source>
-        <translation>Noise control during calls:</translation>
+        <translation>Noise control during calls</translation>
     </message>
     <message id="battery.voice_prompts">
         <source></source>
-        <translation>Voice prompts:</translation>
+        <translation>Voice prompts</translation>
     </message>
     <message id="battery.auto_connection_zik">
         <source></source>
-        <translation>Connect automatically:</translation>
+        <translation>Connect automatically</translation>
     </message>
     <message id="battery.auto_power_off">
         <source></source>
-        <translation>Auto power off:</translation>
+        <translation>Auto power off</translation>
     </message>
     <message id="battery.auto_power_off.never">
         <source></source>
@@ -619,7 +624,7 @@
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
-        <translation>MyPods Settings…</translation>
+        <translation>Open MyPods</translation>
     </message>
     <message id="settings.language">
         <location filename="../qml/pages/SettingsPage.qml" line="0"/>
@@ -778,7 +783,7 @@
     </message>
     <message id="battery.codec_details">
         <source></source>
-        <translation>Transmission:</translation>
+        <translation>Transmission</translation>
     </message>
     <message id="battery.codec_details.khz">
         <source></source>
@@ -806,7 +811,7 @@
     </message>
     <message id="battery.tilt">
         <source></source>
-        <translation>Tone:</translation>
+        <translation>Tone</translation>
     </message>
     <message id="battery.tilt.warm">
         <source></source>
@@ -839,12 +844,12 @@
     <message id="settings.hi_res">
         <location filename="../qml/pages/SettingsPage.qml" line="0"/>
         <source></source>
-        <translation>Hi-Res playback:</translation>
+        <translation>Hi-Res playback</translation>
     </message>
     <message id="battery.signal_path">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
         <source></source>
-        <translation>Signal path:</translation>
+        <translation>Signal path</translation>
     </message>
     <message id="battery.signal_path.bit_perfect">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
@@ -894,7 +899,7 @@
     <message id="battery.bluetooth_high_quality">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>
         <source></source>
-        <translation>Highest Bluetooth quality:</translation>
+        <translation>Highest Bluetooth quality</translation>
     </message>
     <message id="info.about">
         <location filename="../qml/pages/BatteryPage.qml" line="0"/>

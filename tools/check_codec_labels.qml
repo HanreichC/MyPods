@@ -1,12 +1,12 @@
-// Self-check: BatteryPage's codecLabel turns PipeWire card profiles into readable codec names.
-// It evaluates the function straight from BatteryPage.qml, so it tests the shipped code.
+// Self-check: DevicePage's codecLabel turns PipeWire card profiles into readable codec names.
+// It evaluates the function straight from DevicePage.qml, so it tests the shipped code.
 // Run: QT_FORCE_STDERR_LOGGING=1 QML_XHR_ALLOW_FILE_READ=1 qml6 tools/check_codec_labels.qml
 import QtQml
 
 QtObject {
     Component.onCompleted: {
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", Qt.resolvedUrl("../ui/src/app/qml/pages/BatteryPage.qml"), false);
+        xhr.open("GET", Qt.resolvedUrl("../ui/src/app/qml/pages/DevicePage.qml"), false);
         xhr.send();
         var source = /function codecLabel[\s\S]*?\n    }\n/.exec(xhr.responseText)[0];
 

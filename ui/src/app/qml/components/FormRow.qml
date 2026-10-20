@@ -65,7 +65,7 @@ Item {
             Layout.fillWidth: true
             // as wide as its text, wrapped only when the row runs short; rounded up, as the layout rounds down
             Layout.maximumWidth: Math.ceil(implicitWidth)
-            text: root.label.replace(/:\s*$/, "")
+            text: root.label
             color: MP.Theme.text
             font.pixelSize: MP.Theme.bodySize
             wrapMode: Text.Wrap // long labels and names wrap rather than being cut off

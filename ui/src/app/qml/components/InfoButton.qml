@@ -75,7 +75,7 @@ ToolButton {
 
                     Label {
                         width: parent.width
-                        text: root.title.replace(/:\s*$/, "")
+                        text: root.title
                         color: MP.Theme.text
                         font.pixelSize: 15
                         font.weight: Font.DemiBold
