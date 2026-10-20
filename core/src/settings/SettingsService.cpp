@@ -109,4 +109,16 @@ std::string SettingsService::GetConfigPath(const std::string &fileName) {
 
     throw std::runtime_error("Cannot determine config path");
 }
+
+std::filesystem::path SettingsService::GetLogPath(const std::string &fileName) {
+#ifdef _WIN32
+    if (const wchar_t* localAppData = _wgetenv(L"LOCALAPPDATA")) // wide: a user name with umlauts is no ANSI path
+        return std::filesystem::path(localAppData) / L"MyPods" / L"logs" / fileName;
+#endif
+    if (const char* state = std::getenv("XDG_STATE_HOME"))
+        return std::filesystem::path(state) / "mypods" / fileName;
+    if (const char* home = std::getenv("HOME"))
+        return std::filesystem::path(home) / ".local" / "state" / "mypods" / fileName;
+    return {};
+}
 }

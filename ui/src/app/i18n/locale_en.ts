@@ -284,6 +284,46 @@
         <source></source>
         <translation>Home page</translation>
     </message>
+    <message id="about.diagnostics">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Diagnostics</translation>
+    </message>
+    <message id="about.logs">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Logs</translation>
+    </message>
+    <message id="about.logs.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>What MyPods and its background service write down (ui.log and core.log). Helps when something doesn't work: the files show what happened last.</translation>
+    </message>
+    <message id="about.logs.open">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Open Folder</translation>
+    </message>
+    <message id="about.effects.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>On Windows the sound effects (equalizer, tone, correction, loudness) run in Equalizer APO, which MyPods installs along. Without it the effects stay off; reinstalling MyPods brings it back.</translation>
+    </message>
+    <message id="about.effects.ready">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Active</translation>
+    </message>
+    <message id="about.effects.missing">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Not installed</translation>
+    </message>
+    <message id="about.iphone.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Whether this computer reaches the iPhone over Bluetooth LE. That is how the tray popup shows what plays on the iPhone.</translation>
+    </message>
     <message id="about.packages">
         <location filename="../qml/pages/AboutPage.qml" line="65"/>
         <source></source>

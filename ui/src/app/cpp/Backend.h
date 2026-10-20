@@ -17,6 +17,8 @@ class Backend final : public QObject
     Q_PROPERTY(QString backendInfoText READ backendInfoText NOTIFY backendInfoChanged)
     // Version of the daemon this UI is connected to (not of the file next to the UI), empty when not connected
     Q_PROPERTY(QString backendVersion READ backendVersion NOTIFY backendInfoChanged)
+    // the daemon's effects can run (Equalizer APO installed on Windows)
+    Q_PROPERTY(bool effectsAvailable READ effectsAvailable NOTIFY backendInfoChanged)
 
 public:
     explicit Backend(QObject *parent = nullptr);
@@ -26,6 +28,7 @@ public:
     bool unsupportedApi() const;
     QString backendInfoText() const;
     QString backendVersion() const { return backendVersionValue; }
+    bool effectsAvailable() const { return effectsAvailableValue; }
 
     Q_INVOKABLE void connectSocket();
     Q_INVOKABLE void disconnectSocket();
@@ -75,6 +78,7 @@ private:
     int reconnectAttempts = 0;
     QString backendInfoTextValue;
     QString backendVersionValue;
+    bool effectsAvailableValue = true;
     bool apiReady = false;
     bool unsupportedApiValue = false;
 };

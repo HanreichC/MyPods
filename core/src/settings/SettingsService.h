@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 #include <mutex>
 #include <optional>
@@ -80,6 +81,8 @@ public:
     }
 
     static std::string GetConfigPath(const std::string &fileName);
+    // Where the logs go: %LOCALAPPDATA%\MyPods\logs, $XDG_STATE_HOME/mypods (~/.local/state/mypods); the UI's are there too
+    static std::filesystem::path GetLogPath(const std::string &fileName);
 };
 
 template<typename T>

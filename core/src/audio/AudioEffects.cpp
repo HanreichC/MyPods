@@ -944,6 +944,8 @@ namespace MyPods
             waitpid(pid, nullptr, 0);
     }
 
+    bool AudioEffects::Available() { return true; }
+
     void AudioEffects::ApplySoundServerOptions(bool hiRes, const std::vector<std::string> &cards)
     {
         static std::mutex applying; // from the settings event and the startup check

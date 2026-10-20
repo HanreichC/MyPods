@@ -105,4 +105,54 @@ Components.ScrollPage {
               ? cppBackend.backendInfoText
               : qsTrId("about.not_connected")
     }
+
+    // What helps when something doesn't work: the logs, and whether the parts MyPods relies on are there
+    MP.Heading {
+        level: 5
+        Layout.topMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Units.largeSpacing
+        text: qsTrId("about.diagnostics")
+    }
+
+    Components.Card {
+
+        MP.FormRow {
+            label: qsTrId("about.logs")
+            info: qsTrId("about.logs.info")
+            iconSource: MP.Theme.asset("icons/icon-info-fill.svg")
+            iconColor: MP.Theme.gray
+            MP.Button {
+                text: qsTrId("about.logs.open")
+                onClicked: desktopManager.openLogDir()
+            }
+        }
+
+        // the effects' engine on Windows, installed with MyPods
+        MP.FormRow {
+            visible: Qt.platform.os === "windows" && (cppBackend?.connected ?? false)
+            label: "Equalizer APO"
+            info: qsTrId("about.effects.info")
+            iconSource: MP.Theme.asset("icons/icon-eq.svg")
+            iconColor: MP.Theme.gray
+            MP.Label {
+                color: cppBackend?.effectsAvailable ? MP.Theme.secondaryText : MP.Theme.red
+                text: cppBackend?.effectsAvailable ? qsTrId("about.effects.ready") : qsTrId("about.effects.missing")
+            }
+        }
+
+        Repeater {
+            model: cppMedia.iphones
+            MP.FormRow {
+                required property var modelData
+                label: modelData.name
+                info: qsTrId("about.iphone.info")
+                iconSource: MP.Theme.asset("icons/icon-iphone.svg")
+                iconColor: MP.Theme.gray
+                MP.Label {
+                    color: MP.Theme.secondaryText
+                    text: modelData.connected ? qsTrId("headphones.iphone.connected") : qsTrId("headphones.iphone.not_connected")
+                }
+            }
+        }
+    }
 }

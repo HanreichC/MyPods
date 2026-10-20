@@ -4,7 +4,9 @@
 
 #include "DesktopManager.h"
 
+#include <QDesktopServices>
 #include <QDir>
+#include <QUrl>
 #include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
@@ -20,6 +22,21 @@ DesktopManager::DesktopManager(QObject *parent)
         QFile::remove(data + "/icons/magicpods.png");
         createDesktopFile();
     }
+}
+
+QString DesktopManager::logDir()
+{
+#ifdef Q_OS_WIN
+    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/MyPods/logs");
+#else
+    return QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation) + QStringLiteral("/mypods");
+#endif
+}
+
+void DesktopManager::openLogDir() const
+{
+    QDir().mkpath(logDir());
+    QDesktopServices::openUrl(QUrl::fromLocalFile(logDir()));
 }
 
 static QString iconInstallPath()

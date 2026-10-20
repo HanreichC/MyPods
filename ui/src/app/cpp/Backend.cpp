@@ -425,6 +425,8 @@ void Backend::handleTextMessageReceived(const QString &message)
             const int backendApiVersion = apiIt->get<int>();
 
             backendVersionValue = backendVersion; // announced with the info text below
+            const auto effectsIt = initIt->find("effects");
+            effectsAvailableValue = effectsIt == initIt->end() || !effectsIt->is_boolean() || effectsIt->get<bool>();
             updateBackendInfoText(
                 backendVersion.isEmpty()
                     ? QStringLiteral("API %1").arg(backendApiVersion)

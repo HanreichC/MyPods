@@ -284,6 +284,46 @@
         <source></source>
         <translation>Website</translation>
     </message>
+    <message id="about.diagnostics">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Diagnose</translation>
+    </message>
+    <message id="about.logs">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Protokolle</translation>
+    </message>
+    <message id="about.logs.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Was MyPods und sein Hintergrunddienst mitschreiben (ui.log und core.log). Hilft, wenn etwas nicht klappt: Die Dateien zeigen, was zuletzt passiert ist.</translation>
+    </message>
+    <message id="about.logs.open">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Ordner öffnen</translation>
+    </message>
+    <message id="about.effects.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Die Klangeffekte (Equalizer, Klangfarbe, Korrektur, Loudness) laufen unter Windows in Equalizer APO, das MyPods mitinstalliert. Fehlt es, bleiben die Effekte aus; MyPods neu installieren bringt es zurück.</translation>
+    </message>
+    <message id="about.effects.ready">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Aktiv</translation>
+    </message>
+    <message id="about.effects.missing">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Nicht installiert</translation>
+    </message>
+    <message id="about.iphone.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Ob dieser Computer das iPhone über Bluetooth LE erreicht. Darüber zeigt das Tray-Popup, was auf dem iPhone läuft.</translation>
+    </message>
     <message id="about.packages">
         <location filename="../qml/pages/AboutPage.qml" line="65"/>
         <source></source>

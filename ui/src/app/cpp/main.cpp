@@ -6,7 +6,10 @@
 #include <QQmlApplicationEngine>
 #include <QTranslator>
 #include <QLocale>
+#include <QDateTime>
 #include <QDir>
+#include <QFile>
+#include <QMutex>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QIcon>
@@ -107,12 +110,44 @@ static int runAction(int argc, char *argv[], const QString &action) {
     return app.exec();
 }
 
+// qDebug/qWarning also into ui.log beside the daemon's core.log, with the time; past 1 MB the file is moved to
+// ui.log.1 at the start. The tray app has no console on Windows, so this is all there is to look at later.
+static QFile uiLog;
+static QtMessageHandler consoleHandler = nullptr; // Qt's own, to the console as before
+static void logToFile(QtMsgType type, const QMessageLogContext &context, const QString &message)
+{
+    static QMutex lock;
+    if (consoleHandler)
+        consoleHandler(type, context, message);
+    QMutexLocker locker(&lock);
+    if (uiLog.isOpen()) {
+        static const char *levels[] = {"DBG", "WRN", "CRT", "FTL", "INF"};
+        uiLog.write(QStringLiteral("%1 %2 %3\n").arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")),
+                                                     QLatin1String(levels[type]), message).toUtf8());
+        uiLog.flush();
+    }
+}
+
+static void startLogFile()
+{
+    const QString dir = DesktopManager::logDir();
+    QDir().mkpath(dir);
+    uiLog.setFileName(dir + QStringLiteral("/ui.log"));
+    if (uiLog.size() > 1024 * 1024) {
+        QFile::remove(uiLog.fileName() + QStringLiteral(".1"));
+        QFile::rename(uiLog.fileName(), uiLog.fileName() + QStringLiteral(".1"));
+    }
+    if (uiLog.open(QIODevice::Append | QIODevice::Text))
+        consoleHandler = qInstallMessageHandler(logToFile);
+}
+
 int main(int argc, char *argv[]) {
     for (int i = 1; i + 1 < argc; ++i)
         if (qstrcmp(argv[i], "--action") == 0)
             return runAction(argc, argv, QString::fromLocal8Bit(argv[i + 1]));
 
     ensureEnvDefaults();
+    startLogFile();
 
     QApplication app(argc, argv);
 

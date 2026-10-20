@@ -7,6 +7,8 @@
 #include "StringUtils.h"
 
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <ctime>
 #include <mutex>
@@ -65,6 +67,7 @@ private:
     LogLevel _loggingLevel{};
     std::mutex _mutex{};
     std::unique_ptr<ILoggerFormatter> _formatter{};
+    std::ofstream _file{}; // SetFileForGlobalLogger
 
 public:
     explicit Logger(LogLevel loggingLevel, std::unique_ptr<ILoggerFormatter> formatter) : _loggingLevel{loggingLevel}, _formatter{std::move(formatter)} {}
@@ -82,7 +85,14 @@ public:
         std::lock_guard<std::mutex> lock{_mutex};
         if (static_cast<int>(loggingLevel) < static_cast<int>(_loggingLevel))
             return;
-        printf("%s\n", _formatter->Format(loggingLevel, MyPods::StringUtils::Format(format, args...)).c_str());
+        const auto line = _formatter->Format(loggingLevel, MyPods::StringUtils::Format(format, args...));
+        printf("%s\n", line.c_str());
+        if (_file.is_open()) {
+            char time[20];
+            const std::time_t now = std::time(nullptr);
+            std::strftime(time, sizeof time, "%Y-%m-%d %H:%M:%S", std::localtime(&now)); // under _mutex
+            _file << time << ' ' << line << std::endl;
+        }
     }
 
     void SetLoggingLevel(LogLevel loggingLevel) {
@@ -123,6 +133,18 @@ public:
     template <typename... Args>
     static void Critical(const char* format, const Args&... args) {
         GetGlobalInstance().Log(LogLevel::Critical, format, args...);
+    }
+
+    // Also into `path`, with the time, for when something went wrong and no console was there to see it. Past 1 MB
+    // the file is moved to <path>.1 at the start, so one older run stays and nothing grows without end.
+    static void SetFileForGlobalLogger(const std::filesystem::path& path) {
+        std::error_code ignored;
+        std::filesystem::create_directories(path.parent_path(), ignored);
+        if (std::filesystem::file_size(path, ignored) > 1024 * 1024)
+            std::filesystem::rename(path, path.string() + ".1", ignored);
+        auto& logger = GetGlobalInstance();
+        std::lock_guard<std::mutex> lock{logger._mutex};
+        logger._file.open(path, std::ios::app);
     }
 
     static void SetLoggingLevelForGlobalLogger(LogLevel loggingLevel) {

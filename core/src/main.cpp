@@ -123,6 +123,7 @@ void InitHandshake(auto *ws) {
     auto wrappedJson = nlohmann::json::object();
     wrappedJson["init"]["api"] = API_VERSION;
     wrappedJson["init"]["version"] = CMAKE_PROJECT_VERSION;
+    wrappedJson["init"]["effects"] = AudioEffects::Available(); // for the About page's diagnostics
     auto response = wrappedJson.dump();
     ws->send(response, uWS::OpCode::TEXT, response.length() < 16 * 1024);
 }
@@ -566,6 +567,9 @@ int main(int argc, char** argv) {
     // and Windows reports the daemon as crashed. Like SIGTERM on Linux nothing needs an orderly shutdown.
     SetConsoleCtrlHandler([](DWORD) -> BOOL { TerminateProcess(GetCurrentProcess(), 0); return TRUE; }, TRUE);
 #endif
+
+    if (auto log = SettingsService::GetLogPath("core.log"); !log.empty())
+        Logger::SetFileForGlobalLogger(log);
 
     std::shared_ptr<SettingsService> settingsService = std::make_shared<SettingsService>(SettingsService::GetConfigPath("config.toml"));
     StartListeningLogSettings(*settingsService);

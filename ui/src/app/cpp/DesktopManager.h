@@ -31,6 +31,9 @@ public:
     Q_INVOKABLE bool install();
     Q_INVOKABLE bool uninstall();
     Q_INVOKABLE bool isInstalled() const;
+    // Where the logs go (the daemon's core.log, the UI's ui.log): %LOCALAPPDATA%/MyPods/logs, ~/.local/state/mypods
+    static QString logDir();
+    Q_INVOKABLE void openLogDir() const;
 
 private:
     QString desktopFilePath() const;

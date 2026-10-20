@@ -92,6 +92,8 @@ namespace MyPods
         // headphones with the highest Bluetooth quality (AAC at its best VBR, LDAC at 990 kbit/s).
         // Restarts the services whose files changed; blocking. Linux only.
         static void ApplySoundServerOptions(bool hiRes, const std::vector<std::string> &cards);
+        // The effects can run: Equalizer APO is installed (Windows); PipeWire always (Linux)
+        static bool Available();
         static std::string HiResRatesConfig();
         static std::string HiResStreamConfig();
         // WirePlumber rule for `cards`, empty when there are none

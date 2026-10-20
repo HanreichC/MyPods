@@ -416,6 +416,8 @@ namespace MyPods
         }).detach();
     }
 
+    bool AudioEffects::Available() { return Read(APP, L"ConfigPath").has_value(); }
+
     std::string AudioEffects::Apply(const std::string &sink, const std::string &description, EffectsConfig config)
     {
         std::lock_guard lock{_lock};
