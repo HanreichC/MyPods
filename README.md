@@ -2,10 +2,10 @@
 
 # MyPods
 
-### AirPods-Magie. Jetzt auch auf Linux.
+### AirPods wie am Mac, jetzt auch unter Linux
 
-Deckel auf. Akku da. Musik läuft.<br>
-Das Gefühl von AirPods am Mac, für Linux und Windows. Für AirPods, Beats und fast jeden anderen Kopfhörer.
+Popup beim Öffnen des Case, Akku aufs Prozent, Geräuschkontrolle und Wechsel zwischen iPhone und Computer.<br>
+Für Linux und Windows, für AirPods, Beats und fast jeden anderen Bluetooth-Kopfhörer.
 
 <br>
 
@@ -33,11 +33,11 @@ Das Gefühl von AirPods am Mac, für Linux und Windows. Für AirPods, Beats und 
 
 <br>
 
-**Inhalt:** [Funktionen](#deckel-auf-da-sind-sie) · [Geräte](#nicht-nur-airpods) · [So funktioniert's](#so-funktionierts) · [Technische Daten](#technische-daten) · [Installation](#herunterladen-installieren-fertig) · [Windows](#auch-unter-windows) · [Einrichtung](#einmal-einrichten-nahtlos-wechseln) · [Bedienung](#so-bedienst-du-mypods) · [Konfiguration](#feinschliff-in-der-configtoml) · [Selbst bauen](#selbst-bauen) · [Tests](#geprüft-immer-wieder) · [API](#für-entwickler-die-api) · [Grenzen](#was-noch-nicht-geht) · [Hilfe](#wenns-hakt) · [Sicherheit](#sicherheit-und-datenschutz) · [Herkunft](#herkunft-und-lizenz)
+**Inhalt:** [Funktionen](#case-auf-popup-da) · [Geräte](#nicht-nur-airpods) · [So funktioniert's](#so-funktionierts) · [Technische Daten](#technische-daten) · [Installation](#installation) · [Windows](#windows) · [Einrichtung](#bluez-einmal-als-apple-gerät-melden) · [Bedienung](#bedienung) · [Konfiguration](#konfiguration) · [Selbst bauen](#selbst-bauen) · [Tests](#tests) · [API](#websocket-api) · [Grenzen](#was-noch-nicht-geht) · [Hilfe](#wenns-hakt) · [Sicherheit](#sicherheit-und-datenschutz) · [Herkunft](#herkunft-und-lizenz)
 
 <br>
 
-## Deckel auf. Da sind sie.
+## Case auf, Popup da
 
 <div align="center">
 
@@ -45,57 +45,57 @@ Das Gefühl von AirPods am Mac, für Linux und Windows. Für AirPods, Beats und 
 
 </div>
 
-Öffne das Case neben deinem Computer, und das vertraute Popup erscheint, mit Animation und dem Akku von links, rechts und Case. Genau wie am Mac. MyPods liest dafür die BLE-Advertisements, die deine AirPods ständig senden. Deshalb ist das Popup sofort da, noch bevor die AirPods überhaupt verbunden sind. Ein Klick auf **Verbinden**, und der Ton landet in deinen Ohren.
+Öffnest du das Case neben dem Computer, erscheint das Popup, das du vom Mac kennst: die Animation und der Akku von links, rechts und Case. MyPods liest dafür die BLE-Advertisements, die AirPods ständig senden, und zeigt das Popup deshalb schon, bevor die AirPods verbunden sind. **Verbinden** verbindet sie und schaltet den Ton auf die AirPods.
 
 <br>
 
-## Jedes Prozent zählt.
+## Akku aufs Prozent
 
-Der Akku kommt aufs Prozent genau, für links, rechts und das Case, samt Ladezustand. MyPods entschlüsselt ihn aus dem Advertisement und liest ihn zusätzlich über AAP. Das Tray-Symbol zeigt ihn als Ring, rot, wenn es knapp wird. Zeig mit der Maus darauf, und MyPods verrät dir, wie lange der Akku ungefähr noch hält, sobald es genug Werte gesammelt hat.
+Den Akku von links, rechts und Case zeigt MyPods in 1-%-Schritten, samt Ladezustand. Er stammt aus dem verschlüsselten Teil des Advertisements und kommt zusätzlich über AAP. Das Tray-Symbol zeigt ihn als Ring, der bei 20 % und weniger rot wird, solange nicht geladen wird. Im Tooltip steht nach einer Weile auch, wie lange der Akku ungefähr noch hält.
 
-Fällt ein AirPod oder die Max auf 10 %, meldet sich eine **Benachrichtigung**. Sie kommt erst wieder, nachdem geladen wurde oder der Stand über 20 % liegt. Und weil MyPods den genauen Wert unter Linux an BlueZ weitergibt, zeigen ihn auch das Bluetooth-Applet deines Desktops und UPower.
-
-<br>
-
-## Ruhe. Oder die Welt.
-
-**Aus**, **Transparenz**, **Adaptiv** und **Geräuschunterdrückung**: dieselben Modi wie am Mac, dazu der Regler für den adaptiven Modus von 0 bis 100. Du legst fest, welche Modi Drücken und Halten durchschaltet und ob **Aus** dazugehört. **Geräuschunterdrückung mit einem AirPod** gibt es auch.
-
-Bei AirPods Pro 2 und 3 kommen **Reduzierung lauter Geräusche** und die **angepasste Transparenz** dazu: Verstärkung, Balance, Klang, Umgebungsgeräuschreduzierung und Gesprächsverstärkung, über den ATT-Kanal der AirPods. *Ungeprüft an Hardware.*
-
-**Konversationserkennung** senkt die Lautstärke, sobald du sprichst, standardmäßig auf 30 % ihres Pegels, einstellbar, und holt sie danach zurück. Ein Schalter, und der aktuelle Zustand ist immer zu sehen.
+Fällt ein AirPod oder die Max auf 10 %, kommt eine Benachrichtigung. Sie kommt erst wieder, nachdem geladen wurde oder der Stand über 20 % liegt. Und weil MyPods den genauen Wert unter Linux an BlueZ weitergibt, zeigen ihn auch das Bluetooth-Applet deines Desktops und UPower.
 
 <br>
 
-## Vom iPhone zum Laptop. Und zurück.
+## Geräuschkontrolle
 
-Starte am Computer einen Player, ob Browser, Spotify oder irgendetwas mit MPRIS, und MyPods holt die AirPods von deinem iPhone: verbindet sie bei Bedarf, führt Apples Smart-Routing-Übergabe aus, schaltet A2DP ein und macht sie zur Standardausgabe. Spielt das iPhone wieder, pausiert der Computer und wechselt zurück auf seine Lautsprecher. Während eines Anrufs auf dem anderen Gerät übernimmt er nie. Genau wie **„Mit diesem Mac verbinden: Automatisch“**.
+Aus, Transparenz, Adaptiv und Geräuschunterdrückung, dazu der Regler für den adaptiven Modus von 0 bis 100. Du legst fest, welche Modi Drücken und Halten durchschaltet und ob „Aus“ dazugehört, und kannst die Geräuschunterdrückung mit nur einem AirPod einschalten.
+
+Bei AirPods Pro 2 und 3 kommen die Reduzierung lauter Geräusche und die angepasste Transparenz dazu: Verstärkung, Balance, Klang, Umgebungsgeräuschreduzierung und Gesprächsverstärkung, über den ATT-Kanal der AirPods. *Ungeprüft an Hardware.*
+
+Die Konversationserkennung senkt die Lautstärke, solange du sprichst, auf 30 % ihres Pegels (einstellbar). MyPods zeigt dabei an, ob sie gerade greift.
+
+<br>
+
+## Vom iPhone zum Laptop und zurück
+
+Startest du am Computer einen Player (Browser, Spotify, alles mit MPRIS), holt MyPods die AirPods vom iPhone: Es verbindet sie bei Bedarf, führt Apples Smart-Routing-Übergabe aus, schaltet A2DP ein und macht sie zur Standardausgabe. Spielt das iPhone wieder, pausiert der Computer und wechselt auf seine Lautsprecher. Läuft auf dem anderen Gerät ein Anruf, übernimmt er nie. Am Mac heißt das „Mit diesem Mac verbinden: Automatisch“.
 
 Trägst du die AirPods, während ein anderes Gerät sie hat, bleiben die Lautsprecher still: Was hier spielt, geht auf eine stumme Ausgabe, bis die AirPods es abspielen. Nimm sie heraus oder wähle eine Ausgabe, und die Lautsprecher sind zurück. Das Banner auf dem iPhone nennt deinen Computer beim Bluetooth-Namen.
 
-Wie am Mac zeigt die Geräteseite **„Wiedergabe auf iPhone – Hierher holen“**. Lieber von Hand? **„Bei letzter Verbindung mit diesem Computer“** gibt es auch, dann wechselst du nur selbst.
+Spielen die AirPods gerade am iPhone, steht auf der Geräteseite „Wiedergabe auf iPhone“ mit dem Knopf **Hierher holen**. Wer nur von Hand wechseln will, stellt „Bei letzter Verbindung mit diesem Computer“ ein.
 
-Dafür muss sich BlueZ einmal als Apple-Gerät melden, siehe [Einrichtung](#einmal-einrichten-nahtlos-wechseln).
-
-<br>
-
-## Nimm sie raus. Die Musik wartet.
-
-Nimmst du einen AirPod heraus, pausiert die Wiedergabe. Setzt du ihn wieder ein, geht es weiter, über MPRIS. Der Schalter dafür liegt in den AirPods selbst. **Pausieren beim Einschlafen** und die Richtung der **Digital Crown** (AirPods Max) gibt es für die AirPods, die sie melden.
+Unter Linux muss sich BlueZ dafür einmal als Apple-Gerät melden, siehe [Einrichtung](#bluez-einmal-als-apple-gerät-melden).
 
 <br>
 
-## Deine AirPods. Ganz nach dir.
+## Pod raus, Musik pausiert
 
-Was du am Mac in den Einstellungen deiner AirPods findest, schreibt MyPods direkt in die AirPods, für die Modelle, die es melden: **Drückgeschwindigkeit**, **Dauer für Drücken und Halten**, **Lautstärke durch Streichen** samt Streichlänge, **Tonlautstärke**, **personalisierte Lautstärke**, **Stummschaltung und Anruf beenden** und das **Mikrofon**: automatisch, immer links oder immer rechts.
-
-Gib deinen AirPods einen neuen **Namen**. Er wird in den AirPods gespeichert, also sieht ihn jedes gekoppelte Gerät. Modellnummer, Seriennummer und Firmware stehen im Abschnitt **Gerät**, wie in der Info-Ansicht am Mac.
-
-Mehrere Kopfhörer verbunden? Die zuletzt verbundenen sind die aktiven. Ein Klick in der Seitenleiste wählt andere, und Tray und Popup ziehen mit.
+Nimmst du einen AirPod heraus, pausiert die Wiedergabe, setzt du ihn wieder ein, läuft sie weiter (über MPRIS). Der Schalter dafür ist in den AirPods gespeichert. Pausieren beim Einschlafen und die Drehrichtung der Digital Crown (AirPods Max) gibt es bei den Modellen, die sie melden.
 
 <br>
 
-## Klingt nach dir.
+## Die Einstellungen deiner AirPods
+
+Diese Einstellungen schreibt MyPods in die AirPods, sofern das Modell sie meldet: Drückgeschwindigkeit, Dauer für Drücken und Halten, Lautstärke durch Streichen samt Streichlänge, Tonlautstärke, personalisierte Lautstärke, Stummschaltung und Anruf beenden, und welches Mikrofon spricht (automatisch, immer links, immer rechts).
+
+Einen neuen Namen speichert MyPods in den AirPods selbst, jedes gekoppelte Gerät sieht ihn also. Modellnummer, Seriennummer und Firmware stehen im Abschnitt „Gerät“.
+
+Sind mehrere Kopfhörer verbunden, steuert MyPods die zuletzt verbundenen. Andere wählst du in der Seitenleiste; Tray und Popup richten sich danach.
+
+<br>
+
+## Klingt nach dir
 
 <div align="center">
 
@@ -103,48 +103,48 @@ Mehrere Kopfhörer verbunden? Die zuletzt verbundenen sind die aktiven. Ein Klic
 
 </div>
 
-Die Presets aus Apple Music sind da: Akustik, Bass Booster, Klassik, Rock, Vocal Booster und mehr, sauber vor die AirPods gelegt, ohne Übersteuern. Oder du stellst zehn Bänder selbst ein (**Manuell**). Die Kurve zeigt dir, was mit deinem Klang passiert.
+Der Equalizer hat die Presets aus Apple Music (Akustik, Bass Booster, Klassik, Rock, Vocal Booster und so weiter) oder zehn Bänder zum Selbsteinstellen („Manuell“). Er übersteuert nicht, und die Kurve darunter zeigt, wie er den Frequenzgang ändert. Dazu kommen:
 
-- **Klangfarbe:** ein Regler macht alles wärmer oder heller, Bass runter und Höhen rauf (oder umgekehrt), um bis zu 6 dB, 1 kHz bleibt.
-- **Kopfhörerkorrektur:** gemessene [AutoEQ](https://github.com/jaakkopasanen/AutoEq)-Filter bringen das Modell auf das Harman-Ziel, für AirPods 1–4, Pro, Pro 2, Max und die meisten Beats (noch nicht Pro 3 oder Max 2, die hat noch niemand gemessen).
-- **Deine eigene Korrektur:** eine `ParametricEQ.txt` von AutoEQ oder Equalizer APO (Einstellung `eqFile`) ersetzt die eingebaute, für deine eigene Messung, ein anderes Ziel oder Modelle, die noch niemand gemessen hat.
-- **Crossfeed** (im Stil von bs2b) für Stereomusik ohne 3D-Audio: Jedes Ohr hört ein wenig vom Bass des anderen Kanals, wie bei Lautsprechern. Mono bleibt unberührt.
-- **Gehörrichtige Lautstärke** (ISO 226): Je leiser du hörst, desto mehr Bass kommt zurück, live mit der Lautstärke.
-- **Hörprofil:** ein Audiogramm pro Ohr (sechs Schwellen von 250 Hz bis 8 kHz) wird zu einem eigenen EQ für jedes Ohr (Half-Gain-Regel, höchstens 20 dB). Wie Apples Kopfhöreranpassungen.
-- **Ohne Effekte vergleichen (A/B):** schaltet jeden Effekt ab, behält aber die Vorverstärkung, damit beide Seiten gleich laut spielen und lauter nie als besser durchgeht.
-- **Limiter mit Vorausschau** am Ende der Kette (mit `swh-plugins`): 3D-Audio spielt damit 7 dB lauter, und Kopfdrehungen über 45° übersteuern nicht mehr (gemessen: −1,0 dBFS Spitze, wo die Kette ohne ihn +0,9 dBFS erreichte).
-- **Hörgerät:** derselbe Schalter wie am iPhone, sobald dort der Hörtest eingerichtet ist.
-
-<br>
-
-## Klang, der dich umgibt.
-
-**3D-Audio**: Aus, Fest oder **Kopfbewegung folgen**. Eine PipeWire-Filterkette mit HRTF (libmysofa) setzt den Klang in den Raum, so entzerrt, dass zentrierter Klang neutral bleibt (innerhalb von 0,75 dB von 31 Hz bis 8 kHz, gemessen). Die Kopfhaltung kommt direkt aus den AirPods.
-
-Für Filme gibt es **Surround (7.1)**: Die Kette nimmt 5.1 und 7.1 an und stellt sieben virtuelle Lautsprecher auf (ITU-Anordnung, Seiten bei 90°, hinten bei 135°), alle mit Kopfverfolgung; der LFE geht auf beide Ohren. Stereo-Player mischt PipeWire dann hoch. So wie Apples 3D-Audio für Dolby Atmos.
+- Klangfarbe: ein Regler macht alles wärmer oder heller, Bass runter und Höhen rauf (oder umgekehrt), um bis zu 6 dB, 1 kHz bleibt.
+- Kopfhörerkorrektur: gemessene [AutoEQ](https://github.com/jaakkopasanen/AutoEq)-Filter bringen das Modell auf das Harman-Ziel, für AirPods 1–4, Pro, Pro 2, Max und die meisten Beats (noch nicht Pro 3 oder Max 2, die hat noch niemand gemessen).
+- Eine eigene Korrektur: eine `ParametricEQ.txt` von AutoEQ oder Equalizer APO (Einstellung `eqFile`) ersetzt die eingebaute, für deine eigene Messung, ein anderes Ziel oder Modelle, die noch niemand gemessen hat.
+- Crossfeed (im Stil von bs2b) für Stereomusik ohne 3D-Audio: Jedes Ohr hört ein wenig vom Bass des anderen Kanals, wie bei Lautsprechern. Mono bleibt unberührt.
+- Gehörrichtige Lautstärke (ISO 226): Je leiser du hörst, desto mehr Bass kommt zurück, live mit der Lautstärke.
+- Hörprofil: ein Audiogramm pro Ohr (sechs Schwellen von 250 Hz bis 8 kHz) wird zu einem eigenen EQ für jedes Ohr (Half-Gain-Regel, höchstens 20 dB). Das entspricht Apples Kopfhöreranpassungen.
+- Ohne Effekte vergleichen (A/B) schaltet jeden Effekt ab, behält aber die Vorverstärkung, damit beide Seiten gleich laut spielen und lauter nie als besser durchgeht.
+- Ein Limiter mit Vorausschau am Ende der Kette (mit `swh-plugins`): 3D-Audio spielt damit 7 dB lauter, und Kopfdrehungen über 45° übersteuern nicht mehr (gemessen: −1,0 dBFS Spitze, wo die Kette ohne ihn +0,9 dBFS erreichte).
+- Der Hörgerät-Schalter, sobald der Hörtest auf einem iPhone eingerichtet ist.
 
 <br>
 
-## Ehrlich bis zum letzten Bit.
+## 3D-Audio und Surround
 
-Lossless und Hi-Res aus Apple Music? Über Bluetooth gibt es das nicht: AirPods sprechen nur AAC, und das ist verlustbehaftet. Was MyPods stattdessen hat:
+3D-Audio gibt es aus, fest oder mit Kopfverfolgung („Kopfbewegung folgen“). Eine PipeWire-Filterkette mit HRTF (libmysofa) setzt den Klang in den Raum, so entzerrt, dass zentrierter Klang neutral bleibt (innerhalb von 0,75 dB von 31 Hz bis 8 kHz, gemessen). Die Kopfhaltung kommt direkt aus den AirPods.
 
-- **Signalweg** auf der Geräteseite sagt dir, ob das, was spielt, bitgenau ankommt, und wenn nicht, warum.
-- **Hi-Res-Wiedergabe** lässt Kabelkopfhörer und USB-DACs mit der Rate der Quelle spielen, bis 192 kHz.
-- **Höchste Bluetooth-Qualität** stellt AAC auf seine beste variable Bitrate und LDAC auf 990 kbit/s (Details unter [Bluetooth-Klangqualität](#bluetooth-klangqualität)).
-- Die **Codec-Anzeige** verrät, welcher Codec gerade läuft.
+Für Filme gibt es „Surround (7.1)“, das Gegenstück zu Apples 3D-Audio für Dolby Atmos: Die Kette nimmt 5.1 und 7.1 an und stellt sieben virtuelle Lautsprecher auf (ITU-Anordnung, Seiten bei 90°, hinten bei 135°), alle mit Kopfverfolgung; der LFE geht auf beide Ohren. Stereo-Player mischt PipeWire dann hoch.
 
 <br>
 
-## Ein Klick. Und es spielt dort.
+## Was wirklich ankommt
 
-Klick links in der Seitenleiste auf deine Kopfhörer, und sie sind die, die du steuerst, und der Ton spielt dort. Ein kleines Lautsprecher-Symbol zeigt dir, wo gerade gespielt wird. Wechselst du die Ausgabe woanders, in der Taskleiste oder in den Toneinstellungen deines Desktops, zieht MyPods mit.
+Lossless und Hi-Res wie in Apple Music gibt es über Bluetooth nicht: AirPods sprechen nur AAC, und das ist verlustbehaftet. MyPods hat stattdessen:
 
-Im Tray-Popup steht unter **Ausgabe** jede Ausgabe, Lautsprecher, Monitor und Kopfhörer, die aktive mit Haken. Ein Klick, und es spielt dort. Kopfhörer bringen dabei ihre Effekte mit. Kopfhörer an der Buchse eines Monitors markierst du einmal unter *Einstellungen → Kopfhörer an diesen Ausgängen*, denn Monitore verraten niemandem, ob etwas eingesteckt ist. Danach sind sie Kopfhörer wie alle anderen, mit eigenem Equalizer.
+- Den Signalweg auf der Geräteseite. Er sagt dir, ob das, was spielt, bitgenau ankommt, und wenn nicht, warum.
+- Hi-Res-Wiedergabe: Kabelkopfhörer und USB-DACs spielen mit der Rate der Quelle, bis 192 kHz.
+- Höchste Bluetooth-Qualität: stellt AAC auf seine beste variable Bitrate und LDAC auf 990 kbit/s (Details unter [Bluetooth-Klangqualität](#bluetooth-klangqualität)).
+- Eine Anzeige, welcher Codec gerade läuft.
 
 <br>
 
-## Alles in der Menüleiste.
+## Die Ausgabe wechseln
+
+Ein Klick auf Kopfhörer in der Seitenleiste macht sie zu denen, die du steuerst, und schaltet den Ton auf sie. Ein kleines Lautsprecher-Symbol zeigt, wo gerade gespielt wird. Wechselst du die Ausgabe in der Taskleiste oder in den Toneinstellungen des Desktops, zieht MyPods mit.
+
+Im Tray-Popup stehen unter „Ausgabe“ alle Ausgaben, also auch Lautsprecher und Monitor, die aktive mit Haken. Kopfhörer nehmen beim Wechsel ihre Effekte mit. Hängen sie an der Buchse eines Monitors, markierst du sie einmal unter *Einstellungen > Kopfhörer an diesen Ausgängen*, denn Monitore verraten niemandem, ob etwas eingesteckt ist. Danach sind sie Kopfhörer wie alle anderen, mit eigenem Equalizer.
+
+<br>
+
+## Das Tray-Popup
 
 <div align="center">
 
@@ -152,17 +152,17 @@ Im Tray-Popup steht unter **Ausgabe** jede Ausgabe, Lautsprecher, Monitor und Ko
 
 </div>
 
-Ein Klick auf das Tray-Symbol, und direkt unter der Leiste öffnet sich das Popup, wie das AirPods-Modul im Kontrollzentrum: Akku, Geräuschkontrolle, Konversationserkennung, **Hierher holen**, was gerade läuft mit Play, Pause und Skip, die Lautstärke und die Ausgabe. Ein Doppelklick öffnet das ganze Fenster.
+Ein Klick auf das Tray-Symbol öffnet unter der Leiste ein Popup ähnlich dem AirPods-Modul im Kontrollzentrum: Akku, Geräuschkontrolle, Konversationserkennung, „Hierher holen“, was gerade läuft (mit Play, Pause und Skip), die Lautstärke und die Ausgabe. Ein Doppelklick öffnet das Fenster.
 
 <br>
 
-## Dein iPhone spielt mit.
+## Musik vom iPhone
 
-Hörst du mit dem iPhone über seine eigenen Kopfhörer, zeigt und steuert das Tray-Popup, was dort läuft: Titel, Interpret, Cover, Play, Pause und Skip, den Stern aus Apple Music (Favorit) und die Lautstärke des iPhones in seinen 16 Stufen, markiert mit **„Wiedergabe auf <iPhone>“**. Das läuft über den Apple Media Service (BLE), genau wie bei einer Apple Watch. Das Cover kommt aus der iTunes Search API, die dafür Interpret und Titel bekommt. Die Bluetooth-Seite listet deine gekoppelten iPhones und ob sie verbunden sind.
+Hörst du mit dem iPhone über seine eigenen Kopfhörer, zeigt und steuert das Tray-Popup, was dort läuft: Titel, Interpret, Cover, Play, Pause und Skip, den Stern aus Apple Music (Favorit) und die Lautstärke des iPhones in seinen 16 Stufen, markiert mit „Wiedergabe auf <iPhone>“. Das läuft über den Apple Media Service (BLE), den auch eine Apple Watch dafür nutzt. Das Cover kommt aus der iTunes Search API, die dafür Interpret und Titel bekommt. Die Bluetooth-Seite listet deine gekoppelten iPhones und ob sie verbunden sind.
 
 <br>
 
-## Hell. Oder dunkel.
+## Hell oder dunkel
 
 <div align="center">
 
@@ -170,15 +170,15 @@ Hörst du mit dem iPhone über seine eigenen Kopfhörer, zeigt und steuert das T
 
 </div>
 
-MyPods ist aus Glas, wie Liquid Glass: Seitenleiste, Popups und Menüs schweben über dem Inhalt. Hell, dunkel oder automatisch, wie dein System. Das Tray-Symbol passt sich eigens an. Neben jeder Einstellung steht ein (i), das erklärt, was sie tut. Und MyPods spricht Deutsch und Englisch (Qt Linguist).
+Seitenleiste, Popups und Menüs sind aus Glas und liegen über dem Inhalt, im Stil von Apples Liquid Glass. Das Erscheinungsbild ist hell, dunkel oder folgt dem System; für das Tray-Symbol gibt es eine eigene Einstellung. Neben jeder Einstellung erklärt ein (i), was sie tut. Die Oberfläche gibt es auf Deutsch und Englisch (Qt Linguist).
 
-Außerdem dabei: Autostart, ein Steam-Deck- und gamescope-Modus aus MagicPods, und unter *Über* eine **Diagnose** mit den Protokollen, dem Zustand von Equalizer APO (Windows) und deinem iPhone.
+Außerdem gibt es Autostart, einen Modus für Steam Deck und gamescope (aus MagicPods) und unter „Über“ eine Diagnose mit den Protokollen, dem Zustand von Equalizer APO (Windows) und dem des iPhones.
 
 <br>
 
-## Deine Tasten. Deine Regeln.
+## Tastenkürzel
 
-`mypods --action <name>` ändert die verbundenen Kopfhörer über den Daemon und beendet sich, ohne ein Fenster zu öffnen. Leg es in den Kurzbefehl-Einstellungen deines Desktops auf eine Taste (KDE: *Systemeinstellungen → Tastatur → Kurzbefehle → Neu hinzufügen → Befehl*, GNOME: *Einstellungen → Tastatur → Eigene Tastenkombinationen*); das klappt unter X11 und Wayland gleichermaßen.
+`mypods --action <name>` ändert die verbundenen Kopfhörer über den Daemon und beendet sich, ohne ein Fenster zu öffnen. Leg es in den Kurzbefehl-Einstellungen deines Desktops auf eine Taste (KDE: *Systemeinstellungen > Tastatur > Kurzbefehle > Neu hinzufügen > Befehl*, GNOME: *Einstellungen > Tastatur > Eigene Tastenkombinationen*); das klappt unter X11 und Wayland gleichermaßen.
 
 | Aktion | Macht |
 |--------|-------|
@@ -190,21 +190,21 @@ Außerdem dabei: Autostart, ein Steam-Deck- und gamescope-Modus aus MagicPods, u
 | `effects-bypass` | Mit und ohne Effekte vergleichen (A/B) an/aus |
 | `output-next` | Auf der nächsten Ausgabe spielen (Lautsprecher, Monitor, Kopfhörer), mit oder ohne verbundene Kopfhörer |
 
-Läuft der Daemon nicht oder können die Kopfhörer es nicht, endet der Befehl mit Status 1 und einer Meldung. Unter Windows bringt MyPods eigene Kürzel mit, siehe [Auch unter Windows](#auch-unter-windows).
+Läuft der Daemon nicht oder können die Kopfhörer es nicht, endet der Befehl mit Status 1 und einer Meldung. Unter Windows bringt MyPods eigene Kürzel mit, siehe [Windows](#windows).
 
 <br>
 
-## Nicht nur AirPods.
+## Nicht nur AirPods
 
 ### Parrot Zik 2.0
 
-Gesteuert über die eigene RFCOMM-XML-API des Kopfhörers. Einfach koppeln; MyPods erkennt ihn an seiner Service-UUID.
+Gesteuert über die eigene RFCOMM-XML-API des Kopfhörers. Du musst ihn nur koppeln, MyPods erkennt ihn an seiner Service-UUID.
 
 - Akkustand und Ladezustand
-- Geräuschkontrolle: ANC und Straßenmodus, jeweils normal oder maximal. **Aus** gibt es bewusst nicht, denn das schaltet den Zik 2 stumm.
+- Geräuschkontrolle: ANC und Straßenmodus, jeweils normal oder maximal. „Aus“ fehlt mit Absicht, weil der Zik 2 dabei stumm wird.
 - Kopferkennung (automatische Pause)
 - Concert-Hall-Effekt mit Raumgröße (still, Wohnzimmer, Jazzclub, Konzertsaal) und Winkel (30°–180°)
-- Equalizer auf dem DSP des Kopfhörers, mit denselben Presets wie bei den AirPods oder deinen eigenen 5 Bändern (**Eigene**); er bleibt im Kopfhörer
+- Equalizer auf dem DSP des Kopfhörers, mit denselben Presets wie bei den AirPods oder deinen eigenen 5 Bändern („Eigene“); er bleibt im Kopfhörer
 - Smart Audio Tune, ANC bei Anrufen, Sprachansagen, automatische Verbindung, automatisches Ausschalten
 
 ### Samsung Galaxy Buds
@@ -232,11 +232,11 @@ Jedes gekoppelte Gerät mit Freisprechprofil (oder nur A2DP) zeigt seinen Akku, 
 | Bang & Olufsen | Beoplay E8 (1. Generation) | Geräteinfos und Transparenz-Zustand, nur Windows |
 | Allgemein | Jedes Freisprech- (HFP) oder A2DP-Headset, Kabelkopfhörer | Akku (wenn gemeldet), Codec, Effekte auf diesem Computer |
 
-Linux bekommt jede Funktion. Windows bekommt den Teil, der ohne Kerneltreiber geht, siehe [Auch unter Windows](#auch-unter-windows).
+Unter Linux gibt es alle Funktionen, unter Windows den Teil, der ohne Kerneltreiber geht (siehe [Windows](#windows)).
 
 <br>
 
-## So funktioniert's.
+## So funktioniert's
 
 Apple-Kopfhörer sprechen über zwei getrennte Kanäle mit ihrem Gerät, und die meisten Tools nutzen nur einen davon. MyPods nutzt beide.
 
@@ -267,7 +267,7 @@ Apple-Kopfhörer sprechen über zwei getrennte Kanäle mit ihrem Gerät, und die
 
 1. **BLE-Advertisements.** AirPods senden ständig Apple-Herstellerdaten (`0x004C`). Die Proximity-Pairing-Nachricht enthält das Modell, den Deckelzähler, die Bits für im Ohr und im Case, grobe Akku-Nibbles und einen 16 Byte großen, mit AES-128 verschlüsselten Block mit dem genauen Akku. Deshalb erscheint das Popup sofort, noch bevor die AirPods verbunden sind. Unter Linux pausiert der Scan, solange AirPods verbunden sind: AAP liefert dann dasselbe, und die klassische Inquiry des Scans kann A2DP stottern lassen.
 2. **AAP über L2CAP.** Sobald verbunden, öffnet der Daemon einen L2CAP-Socket auf PSM `0x1001`, schickt den Handshake und abonniert die Benachrichtigungen. Ab dann schicken die AirPods Akku, Geräuschkontrolle, Ohrerkennung und mehr von selbst und nehmen Einstellungen an. Schließen die AirPods den Kanal, während die Bluetooth-Verbindung bleibt, öffnet der Daemon ihn wieder (bis zu fünfmal pro Verbindung). AirPods Pro 2 und 3 führen ein paar Einstellungen (Reduzierung lauter Geräusche, angepasste Transparenz) als GATT-Characteristics, die der Daemon über einen zweiten L2CAP-Kanal liest und schreibt (ATT, PSM `0x1F`).
-3. **Schlüssel.** Um *deine* AirPods unter wechselnden BLE-Adressen (RPA) zu erkennen und den Akkublock zu entschlüsseln, braucht MyPods den IRK und den ENC-Schlüssel. Es fragt die AirPods bei jeder Verbindung über AAP danach und speichert sie, wenn sie sich ändern. Ganz ohne iCloud.
+3. **Schlüssel.** Um *deine* AirPods unter wechselnden BLE-Adressen (RPA) zu erkennen und den Akkublock zu entschlüsseln, braucht MyPods den IRK und den ENC-Schlüssel. Es fragt die AirPods bei jeder Verbindung über AAP danach und speichert sie, wenn sie sich ändern. iCloud braucht es dafür nicht.
 4. **Umschalten.** Die AirPods reichen Apples Smart-Routing-Nachrichten zwischen ihren Quellen weiter. MyPods nimmt an diesem Austausch teil und beobachtet MPRIS-Player, um zu entscheiden, wann es übernimmt.
 5. **Effekte.** Equalizer, Kopfhörerkorrektur, Crossfeed, gehörrichtige Lautstärke, Hörprofil und 3D-Audio laufen als PipeWire-Filterketten-Sink (`mypods_fx`) vor den Kopfhörern: eine Vorverstärkung pro Eingangskanal, dann 3D-Audio oder Crossfeed, dann die Filter pro Ohr, dann der Limiter. Die Vorverstärkung nimmt genau so viel weg, wie die Kette anheben kann (aus den summierten Filterkurven berechnet), so übersteuert nichts. Kopfverfolgung und Lautstärke (für die gehörrichtige Lautstärke) ändern die laufende Kette über `pw-cli`. Die Kette läuft mit der Rate des Graphen, mit Hi-Res-Wiedergabe also mit der der Quelle. Startet PipeWire neu, verbindet sich der Daemon wieder und setzt eine neue Kette vor die Kopfhörer, die dann spielen.
 6. **Was auf dem iPhone läuft.** Die Oberfläche spricht direkt mit einem gekoppelten iPhone, über den Apple Media Service (AMS), den BLE-GATT-Dienst, den eine Apple Watch für dasselbe nutzt. Das iPhone schickt Titel, Interpret, Wiedergabezustand und Lautstärke und nimmt Play/Pause, Skip und Lautstärkeschritte an. Unter Linux meldet die Oberfläche bei BlueZ ein LE-Advertisement an, das nach AMS fragt, und das iPhone verbindet sich damit; unter Windows verbindet sich die Oberfläche selbst mit dem iPhone. Der Daemon ist daran nicht beteiligt.
@@ -294,7 +294,7 @@ Eine ausführliche Herleitung der Protokolle und Entscheidungen steht in [docs/P
 
 <br>
 
-## Herunterladen. Installieren. Fertig.
+## Installation
 
 ### AppImage (jede Distribution)
 
@@ -335,7 +335,7 @@ cd MyPods
 
 Der Daemon läuft als systemd-User-Dienst, unabhängig vom Tray-Programm: Ohrerkennung, automatisches Umschalten und die Effekte laufen weiter, wenn du das Tray-Programm beendest, und systemd startet den Daemon nach einem Absturz neu. Sein Protokoll steht in `journalctl --user -u mypods-core` und in `~/.local/state/mypods/core.log`. Ohne systemd (und im AppImage) startet das Tray-Programm den Daemon selbst. Ohne Bluetooth-Adapter beendet sich der Daemon, und systemd (oder das Tray-Programm) startet ihn wieder, bis einer auftaucht; er nimmt den ersten Adapter von BlueZ, der nicht `hci0` heißen muss. Dasselbe passiert, wenn der Adapter verschwindet oder bluetoothd neu startet oder abstürzt.
 
-Zum Aktualisieren führst du das Skript einfach noch einmal aus. Es stoppt die laufende Instanz, installiert neu und startet wieder. Eine Installation von früher, als MyPods noch MagicPods hieß, räumt es dabei gleich mit weg.
+Zum Aktualisieren führst du das Skript noch einmal aus. Es stoppt die laufende Instanz, installiert neu und startet sie wieder. Reste einer Installation aus der Zeit, als MyPods noch MagicPods hieß, entfernt es dabei.
 
 **Deinstallieren**
 
@@ -356,7 +356,7 @@ rm -rf ~/.config/mypods ~/.local/state/mypods   # optional: Einstellungen, gespe
 **Zur Laufzeit**
 
 - Linux mit **BlueZ** und **PipeWire** (mit `pipewire-pulse`, denn der Daemon nutzt libpulse)
-- **Qt 6.9 oder neuer**: `qt6-base`, `qt6-declarative`, `qt6-websockets`, `qt6-svg`
+- Qt 6.9 oder neuer: `qt6-base`, `qt6-declarative`, `qt6-websockets`, `qt6-svg`
 - `libpulse`, `openssl`, `systemd-libs`
 - `libmysofa` (nur für 3D-Audio; die Standard-HRTF liegt unter `/usr/share/libmysofa/default.sofa`)
 - Optional: `swh-plugins` für den Limiter mit Vorausschau (LADSPA `fast_lookahead_limiter_1913.so`, gesucht in `$LADSPA_PATH` oder `/usr/lib/ladspa`). Ohne ihn spielt 3D-Audio 7 dB leiser, um sauber zu bleiben.
@@ -369,7 +369,7 @@ rm -rf ~/.config/mypods ~/.local/state/mypods   # optional: Einstellungen, gespe
 
 **Zum Bauen**
 
-- **Podman**: Der Build läuft in einem Container, auf deinem System wird nichts installiert.
+- Podman. Der Build läuft in einem Container, auf deinem System wird nichts installiert.
 
 Der Container basiert auf Arch Linux, damit die Programme zu einem Arch-basierten System passen (Arch, CachyOS, EndeavourOS, …). Auf anderen Distributionen baust du nativ (siehe [Selbst bauen](#selbst-bauen)).
 
@@ -382,9 +382,9 @@ sudo pacman -S --needed bluez pipewire pipewire-pulse libpulse openssl \
 
 <br>
 
-## Auch unter Windows.
+## Windows
 
-Lade `MyPods-x64.msi` aus dem [neuesten Release](https://github.com/HanreichC/MyPods/releases/latest) und installiere es. Es landet in `C:\Program Files\MyPods`, legt einen Startmenü-Eintrag an und startet MyPods beim Anmelden versteckt im Tray. Die Einstellungen liegen in `%APPDATA%\mypods\config.toml`, die Protokolle in `%LOCALAPPDATA%\MyPods\logs`. Gibt es eine neuere Version, sagt MyPods es dir unter *Über* (abschaltbar unter *Einstellungen → Allgemein → Nach Updates suchen*); das MSI aktualisiert an Ort und Stelle und beendet ein laufendes MyPods vorher.
+Lade `MyPods-x64.msi` aus dem [neuesten Release](https://github.com/HanreichC/MyPods/releases/latest) und installiere es. Es landet in `C:\Program Files\MyPods`, legt einen Startmenü-Eintrag an und startet MyPods beim Anmelden versteckt im Tray. Die Einstellungen liegen in `%APPDATA%\mypods\config.toml`, die Protokolle in `%LOCALAPPDATA%\MyPods\logs`. Gibt es eine neuere Version, steht das unter „Über“ (abschaltbar unter *Einstellungen > Allgemein > Nach Updates suchen*); das MSI aktualisiert an Ort und Stelle und beendet ein laufendes MyPods vorher.
 
 Windows lässt nur Kerneltreiber L2CAP-Kanäle öffnen, und jede AirPods-Einstellung reist über L2CAP (AAP). MyPods bringt keinen Bluetooth-Treiber mit, also macht es unter Windows, was ohne Treiber geht:
 
@@ -404,9 +404,9 @@ Windows lässt nur Kerneltreiber L2CAP-Kanäle öffnen, und jede AirPods-Einstel
 | Akku in den Bluetooth-Einstellungen des Systems | Nein, Windows nimmt keine Werte von Anwendungen |
 | Automatisches Umschalten mit dem iPhone („Hierher holen“) | Nein, braucht AAP |
 | Equalizer, Kopfhörerkorrektur, Hörprofil, gehörrichtige Lautstärke, Crossfeed | Ja, für Bluetooth- und Kabelkopfhörer, über die Engine von Equalizer APO, die das MSI mitbringt und auf die Kopfhörerausgänge legt. Kopfhörer, die später dazukommen, fragen einmal nach Administratorrechten. Ein selbst installiertes Equalizer APO wird so genutzt, wie es ist. |
-| Kopfhörer an der Buchse eines Monitors | Ja, einmal markiert unter *Einstellungen → Kopfhörer an diesen Ausgängen*: Monitore sagen Windows nicht, ob etwas eingesteckt ist |
+| Kopfhörer an der Buchse eines Monitors | Ja, einmal markiert unter *Einstellungen > Kopfhörer an diesen Ausgängen*: Monitore sagen Windows nicht, ob etwas eingesteckt ist |
 | Ausgabe wählen (Seitenleiste, *Ausgabe* im Tray-Popup) | Ja, die Standardausgabe von Windows für Musik, Anrufe und Systemklänge |
-| Tastenkürzel | Ja, unter *Einstellungen → Allgemein*: Strg+Alt+Umschalt+N Geräuschkontrolle, +O nächste Ausgabe, +H Hierher holen |
+| Tastenkürzel | Ja, unter *Einstellungen > Allgemein*: Strg+Alt+Umschalt+N Geräuschkontrolle, +O nächste Ausgabe, +H Hierher holen |
 | 3D-Audio | Nein, bisher nur Linux |
 | Signalweg, Hi-Res-Wiedergabe, höchste Bluetooth-Qualität | Nein, die Audio-Engine von Windows wählt das Format selbst |
 | Codec-Anzeige und -Wechsel | Nein, Windows legt beides nicht offen |
@@ -415,9 +415,9 @@ Windows lässt nur Kerneltreiber L2CAP-Kanäle öffnen, und jede AirPods-Einstel
 
 <br>
 
-## Einmal einrichten. Nahtlos wechseln.
+## BlueZ einmal als Apple-Gerät melden
 
-Damit dein iPhone und dieser Computer die AirPods untereinander weiterreichen, muss sich BlueZ als Apple-Gerät melden. Sonst beziehen iPhone und AirPods den Computer nicht in die Übergabe ein. Alles andere funktioniert auch ohne diesen Schritt.
+Damit iPhone und Computer die AirPods untereinander weiterreichen, muss sich BlueZ als Apple-Gerät melden. Sonst beziehen iPhone und AirPods den Computer nicht in die Übergabe ein. Alles andere funktioniert auch ohne diesen Schritt.
 
 ```bash
 sudo sed -i '/^\[General\]/a DeviceID = bluetooth:004C:0000:0000' /etc/bluetooth/main.conf
@@ -431,7 +431,7 @@ Verbinde die AirPods danach einmal neu. `install.sh` erinnert dich, wenn die Zei
 
 <br>
 
-## So bedienst du MyPods.
+## Bedienung
 
 1. **Koppel deine Kopfhörer** wie gewohnt mit dem System. Bei AirPods hältst du die Taste am Case, bis das Licht weiß blinkt, und koppelst dann über die Bluetooth-Einstellungen deines Desktops oder `bluetoothctl`.
 2. **Starte MyPods** aus dem Startmenü (beim Anmelden startet es auch von selbst). Die Oberfläche startet den Daemon selbst.
@@ -451,7 +451,7 @@ Startest du `mypods` ein zweites Mal, holt es das bestehende Fenster nach vorn, 
 
 <br>
 
-## Feinschliff in der config.toml.
+## Konfiguration
 
 Der Daemon speichert die Einstellungen als TOML:
 
@@ -463,7 +463,7 @@ Das meiste stellst du in der Oberfläche ein. Globale Optionen stehen in der Tab
 
 | Schlüssel | Standard | Bedeutung |
 |-----------|----------|-----------|
-| `animation` | `true` | Zeigt das Deckel-Popup. Der BLE-Scan dahinter läuft nur, solange AirPods gekoppelt sind und keine verbunden ist (unter Windows auch verbunden, die Advertisements sind alles, was es hat). Automatisches Umschalten nutzt denselben Scan, um zu wissen, ob du die AirPods trägst; mit „Automatisch“ läuft er also auch weiter, wenn das Popup aus ist — siehe [Wenn's hakt](#wenns-hakt). |
+| `animation` | `true` | Zeigt das Deckel-Popup. Der BLE-Scan dahinter läuft nur, solange AirPods gekoppelt sind und keine verbunden ist (unter Windows auch verbunden, die Advertisements sind alles, was es hat). Automatisches Umschalten nutzt denselben Scan, um zu wissen, ob du die AirPods trägst; mit „Automatisch“ läuft er also auch weiter, wenn das Popup aus ist (siehe [Wenn's hakt](#wenns-hakt)). |
 | `logLevel` | Info | Wie ausführlich der Daemon protokolliert (Debug-Builds protokollieren immer auf Debug-Stufe). |
 | `hiRes` | `false` | Hi-Res-Wiedergabe (Einstellungen): die PipeWire-Drop-ins unter [Bluetooth-Klangqualität](#bluetooth-klangqualität). Nur Linux. |
 | `headphoneOutputs` | leer | Als Kopfhörer markierte Ausgänge (Einstellungen), ein Sink pro Zeile. |
@@ -493,7 +493,7 @@ Beim Deinstallieren bleiben sie liegen; lösch sie von Hand, wenn du die Optione
 
 <br>
 
-## Selbst bauen.
+## Selbst bauen
 
 ### Mit Podman (empfohlen)
 
@@ -538,9 +538,9 @@ Auf einer anderen Distribution als Arch installierst du die Entsprechungen der P
 
 <br>
 
-## Geprüft. Immer wieder.
+## Tests
 
-MyPods folgt einer einfachen Regel: Jedes Stück nicht-triviale Logik hat genau eine ausführbare Prüfung, ganz ohne Test-Framework. Bis auf zwei laufen alle ohne Hardware.
+Jedes Stück nicht-triviale Logik in MyPods hat genau eine ausführbare Prüfung, ohne Test-Framework. Bis auf zwei laufen alle ohne Hardware.
 
 ```bash
 # Alles, was keine Hardware braucht, in einem Rutsch (die CI führt es vor dem AppImage-Build aus)
@@ -585,7 +585,7 @@ python3 tools/check_new_pairing.py AA:BB:CC:DD:EE:FF
 
 ### Mitschnitte von echter Hardware
 
-[tools/sniff.py](tools/sniff.py) zeichnet Apple-BLE-Advertisements über BlueZ und D-Bus auf und dekodiert sie. Ganz ohne root.
+[tools/sniff.py](tools/sniff.py) zeichnet Apple-BLE-Advertisements über BlueZ und D-Bus auf und dekodiert sie, ohne root.
 
 ```bash
 python3 tools/sniff.py                                         # live ansehen
@@ -599,9 +599,9 @@ AirPods Max haben kein Lade-Case. Bei ihnen ist der Popup-Auslöser das obere Ni
 
 <br>
 
-## Für Entwickler: die API.
+## WebSocket-API
 
-Oberfläche und Daemon sind getrennte Prozesse, die über einen WebSocket auf Port `2020` JSON sprechen. So kannst du eigene Oberflächen, Skripte oder Integrationen schreiben.
+Oberfläche und Daemon sind getrennte Prozesse, die über einen WebSocket auf Port `2020` JSON sprechen. Darüber lassen sich eigene Oberflächen, Skripte oder Integrationen anbinden.
 
 ```bash
 # Beispiel mit websocat
@@ -614,28 +614,28 @@ Die vollständige Referenz mit Beispielen für Anfragen und Antworten steht in [
 
 <br>
 
-## Was (noch) nicht geht.
+## Was (noch) nicht geht
 
-- **Allgemeine HRTF.** 3D-Audio nutzt die allgemeine KEMAR-HRTF aus libmysofa. Apple personalisiert sie aus einem Scan deiner Ohren. Eine persönliche SOFA-Datei lässt sich pro Gerät setzen (`sofa`, siehe [Konfiguration](#feinschliff-in-der-configtoml)). Unter 250 Hz umgeht der Bass die HRTF, deren unteres Ende unbrauchbar ist. 3D-Audio spielt mit Limiter 3 dB leiser, ohne ihn etwa 10 dB (dann kann sehr lautes Material noch übersteuern, wenn du den Kopf mehr als 45° vom Bildschirm wegdrehst); dreh die Kopfhörer zum Ausgleich lauter. Die 3 dB sind eine Abwägung: Sehr laute Master bringen den Limiter zum Arbeiten. 7.1 bekommt 3 dB mehr, und seine Center-, Seiten- und hinteren Lautsprecher nutzen die klangliche Korrektur des vorderen Paars.
-- **Gehörrichtige Lautstärke und Hörprofil sind nicht kalibriert.** Welcher Hörpegel einer Lautstärke entspricht, hängt von den Kopfhörern ab (`loudnessReference`, siehe [Konfiguration](#feinschliff-in-der-configtoml)). Das Hörprofil nutzt die Half-Gain-Regel, keine Anpassformel wie NAL-NL2, und hat keinen eingebauten Hörtest: Ein unkalibrierter Tontest kann kein dB HL liefern. Trag ein Audiogramm von einer Hörakustikerin, einem Hörakustiker oder aus einer Hörtest-App ein.
-- **Kalibrierung der Kopfverfolgung.** Die Auswertung des Kopfverfolgungs-Streams ist eine Heuristik aus LibrePods und noch nicht an echter Hardware kalibriert.
-- **Keine Übernahme für Ton ohne MPRIS.** Spiele und Systemklänge lösen das automatische Umschalten bewusst nicht aus, wie am Mac.
-- **Die Übergabe mit dem iPhone** braucht die Apple-DeviceID in BlueZ (siehe [Einrichtung](#einmal-einrichten-nahtlos-wechseln)).
-- **Nicht umgesetzt:** Herzfrequenz (AirPods Pro 3), Wo ist? und der Case-Lautsprecher. Diese Teile von Apples Protokoll sind öffentlich nicht entschlüsselt. Kopfgesten (Nicken oder Schütteln, um einen Anruf anzunehmen) auch nicht: Die AirPods liefern nur die Kopfbewegung, das Telefon deutet sie, und ein Linux-Desktop hat keinen Anruf anzunehmen.
-- **Einstellungen der AirPods Pro 2/3 über ATT** (Reduzierung lauter Geräusche, angepasste Transparenz) folgen LibrePods und sind nicht an Hardware geprüft, auch nicht die Wertebereiche der Transparenz-Regler. Der Hörgerät-Schalter braucht den Hörtest von einem iPhone; ohne ihn bleibt er verborgen.
-- **Popup bei Verbindung (Linux).** Der BLE-Scan pausiert, solange AirPods verbunden sind; öffnest du das Case von AirPods, die noch mit diesem Computer verbunden sind, kommt kein Popup. Sind sie getrennt, oder verbindest du sie gerade, kommt es.
-- **Binärkompatibilität.** Was `install.sh` baut, ist für Arch-basierte Systeme.
-- **Platz des Tray-Popups.** Unter Wayland dürfen Apps ihre Fenster nicht selbst platzieren, deshalb ist das Popup eine Layer-Shell-Fläche oben rechts: richtig für eine Leiste oben, falsch für eine unten. Das AppImage ist ohne `layer-shell-qt` gebaut, dort platziert der Compositor das Popup. Unter X11 öffnet es am Mauszeiger, für eine Leiste an jedem Rand.
-- **Die Wiedergabe des iPhones** bietet, was AMS hat: kein Stummschalten, kein Stöbern oder Auswählen von Titeln, kein Weg festzustellen, ob ein Titel schon Favorit ist (der Stern zeigt, was in MyPods geklickt wurde), und die Lautstärke nur in den 16 Stufen des iPhones. AMS schickt kein Cover; es wird über Interpret und Titel gesucht und fehlt bei Titeln, die der iTunes-Katalog nicht kennt. Die Musik des iPhones erscheint, wenn am Computer nichts spielt oder nichts geladen ist. Unter Linux ist sie gegen einen Ersatz für bluetoothd getestet, noch nicht mit einem echten iPhone.
-- **Doppelklick im Tray** sind zwei Klicks innerhalb des Doppelklick-Intervalls des Systems, denn das Tray-Protokoll von KDE (StatusNotifierItem) kennt keinen. Das Popup öffnet sich beim ersten Klick und macht beim zweiten dem Fenster Platz.
-- **Restlaufzeit** ist eine grobe Schätzung: eine Gerade seit dem letzten Laden, frühestens nach 20 Minuten und 3 % Verbrauch. Akkus fallen gegen Ende schneller, und Werte in 10-%-Schritten (AirPods ohne AAP, unter Windows) lassen sie springen.
+- Allgemeine HRTF. 3D-Audio nutzt die allgemeine KEMAR-HRTF aus libmysofa. Apple personalisiert sie aus einem Scan deiner Ohren. Eine persönliche SOFA-Datei lässt sich pro Gerät setzen (`sofa`, siehe [Konfiguration](#konfiguration)). Unter 250 Hz umgeht der Bass die HRTF, deren unteres Ende unbrauchbar ist. 3D-Audio spielt mit Limiter 3 dB leiser, ohne ihn etwa 10 dB (dann kann sehr lautes Material noch übersteuern, wenn du den Kopf mehr als 45° vom Bildschirm wegdrehst); dreh die Kopfhörer zum Ausgleich lauter. Die 3 dB sind eine Abwägung: Sehr laute Master bringen den Limiter zum Arbeiten. 7.1 bekommt 3 dB mehr, und seine Center-, Seiten- und hinteren Lautsprecher nutzen die klangliche Korrektur des vorderen Paars.
+- Gehörrichtige Lautstärke und Hörprofil sind nicht kalibriert. Welcher Hörpegel einer Lautstärke entspricht, hängt von den Kopfhörern ab (`loudnessReference`, siehe [Konfiguration](#konfiguration)). Das Hörprofil nutzt die Half-Gain-Regel, keine Anpassformel wie NAL-NL2, und hat keinen eingebauten Hörtest: Ein unkalibrierter Tontest kann kein dB HL liefern. Trag ein Audiogramm von einer Hörakustikerin, einem Hörakustiker oder aus einer Hörtest-App ein.
+- Kalibrierung der Kopfverfolgung. Die Auswertung des Kopfverfolgungs-Streams ist eine Heuristik aus LibrePods und noch nicht an echter Hardware kalibriert.
+- Keine Übernahme für Ton ohne MPRIS. Spiele und Systemklänge lösen das automatische Umschalten bewusst nicht aus, wie am Mac.
+- Die Übergabe mit dem iPhone braucht die Apple-DeviceID in BlueZ (siehe [Einrichtung](#bluez-einmal-als-apple-gerät-melden)).
+- Nicht umgesetzt: Herzfrequenz (AirPods Pro 3), Wo ist? und der Case-Lautsprecher. Diese Teile von Apples Protokoll sind öffentlich nicht entschlüsselt. Kopfgesten (Nicken oder Schütteln, um einen Anruf anzunehmen) auch nicht: Die AirPods liefern nur die Kopfbewegung, das Telefon deutet sie, und ein Linux-Desktop hat keinen Anruf anzunehmen.
+- Einstellungen der AirPods Pro 2/3 über ATT (Reduzierung lauter Geräusche, angepasste Transparenz) folgen LibrePods und sind nicht an Hardware geprüft, auch nicht die Wertebereiche der Transparenz-Regler. Der Hörgerät-Schalter braucht den Hörtest von einem iPhone; ohne ihn bleibt er verborgen.
+- Popup bei Verbindung (Linux). Der BLE-Scan pausiert, solange AirPods verbunden sind; öffnest du das Case von AirPods, die noch mit diesem Computer verbunden sind, kommt kein Popup. Sind sie getrennt, oder verbindest du sie gerade, kommt es.
+- Binärkompatibilität. Was `install.sh` baut, ist für Arch-basierte Systeme.
+- Platz des Tray-Popups. Unter Wayland dürfen Apps ihre Fenster nicht selbst platzieren, deshalb ist das Popup eine Layer-Shell-Fläche oben rechts: richtig für eine Leiste oben, falsch für eine unten. Das AppImage ist ohne `layer-shell-qt` gebaut, dort platziert der Compositor das Popup. Unter X11 öffnet es am Mauszeiger, für eine Leiste an jedem Rand.
+- Die Wiedergabe des iPhones bietet, was AMS hat: kein Stummschalten, kein Stöbern oder Auswählen von Titeln, kein Weg festzustellen, ob ein Titel schon Favorit ist (der Stern zeigt, was in MyPods geklickt wurde), und die Lautstärke nur in den 16 Stufen des iPhones. AMS schickt kein Cover; es wird über Interpret und Titel gesucht und fehlt bei Titeln, die der iTunes-Katalog nicht kennt. Die Musik des iPhones erscheint, wenn am Computer nichts spielt oder nichts geladen ist. Unter Linux ist sie gegen einen Ersatz für bluetoothd getestet, noch nicht mit einem echten iPhone.
+- Doppelklick im Tray sind zwei Klicks innerhalb des Doppelklick-Intervalls des Systems, denn das Tray-Protokoll von KDE (StatusNotifierItem) kennt keinen. Das Popup öffnet sich beim ersten Klick und macht beim zweiten dem Fenster Platz.
+- Restlaufzeit ist eine grobe Schätzung: eine Gerade seit dem letzten Laden, frühestens nach 20 Minuten und 3 % Verbrauch. Akkus fallen gegen Ende schneller, und Werte in 10-%-Schritten (AirPods ohne AAP, unter Windows) lassen sie springen.
 
 <br>
 
-## Wenn's hakt.
+## Wenn's hakt
 
 **Wo sind die Protokolle?**
-Der Daemon schreibt `core.log`, die Oberfläche `ui.log`, in `~/.local/state/mypods` (Linux) oder `%LOCALAPPDATA%\MyPods\logs` (Windows); *Über → Diagnose → Protokolle* öffnet den Ordner. Über 1 MB wandert eine Datei beim nächsten Start nach `.1`. Die Diagnose sagt auch, ob Equalizer APO da ist (Windows) und ob das gekoppelte iPhone erreichbar ist.
+Der Daemon schreibt `core.log`, die Oberfläche `ui.log`, in `~/.local/state/mypods` (Linux) oder `%LOCALAPPDATA%\MyPods\logs` (Windows); *Über > Diagnose > Protokolle* öffnet den Ordner. Über 1 MB wandert eine Datei beim nächsten Start nach `.1`. Die Diagnose sagt auch, ob Equalizer APO da ist (Windows) und ob das gekoppelte iPhone erreichbar ist.
 
 **Das Popup erscheint nicht.**
 Prüf, ob die Einstellung `animation` an ist und Bluetooth läuft. Starte `python3 tools/sniff.py` und öffne das Case; zeigt sich nichts, empfängt der Adapter die Advertisements nicht. Das Popup braucht auch die Schlüssel IRK/ENC, die geholt werden, wenn sich die AirPods mit MyPods verbinden. Unter Linux gibt es kein Popup, solange die AirPods verbunden sind (siehe [Was (noch) nicht geht](#was-noch-nicht-geht)).
@@ -662,7 +662,7 @@ Vielleicht belegt etwas anderes Port 2020 auf `127.0.0.1`, oder ein alter Daemon
 Jeder Build hat eine Version, `MAJOR.MINOR.<Commits seit MAJOR.MINOR gesetzt wurde>` (etwa `1.0.5`), dieselbe auf der Über-Seite, im MSI, im Arch-Paket und im Release-Titel. „MyPods Core“ ist der Daemon, der tatsächlich läuft. Weicht er von der App ab, läuft noch ein Daemon einer anderen Installation, typischerweise ein alter User-Dienst `mypods-core`: `systemctl --user cat mypods-core` zeigt, welches Programm er startet; starte ihn neu oder entferne die alte Kopie.
 
 **Die Musik des iPhones erscheint nicht im Tray-Popup.**
-Das iPhone muss mit diesem Computer gekoppelt sein und etwas spielen. Unter Linux zeigt `journalctl --user -b | grep iPhone` „no LE advertisement“, wenn der Adapter nicht werben kann, und `bluetoothctl info <iPhone-Adresse>` sollte den Dienst `89d3502b-0f36-433a-8ef4-c502ad55f8dc` listen, solange das iPhone in der Nähe ist. Taucht er nie auf, hat die Kopplung keine LE-Schlüssel geliefert (manche Realtek-Adapter und USB-Dongles): Entferne das iPhone auf beiden Seiten und koppel es neu, vom Computer aus. Unter Windows erscheint das iPhone in *Einstellungen → Bluetooth und Geräte*; dort zu koppeln genügt. Findet MyPods es trotzdem nicht, fragt es das iPhone direkt, auch wenn der Bluetooth-Cache von Windows den Medien-Dienst vergessen hat.
+Das iPhone muss mit diesem Computer gekoppelt sein und etwas spielen. Unter Linux zeigt `journalctl --user -b | grep iPhone` „no LE advertisement“, wenn der Adapter nicht werben kann, und `bluetoothctl info <iPhone-Adresse>` sollte den Dienst `89d3502b-0f36-433a-8ef4-c502ad55f8dc` listen, solange das iPhone in der Nähe ist. Taucht er nie auf, hat die Kopplung keine LE-Schlüssel geliefert (manche Realtek-Adapter und USB-Dongles): Entferne das iPhone auf beiden Seiten und koppel es neu, vom Computer aus. Unter Windows erscheint das iPhone in *Einstellungen > Bluetooth und Geräte*; dort zu koppeln genügt. Findet MyPods es trotzdem nicht, fragt es das iPhone direkt, auch wenn der Bluetooth-Cache von Windows den Medien-Dienst vergessen hat.
 
 **3D-Audio hat keine Wirkung.**
 Prüf, ob `/usr/share/libmysofa/default.sofa` existiert (Paket `libmysofa`) und ob die Anwendungen auf den Sink `mypods_fx` spielen.
@@ -672,7 +672,7 @@ Der Graph übernimmt die Rate des ersten Streams, der startet, während nichts s
 
 <br>
 
-## Sicherheit und Datenschutz.
+## Sicherheit und Datenschutz
 
 - Die WebSocket-API des Daemons hat **keine Authentifizierung**. Sie lauscht nur auf `127.0.0.1:2020`, andere Rechner erreichen sie also nicht, aber jeder lokale Benutzer und Prozess. Sie lehnt Verbindungen mit einem `Origin`-Header ab; das hält Webseiten in deinem Browser davon ab, darüber Einstellungen zu ändern. Die Schlüssel der AirPods (`irk`, `enc`) verlassen den Daemon nie über die API: Antworten auf Einstellungen und Änderungsmeldungen lassen sie weg.
 - Die Schlüssel IRK und ENC der AirPods stehen im Klartext in `~/.config/mypods/config.toml`. Der Daemon schreibt die Datei mit Modus `0600` und ersetzt sie atomar, ein Absturz hinterlässt sie also nie halb geschrieben. Lässt sie sich nicht lesen, wird sie nach `config.toml.broken` verschoben, und MyPods startet mit den Standardwerten. Die Protokolle enthalten die Schlüssel nur auf der Trace-Stufe (`logLevel = 0`); teile sie dann nicht.
@@ -681,9 +681,9 @@ Der Graph übernimmt die Rate des ersten Streams, der startet, während nichts s
 
 <br>
 
-## Herkunft und Lizenz.
+## Herkunft und Lizenz
 
-MyPods baut auf bestehender Open-Source-Arbeit auf. Der Großteil des Codes stammt aus diesen GPL-3.0-Projekten, lokal kopiert und angepasst. Danke an alle, die das möglich machen:
+MyPods baut auf bestehender Open-Source-Arbeit auf. Der Großteil des Codes stammt aus diesen GPL-3.0-Projekten, lokal kopiert und angepasst:
 
 - [MagicPodsCore](https://github.com/steam3d/MagicPodsCore) von Aleksandr Maslov und Andrei Litvintsev: der Daemon, der AAP-Stack, die BLE-Dekodierung, das Geräte- und Fähigkeitenmodell, die WebSocket-API
 - [MagicPodsLinux](https://github.com/steam3d/MagicPodsLinux) von Aleksandr Maslov: die Qt/QML-Oberfläche, die Popup-Animation, die Sprites und der Tray
