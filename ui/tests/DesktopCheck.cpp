@@ -15,6 +15,15 @@ int main()
     // a literal percent is %% (field codes start with %)
     assert(desktopExecArgument("/opt/100%/app") == R"("/opt/100%%/app")");
 
+    // the Apple DeviceID: under [General], uncommented, Apple's vendor
+    assert(hasAppleDeviceId("[General]\nName = laptop\nDeviceID = bluetooth:004C:0000:0000\n"));
+    assert(hasAppleDeviceId("[General]\n  DeviceID=bluetooth:004c:0000:0000"));
+    assert(!hasAppleDeviceId("[General]\n#DeviceID = bluetooth:004C:0000:0000\n"));       // commented out
+    assert(!hasAppleDeviceId("[General]\nDeviceID = bluetooth:1234:5678:abcd\n"));       // another vendor
+    assert(!hasAppleDeviceId("[Policy]\nDeviceID = bluetooth:004C:0000:0000\n"));        // wrong section
+    assert(!hasAppleDeviceId("[General]\nDeviceIDX = bluetooth:004C:0000:0000\n"));      // another key
+    assert(!hasAppleDeviceId(""));
+
     std::puts("DesktopCheck: OK");
     return 0;
 }

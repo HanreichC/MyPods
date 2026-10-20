@@ -44,13 +44,12 @@ else
     rm -f "$UNITS/mypods-core.service" # no systemd: the UI starts the daemon itself
 fi
 
-grep -qE '^[[:space:]]*DeviceID[[:space:]]*=[[:space:]]*bluetooth:004C' /etc/bluetooth/main.conf 2>/dev/null || cat <<'HINT'
-
-For automatic switching between the iPhone and this computer, BlueZ has to present itself as an
-Apple device (once, needs root):
-  sudo sed -i '/^\[General\]/a DeviceID = bluetooth:004C:0000:0000' /etc/bluetooth/main.conf
-  sudo systemctl restart bluetooth
-HINT
+# Automatic switching with the iPhone needs BlueZ to present itself as an Apple device: once, as root (pkexec asks
+# here in the terminal). Skipped, MyPods offers it again on its device page.
+if ! grep -qE '^[[:space:]]*DeviceID[[:space:]]*=[[:space:]]*bluetooth:004C' /etc/bluetooth/main.conf 2>/dev/null; then
+    echo "Setting up the Apple DeviceID in /etc/bluetooth/main.conf for switching with the iPhone (needs your password)"
+    "$DEST/mypods" --set-up-bluez || echo "Not set up now; MyPods offers it again on its device page."
+fi
 
 setsid -f "$DEST/mypods" >/dev/null 2>&1
 echo "MyPods is installed and running. From now on it starts at login."

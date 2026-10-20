@@ -406,6 +406,24 @@ Components.ScrollPage {
         }
     }
 
+    // Linux: the iPhone handoff needs BlueZ to present itself as an Apple device; one click and the system's password
+    Components.Card {
+        visible: hasInfo && rootPage.autoSwitchData !== null && !desktopManager.appleDeviceId
+
+        MP.FormRow {
+            Layout.fillWidth: true
+            label: qsTrId("battery.apple_device_id")
+            info: qsTrId("battery.apple_device_id.info")
+            iconSource: MP.Theme.asset("icons/icon-link.svg")
+
+            MP.Button {
+                text: qsTrId("battery.apple_device_id.set_up")
+                highlighted: true
+                onClicked: desktopManager.setUpAppleDeviceId()
+            }
+        }
+    }
+
     // Like the Mac's "Moved to iPhone" banner, with the way back
     Components.Card {
         visible: hasInfo && rootPage.autoSwitchData !== null && !(rootPage.autoSwitchData?.owns ?? true)

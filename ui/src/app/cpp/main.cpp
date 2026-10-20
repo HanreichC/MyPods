@@ -145,6 +145,11 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i + 1 < argc; ++i)
         if (qstrcmp(argv[i], "--action") == 0)
             return runAction(argc, argv, QString::fromLocal8Bit(argv[i + 1]));
+    // install.sh: the Apple DeviceID for the iPhone handoff, root through pkexec
+    if (argc > 1 && qstrcmp(argv[1], "--set-up-bluez") == 0) {
+        QCoreApplication app(argc, argv);
+        return DesktopManager::setUpAppleDeviceIdNow();
+    }
 
     ensureEnvDefaults();
     startLogFile();

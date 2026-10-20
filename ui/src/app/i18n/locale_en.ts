@@ -421,6 +421,31 @@ Ctrl+Alt+Shift+H: take the AirPods over from the iPhone
 
 A combination another program already uses stays with that program.</translation>
     </message>
+    <message id="battery.apple_device_id">
+        <location filename="../qml/pages/DevicePage.qml" line="0"/>
+        <source></source>
+        <translation>Set up switching with the iPhone once</translation>
+    </message>
+    <message id="battery.apple_device_id.info">
+        <location filename="../qml/pages/DevicePage.qml" line="0"/>
+        <source></source>
+        <translation>For the iPhone and the AirPods to include this computer in automatic switching, Bluetooth has to present itself as an Apple device. MyPods writes DeviceID = bluetooth:004C:0000:0000 into /etc/bluetooth/main.conf (the old file stays as main.conf.mypods-backup) and restarts Bluetooth. The system asks for your password once, and the headphones reconnect for a moment.</translation>
+    </message>
+    <message id="battery.apple_device_id.set_up">
+        <location filename="../qml/pages/DevicePage.qml" line="0"/>
+        <source></source>
+        <translation>Set Up…</translation>
+    </message>
+    <message id="settings.autostart">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Start at Login</translation>
+    </message>
+    <message id="settings.autostart.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>MyPods starts hidden in the tray at login, so the popup, ear detection and switching are ready right away. MyPods turns this on by itself on its first start.</translation>
+    </message>
     <message id="settings.appearance">
         <location filename="../qml/pages/SettingsPage.qml" line="1"/>
         <source></source>

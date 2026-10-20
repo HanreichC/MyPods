@@ -24,6 +24,25 @@ inline QString desktopExecArgument(const QString &path)
 
 class QNetworkAccessManager;
 
+// BlueZ presents itself as an Apple device when [General] in main.conf has an uncommented DeviceID with Apple's vendor
+// (bluetooth:004C:...). The iPhone and the AirPods leave a computer without it out of their handoff.
+inline bool hasAppleDeviceId(const QString &mainConf)
+{
+    bool general = false;
+    for (QString line : mainConf.split(QLatin1Char('\n'))) {
+        line = line.trimmed();
+        if (line.startsWith(QLatin1Char('[')))
+            general = line == QStringLiteral("[General]");
+        else if (general && line.startsWith(QStringLiteral("DeviceID"))) {
+            const QString value = line.section(QLatin1Char('='), 1).trimmed();
+            if (line.section(QLatin1Char('='), 0, 0).trimmed() == QStringLiteral("DeviceID") &&
+                value.startsWith(QStringLiteral("bluetooth:004C"), Qt::CaseInsensitive))
+                return true;
+        }
+    }
+    return false;
+}
+
 class DesktopManager : public QObject
 {
     Q_OBJECT
@@ -32,6 +51,10 @@ class DesktopManager : public QObject
     Q_PROPERTY(QString updateUrl READ updateUrl NOTIFY updateChanged)
     // the person may not want MyPods to ask GitHub; stored with the language (QSettings)
     Q_PROPERTY(bool checkUpdates READ checkUpdates WRITE setCheckUpdates NOTIFY updateChanged)
+    // Linux: BlueZ presents itself as an Apple device (DeviceID in /etc/bluetooth/main.conf); always true on Windows
+    Q_PROPERTY(bool appleDeviceId READ appleDeviceId NOTIFY appleDeviceIdChanged)
+    // Linux: MyPods starts hidden in the tray at login (~/.config/autostart/app.mypods.desktop)
+    Q_PROPERTY(bool autostart READ autostart WRITE setAutostart NOTIFY autostartChanged)
     // Windows: Ctrl+Alt+Shift+N/O/H anywhere run the actions of `mypods --action` (noise-next, output-next, move-here)
     Q_PROPERTY(bool hotkeys READ hotkeys WRITE setHotkeys NOTIFY hotkeysChanged)
 
@@ -54,9 +77,20 @@ public:
     bool hotkeys() const;
     void setHotkeys(bool on);
 
+    bool appleDeviceId() const;
+    // Writes the DeviceID and restarts bluetoothd, as root through pkexec: the desktop asks for the password
+    Q_INVOKABLE void setUpAppleDeviceId();
+    // The same, blocking, for `mypods --set-up-bluez` (install.sh); pkexec asks in the terminal there. Exit code
+    static int setUpAppleDeviceIdNow();
+
+    bool autostart() const;
+    void setAutostart(bool on);
+
 signals:
     void updateChanged();
     void hotkeysChanged();
+    void appleDeviceIdChanged();
+    void autostartChanged();
 
 private:
     QNetworkAccessManager *m_network = nullptr; // made on the first check; QtNetwork stays out of this header
@@ -65,4 +99,6 @@ private:
     QString desktopFilePath() const;
     void applyHotkeys();
     bool createDesktopFile();
+    // A desktop entry at `path` that starts this MyPods (the AppImage file for an AppImage) with `arguments`
+    bool writeDesktopFile(const QString &path, const QString &arguments);
 };

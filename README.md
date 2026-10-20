@@ -293,7 +293,7 @@ A detailed write-up of the protocols and design decisions is in [docs/PLAN.md](d
 
 ### AppImage (any distribution)
 
-Download `MyPods-x86_64.AppImage` from the [latest release](https://github.com/HanreichC/MyPods/releases/latest), then run `chmod +x MyPods-x86_64.AppImage && ./MyPods-x86_64.AppImage`. Qt is bundled; BlueZ, PipeWire and libmysofa still come from the host. Every push to `main` is a release (`vX.Y.N`, the version the app shows).
+Download `MyPods-x86_64.AppImage` from the [latest release](https://github.com/HanreichC/MyPods/releases/latest), then run `chmod +x MyPods-x86_64.AppImage && ./MyPods-x86_64.AppImage`. Qt is bundled; BlueZ, PipeWire and libmysofa still come from the host. On its first start the AppImage adds itself to the start menu and to autostart. Every push to `main` is a release (`vX.Y.N`, the version the app shows).
 To build it yourself: `podman run --rm -v "$PWD:/workspace:Z" -w /workspace docker.io/library/ubuntu:22.04 ./appimage.sh`
 
 ### Arch package
@@ -412,14 +412,18 @@ On Linux MyPods fetches the AirPods' IRK and ENC keys over AAP. Without AAP it t
 
 ## Set it up once. Switch from then on.
 
-For automatic switching between your iPhone and this computer, BlueZ must identify itself as an Apple device. Otherwise the iPhone and the AirPods leave the computer out of the handoff. Everything else works without this step.
+For automatic switching between your iPhone and this computer, BlueZ must identify itself as an Apple device. Otherwise the iPhone and the AirPods leave the computer out of the handoff. Everything else works without it. This only concerns Linux; on Windows automatic switching isn't available (see [Windows](#windows-too)).
+
+You don't have to edit anything by hand. When AirPods with automatic switching are connected and the setting is missing, the device page shows "Set up switching with the iPhone once" with a Set Up button. One click opens your desktop's usual password prompt. MyPods then writes `DeviceID = bluetooth:004C:0000:0000` under `[General]` in `/etc/bluetooth/main.conf`, comments out any other DeviceID line, keeps the old file as `main.conf.mypods-backup` and restarts Bluetooth, so the headphones reconnect for a moment. `install.sh` asks for it during the install, and `mypods --set-up-bluez` does the same from a terminal.
+
+Without a graphical session (or without polkit), these two commands do it by hand:
 
 ```bash
 sudo sed -i '/^\[General\]/a DeviceID = bluetooth:004C:0000:0000' /etc/bluetooth/main.conf
 sudo systemctl restart bluetooth
 ```
 
-Then reconnect the AirPods once. `install.sh` reminds you if the line is missing.
+MyPods also takes care of starting at login. On its first start it adds an autostart entry that brings it up hidden in the tray, and an AppImage also gets its start menu entry. *Settings > General > Start at Login* turns it off again, and MyPods leaves it off.
 
 > [!TIP]
 > The Apple DeviceID also unlocks features on the AirPods side, such as multipoint handoff behavior.
@@ -438,6 +442,7 @@ Command-line options:
 
 ```bash
 mypods --hidden            # start minimized to the tray (used by autostart)
+mypods --set-up-bluez      # the one-time Apple DeviceID for switching with the iPhone (asks for your password)
 mypodscore --version       # print daemon version
 mypodscore --selftest      # run the built-in byte-level checks, no hardware needed
 ```
@@ -644,7 +649,7 @@ They need an active classic connection (A2DP/HFP), so connect the AirPods first.
 The daemon log says "BlueZ takes no battery levels from MyPods" when BlueZ lacks the battery provider API; older BlueZ versions only offer it with `bluetoothd --experimental`. A headset that already reports its battery over HFP (through PipeWire) keeps that value.
 
 **Automatic switching does not work.**
-Verify the `DeviceID = bluetooth:004C:0000:0000` line in `/etc/bluetooth/main.conf`, restart Bluetooth and reconnect the AirPods. Switching is also skipped while a call is active on the other device, and only MPRIS players trigger it.
+If the device page still offers the one-time setup, run it (see [Setup](#set-it-up-once-switch-from-then-on)). Otherwise check that `/etc/bluetooth/main.conf` has `DeviceID = bluetooth:004C:0000:0000` under `[General]`, restart Bluetooth and reconnect the AirPods. Switching is also skipped while a call is active on the other device, and only MPRIS players trigger it.
 
 **The UI says it cannot reach the daemon.**
 Something else might be using port 2020 on `127.0.0.1`, or an old daemon is still running: `systemctl --user restart mypods-core` (or `pkill -x mypodscore` without the service), then start MyPods again. `journalctl --user -u mypods-core` shows the daemon's log.

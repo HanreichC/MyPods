@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QProcess>
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
@@ -45,9 +46,35 @@ struct HotkeyFilter : QAbstractNativeEventFilter {
 };
 #endif
 
+// Root's part of the Apple DeviceID: other DeviceID lines commented out, Apple's under [General] (made if missing), a
+// copy of the old file beside it, bluetoothd restarted. A fixed script, nothing from outside goes into it.
+static const char *kAppleDeviceIdScript =
+    "set -e; f=/etc/bluetooth/main.conf; mkdir -p /etc/bluetooth; touch \"$f\"; cp \"$f\" \"$f.mypods-backup\"; "
+    "sed -i 's/^[[:space:]]*DeviceID[[:space:]]*=/#&/' \"$f\"; "
+    "if grep -q '^\\[General\\]' \"$f\"; then sed -i '/^\\[General\\]/a DeviceID = bluetooth:004C:0000:0000' \"$f\"; "
+    "else printf '\\n[General]\\nDeviceID = bluetooth:004C:0000:0000\\n' >> \"$f\"; fi; "
+    "systemctl restart bluetooth";
+
+static QString autostartPath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/autostart/app.mypods.desktop");
+}
+
 DesktopManager::DesktopManager(QObject *parent)
     : QObject(parent)
 {
+#ifndef Q_OS_WIN
+    // The first start does what the MSI does on Windows: MyPods comes up hidden in the tray at login, and an AppImage
+    // gets its menu entry. Packages and install.sh bring their own; the switches under Settings > General undo it.
+    QSettings settings;
+    if (!settings.value(QStringLiteral("firstRunDone")).toBool()) {
+        settings.setValue(QStringLiteral("firstRunDone"), true);
+        if (!autostart() && !QFile::exists(QStringLiteral("/etc/xdg/autostart/app.mypods.desktop")))
+            setAutostart(true);
+        if (!qEnvironmentVariableIsEmpty("APPIMAGE") && !isInstalled())
+            install();
+    }
+#endif
 #ifdef Q_OS_WIN
     QTimer::singleShot(30 * 1000, this, &DesktopManager::checkForUpdate);
     auto *daily = new QTimer(this);
@@ -124,6 +151,50 @@ void DesktopManager::checkForUpdate()
 #endif
 }
 
+bool DesktopManager::appleDeviceId() const
+{
+#ifdef Q_OS_WIN
+    return true; // Windows' own Bluetooth stack, nothing to set
+#else
+    QFile conf(QStringLiteral("/etc/bluetooth/main.conf"));
+    return conf.open(QIODevice::ReadOnly | QIODevice::Text) && hasAppleDeviceId(QString::fromUtf8(conf.readAll()));
+#endif
+}
+
+void DesktopManager::setUpAppleDeviceId()
+{
+    auto *process = new QProcess(this);
+    connect(process, &QProcess::finished, this, [this, process](int code) {
+        if (code != 0) // 126: the password dialog was cancelled
+            qWarning("Apple DeviceID not set up (pkexec exit %d): %s", code, qPrintable(process->readAllStandardError()));
+        process->deleteLater();
+        emit appleDeviceIdChanged();
+    });
+    connect(process, &QProcess::errorOccurred, this, [](QProcess::ProcessError) { qWarning("Apple DeviceID: pkexec missing"); });
+    process->start(QStringLiteral("pkexec"), {QStringLiteral("/bin/sh"), QStringLiteral("-c"), QString::fromLatin1(kAppleDeviceIdScript)});
+}
+
+int DesktopManager::setUpAppleDeviceIdNow()
+{
+    return QProcess::execute(QStringLiteral("pkexec"), {QStringLiteral("/bin/sh"), QStringLiteral("-c"), QString::fromLatin1(kAppleDeviceIdScript)});
+}
+
+bool DesktopManager::autostart() const
+{
+    return QFile::exists(autostartPath());
+}
+
+void DesktopManager::setAutostart(bool on)
+{
+    if (on) {
+        QDir().mkpath(QFileInfo(autostartPath()).absolutePath());
+        writeDesktopFile(autostartPath(), QStringLiteral(" --hidden"));
+    } else {
+        QFile::remove(autostartPath());
+    }
+    emit autostartChanged();
+}
+
 bool DesktopManager::hotkeys() const
 {
     return QSettings().value(QStringLiteral("hotkeys"), false).toBool();
@@ -175,6 +246,15 @@ bool DesktopManager::createDesktopFile()
     if (!installIcon())
         qWarning() << "[DesktopManager] Failed to install icon";
 
+    const QString dirPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+                            + QString("/applications");
+    if (!QDir().mkpath(dirPath))
+        return false;
+    return writeDesktopFile(dirPath + "/app.mypods.desktop", QString());
+}
+
+bool DesktopManager::writeDesktopFile(const QString &filePath, const QString &arguments)
+{
     // Use the AppImage file (its runtime sets APPIMAGE; the binary itself lives in a temporary mount)
     // or launcher script path if available (CQtDeployer sets CQT_RUN_FILE),
     // otherwise fall back to the binary itself (dev builds)
@@ -182,14 +262,6 @@ bool DesktopManager::createDesktopFile()
     if (exePath.isEmpty())
         exePath = QCoreApplication::applicationFilePath();
 
-    const QString dirPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
-                            + QString("/applications");
-    qDebug() << dirPath;
-
-    if (!QDir().mkpath(dirPath))
-        return false;
-
-    const QString filePath = dirPath + "/app.mypods.desktop";
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
         return false;
@@ -201,13 +273,13 @@ Type=Application
 Name=MyPods
 Comment=The control center for your Bluetooth headphones
 Comment[de]=Die Kontrollzentrale für deine Bluetooth-Kopfhörer
-Exec=%1
+Exec=%1%3
 Icon=%2
 Terminal=false
 Categories=Utility;
 StartupWMClass=MyPods
 )")
-    .arg(desktopExecArgument(exePath), iconInstallPath());
+    .arg(desktopExecArgument(exePath), iconInstallPath(), arguments);
     return true;
 }
 

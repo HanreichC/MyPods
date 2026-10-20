@@ -93,6 +93,20 @@ Components.ScrollPage {
             }
         }
 
+        // Linux: the autostart entry (on Windows the MSI's)
+        MP.FormRow {
+            visible: Qt.platform.os !== "windows"
+            iconSource: MP.Theme.asset("icons/icon-timer.svg")
+            iconColor: MP.Theme.green
+            label: qsTrId("settings.autostart")
+            info: qsTrId("settings.autostart.info")
+
+            Components.Toggle {
+                checked: desktopManager.autostart
+                onToggled: desktopManager.autostart = checked
+            }
+        }
+
         // Windows has no place to bind a command to a key, so MyPods brings a few (Linux: `mypods --action`, README)
         MP.FormRow {
             visible: Qt.platform.os === "windows"
