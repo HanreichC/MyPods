@@ -14,14 +14,14 @@ ToolButton {
     property string title: ""
     property string info: ""
 
-    implicitWidth: 24
-    implicitHeight: 24
-    padding: 4
+    implicitWidth: MP.Theme.sizeHitMinDesktop
+    implicitHeight: MP.Theme.sizeHitMinDesktop
+    padding: MP.Theme.spaceXs
     display: AbstractButton.IconOnly
-    icon.source: MP.Theme.asset("icons/icon-info.svg")
-    icon.color: MP.Theme.accent
-    icon.width: 16
-    icon.height: 16
+    icon.source: MP.Units.asset("icons/icon-info.svg")
+    icon.color: MP.Theme.accentText
+    icon.width: MP.Theme.sizeIconM
+    icon.height: MP.Theme.sizeIconM
     focusPolicy: Qt.StrongFocus
     Accessible.name: qsTrId("info.about").arg(title)
     Accessible.description: info
@@ -42,21 +42,22 @@ ToolButton {
         bottomPadding: 18
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-        Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0.35 : 0.14) }
+        Overlay.modal: Rectangle { color: MP.Theme.scrim }
+        // Reduce Motion: popupFromScale is 1, a plain fade
         enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150; easing.type: Easing.OutCubic }
-            NumberAnimation { property: "scale"; from: 0.9; to: 1; duration: 280; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: MP.Theme.durationFade; easing.type: MP.Theme.easeStandard }
+            NumberAnimation { property: "scale"; from: MP.Theme.popupFromScale; to: 1; duration: MP.Theme.durationSpring; easing.type: MP.Theme.easeSpring; easing.overshoot: MP.Theme.springOvershoot }
         }
         exit: Transition {
-            NumberAnimation { property: "opacity"; to: 0; duration: 120; easing.type: Easing.InCubic }
-            NumberAnimation { property: "scale"; to: 0.96; duration: 120; easing.type: Easing.InCubic }
+            NumberAnimation { property: "opacity"; to: 0; duration: MP.Theme.durationHover; easing.type: MP.Theme.easeExit }
+            NumberAnimation { property: "scale"; to: MP.Theme.reduceMotion ? 1 : 0.96; duration: MP.Theme.durationHover; easing.type: MP.Theme.easeExit }
         }
 
         // blurs the window's content behind it (the overlay it lies in is not part of that content)
-        background: MP.Glass { blurSource: ApplicationWindow.window?.contentItem ?? null; tint: MP.Theme.dark ? 0.72 : 0.78 }
+        background: MP.Glass { blurSource: ApplicationWindow.window?.contentItem ?? null; textSurface: true; thickness: "thick" }
 
         contentItem: ColumnLayout {
-            spacing: 16
+            spacing: MP.Theme.spaceL
 
             Flickable {
                 Layout.fillWidth: true
@@ -76,9 +77,8 @@ ToolButton {
                     Label {
                         width: parent.width
                         text: root.title
-                        color: MP.Theme.text
-                        font.pixelSize: 15
-                        font.weight: Font.DemiBold
+                        color: MP.Theme.labelPrimary
+                        font: MP.Theme.fontHeadline
                         wrapMode: Text.Wrap
                         Accessible.role: Accessible.Heading
                     }
@@ -86,9 +86,10 @@ ToolButton {
                         width: parent.width
                         text: root.info
                         textFormat: Text.PlainText
-                        color: MP.Theme.secondaryText
-                        font.pixelSize: 13
-                        lineHeight: 1.2
+                        color: MP.Theme.labelSecondary
+                        font: MP.Theme.fontCallout
+                        lineHeight: MP.Theme.lineCallout
+                        lineHeightMode: Text.FixedHeight
                         wrapMode: Text.Wrap
                     }
                 }

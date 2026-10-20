@@ -19,18 +19,19 @@ MP.Card {
     property int    type:    typeInformation
     property string text:    ""
     property list<QtObject> actions
-    readonly property color tint: [MP.Theme.accent, MP.Theme.green, MP.Theme.orange, MP.Theme.red][type]
+    readonly property color tint: [MP.Theme.statusInfo, MP.Theme.statusPositive, MP.Theme.statusWarning, MP.Theme.statusCritical][type]
 
-    verticalPadding: MP.Units.mediumSpacing + 4
+    verticalPadding: MP.Theme.spaceM
     border.width: 1
     border.color: Qt.rgba(tint.r, tint.g, tint.b, 0.5)
 
     RowLayout {
-        spacing: MP.Units.mediumSpacing
+        spacing: MP.Theme.spaceS
 
+        // C-5: a symbol of its own per type, never the colour alone
         Impl.IconImage {
-            sourceSize: Qt.size(22, 22)
-            source: MP.Theme.asset("icons/icon-info.svg")
+            sourceSize: Qt.size(MP.Theme.sizeIconL, MP.Theme.sizeIconL)
+            source: MP.Units.asset("icons/" + ["icon-info.svg", "icon-check.svg", "icon-warning.svg", "icon-close.svg"][root.type])
             color: root.tint
         }
 

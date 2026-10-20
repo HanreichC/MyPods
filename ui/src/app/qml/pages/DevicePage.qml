@@ -118,7 +118,7 @@ Components.ScrollPage {
         Layout.fillWidth: true
         visible: cap !== null
         label: modelData.label
-        iconSource: MP.Theme.asset("icons/" + modelData.icon)
+        iconSource: MP.Units.asset("icons/" + modelData.icon)
         info: modelData.info ?? ""
 
         Components.Toggle {
@@ -138,7 +138,7 @@ Components.ScrollPage {
         Layout.fillWidth: true
         visible: cap !== null
         label: modelData.label
-        iconSource: MP.Theme.asset("icons/" + modelData.icon)
+        iconSource: MP.Units.asset("icons/" + modelData.icon)
         info: modelData.info ?? ""
 
         Components.Picker {
@@ -159,11 +159,11 @@ Components.ScrollPage {
         property string title
         default property alias rows: sectionCard.content
         Layout.fillWidth: true
-        Layout.topMargin: MP.Units.mediumSpacing
-        spacing: MP.Units.mediumSpacing
+        Layout.topMargin: MP.Theme.spaceS
+        spacing: MP.Theme.spaceS
 
         MP.Heading {
-            Layout.leftMargin: MP.Units.largeSpacing
+            Layout.leftMargin: MP.Theme.spaceL
             level: 5
             text: section.title
         }
@@ -291,7 +291,7 @@ Components.ScrollPage {
 
     Components.HelpMessage {
         visible: !hasInfo
-        iconSource: MP.Theme.asset("icons/illustration-connect.svg")
+        iconSource: MP.Units.asset("icons/illustration-connect.svg")
         titleText: qsTrId("battery.connect_headphones.header")
         bodyText: qsTrId("battery.connect_headphones.description")
     }
@@ -300,12 +300,12 @@ Components.ScrollPage {
     // connected, their battery and noise control
     Components.Card {
         visible: hasInfo
-        padding: MP.Units.largeSpacing
-        verticalPadding: MP.Units.largeSpacing
+        padding: MP.Theme.spaceL
+        verticalPadding: MP.Theme.spaceL
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: MP.Units.largeSpacing
+            spacing: MP.Theme.spaceL
 
             Components.DeviceImage {
                 Layout.preferredWidth: 112
@@ -317,12 +317,12 @@ Components.ScrollPage {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                spacing: MP.Units.largeSpacing
+                spacing: MP.Theme.spaceL
 
                 // How they are connected and what goes through, as chips: "USB", "48 kHz · 16 bit" / "AAC · 48 kHz …"
                 Flow {
                     Layout.fillWidth: true
-                    spacing: MP.Units.smallSpacing + 2
+                    spacing: MP.Theme.spaceXs + 2
                     visible: chipRepeater.count > 0
 
                     Repeater {
@@ -335,17 +335,16 @@ Components.ScrollPage {
                         delegate: Rectangle {
                             required property string modelData
                             implicitWidth: chipText.implicitWidth + 20
-                            implicitHeight: 24
+                            implicitHeight: MP.Theme.sizeChip
                             radius: height / 2
-                            color: MP.Theme.tertiaryFill
+                            color: MP.Theme.fillTertiary
 
                             Text {
                                 id: chipText
                                 anchors.centerIn: parent
                                 text: parent.modelData
-                                color: MP.Theme.secondaryText
-                                font.pixelSize: MP.Theme.captionSize
-                                font.weight: Font.Medium
+                                color: MP.Theme.labelPrimary // C-4: on a filled chip
+                                font: MP.Theme.fontCaption
                             }
                         }
                     }
@@ -354,7 +353,7 @@ Components.ScrollPage {
                 RowLayout {
                     visible: ["single", "left", "right", "case"].some(k => (rootPage.capabilities?.battery?.[k]?.status ?? 0) >= 2)
                     Layout.alignment: Qt.AlignLeft
-                    spacing: MP.Units.mediumSpacing + 4
+                    spacing: MP.Theme.spaceS + 4
 
                     Components.BatteryRing {
                         name: qsTrId("battery.battery_single")
@@ -396,8 +395,8 @@ Components.ScrollPage {
     // What is playing and how loud, across the whole width: the headphones' Control Center
     Components.Card {
         visible: hasInfo && nowPlaying.shown
-        padding: MP.Units.largeSpacing
-        verticalPadding: MP.Units.mediumSpacing + 6
+        padding: MP.Theme.spaceL
+        verticalPadding: MP.Theme.spaceS + 6
 
         Components.NowPlaying {
             id: nowPlaying
@@ -414,7 +413,7 @@ Components.ScrollPage {
             Layout.fillWidth: true
             label: qsTrId("battery.apple_device_id")
             info: qsTrId("battery.apple_device_id.info")
-            iconSource: MP.Theme.asset("icons/icon-link.svg")
+            iconSource: MP.Units.asset("icons/icon-link.svg")
 
             MP.Button {
                 text: qsTrId("battery.apple_device_id.set_up")
@@ -431,7 +430,7 @@ Components.ScrollPage {
         MP.FormRow {
             Layout.fillWidth: true
             label: rootPage.autoSwitchData?.source ? qsTrId("battery.moved").arg(rootPage.autoSwitchData.source) : qsTrId("battery.moved_other")
-            iconSource: MP.Theme.asset("icons/icon-headphones.svg")
+            iconSource: MP.Units.asset("icons/icon-headphones.svg")
 
             MP.Button {
                 text: qsTrId("battery.move_here")
@@ -449,8 +448,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.ancData?.level !== undefined
             label: qsTrId("battery.noise_level")
-            iconSource: MP.Theme.asset("icons/icon-noise.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-noise.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.noise_level.info")
 
             Components.Picker {
@@ -465,8 +464,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.adaptiveAudioNoiseData !== null
             label: qsTrId("battery.adaptive_audio_noise")
-            iconSource: MP.Theme.asset("icons/icon-adaptive.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-adaptive.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.adaptive_audio_noise.info")
 
             // The iPhone's slider: 0 lets more noise through, 100 less; any level the iPhone set shows as it is
@@ -489,8 +488,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.ancOneAirPodData !== null
             label: qsTrId("battery.anc_one_airpod")
-            iconSource: MP.Theme.asset("icons/icon-headphones.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-headphones.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.anc_one_airpod.info")
 
             Components.Toggle {                        
@@ -509,8 +508,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.loudSoundReductionData !== null
             label: qsTrId("battery.loud_sound_reduction")
-            iconSource: MP.Theme.asset("icons/icon-ear.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-ear.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.loud_sound_reduction.info")
 
             Components.Toggle {
@@ -524,8 +523,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.allowOffData !== null
             label: qsTrId("battery.allow_off")
-            iconSource: MP.Theme.asset("icons/icon-off.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-off.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.allow_off.info")
 
             Components.Toggle {
@@ -541,16 +540,16 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.listeningModesData !== null
             label: qsTrId("battery.listening_modes")
-            iconSource: MP.Theme.asset("icons/icon-hand.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-hand.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.listening_modes.info")
         }
 
         Flow {
             Layout.fillWidth: true
-            Layout.bottomMargin: MP.Units.smallSpacing
+            Layout.bottomMargin: MP.Theme.spaceXs
             visible: rootPage.listeningModesData !== null
-            spacing: MP.Units.mediumSpacing
+            spacing: MP.Theme.spaceS
 
             Repeater {
                 model: rootPage.listeningModeBits
@@ -579,7 +578,7 @@ Components.ScrollPage {
 
         Repeater {
             model: rootPage.zikSwitches.filter(z => z.group === "noise")
-            delegate: ZikSwitch { iconColor: MP.Theme.groupNoise }
+            delegate: ZikSwitch { iconColor: MP.Theme.categoryNoise }
         }
     }
 
@@ -590,8 +589,8 @@ Components.ScrollPage {
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.transparency_tuning.enabled")
-            iconSource: MP.Theme.asset("icons/icon-tra.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-tra.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.transparency_tuning.enabled.info")
 
             Components.Toggle {
@@ -600,19 +599,19 @@ Components.ScrollPage {
             }
         }
 
-        TuningSlider { iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg"); iconColor: MP.Theme.groupNoise; field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification"); info: qsTrId("battery.transparency_tuning.amplification.info") }
+        TuningSlider { iconSource: MP.Units.asset("icons/icon-speaker-wave.svg"); iconColor: MP.Theme.categoryNoise; field: "amplification"; label: qsTrId("battery.transparency_tuning.amplification"); info: qsTrId("battery.transparency_tuning.amplification.info") }
 
-        TuningSlider { iconSource: MP.Theme.asset("icons/icon-balance.svg"); iconColor: MP.Theme.groupNoise; field: "balance"; label: qsTrId("battery.transparency_tuning.balance"); info: qsTrId("battery.transparency_tuning.balance.info") }
+        TuningSlider { iconSource: MP.Units.asset("icons/icon-balance.svg"); iconColor: MP.Theme.categoryNoise; field: "balance"; label: qsTrId("battery.transparency_tuning.balance"); info: qsTrId("battery.transparency_tuning.balance.info") }
 
-        TuningSlider { iconSource: MP.Theme.asset("icons/icon-tilt.svg"); iconColor: MP.Theme.groupNoise; field: "tone"; label: qsTrId("battery.transparency_tuning.tone"); info: qsTrId("battery.transparency_tuning.tone.info") }
+        TuningSlider { iconSource: MP.Units.asset("icons/icon-tilt.svg"); iconColor: MP.Theme.categoryNoise; field: "tone"; label: qsTrId("battery.transparency_tuning.tone"); info: qsTrId("battery.transparency_tuning.tone.info") }
 
-        TuningSlider { iconSource: MP.Theme.asset("icons/icon-noise.svg"); iconColor: MP.Theme.groupNoise; field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction"); info: qsTrId("battery.transparency_tuning.ambient_noise_reduction.info") }
+        TuningSlider { iconSource: MP.Units.asset("icons/icon-noise.svg"); iconColor: MP.Theme.categoryNoise; field: "ambientNoiseReduction"; from: 0; label: qsTrId("battery.transparency_tuning.ambient_noise_reduction"); info: qsTrId("battery.transparency_tuning.ambient_noise_reduction.info") }
 
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.transparency_tuning.conversation_boost")
-            iconSource: MP.Theme.asset("icons/icon-speech.svg")
-            iconColor: MP.Theme.groupNoise
+            iconSource: MP.Units.asset("icons/icon-speech.svg")
+            iconColor: MP.Theme.categoryNoise
             info: qsTrId("battery.transparency_tuning.conversation_boost.info")
 
             Components.Toggle {
@@ -631,8 +630,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData !== null
             label: qsTrId("battery.equalizer")
-            iconSource: MP.Theme.asset("icons/icon-eq.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-eq.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.equalizer.info")
 
             Components.Picker {
@@ -651,8 +650,8 @@ Components.ScrollPage {
         // What all the effects together do to the sound
         Components.ResponseCurve {
             Layout.fillWidth: true
-            Layout.topMargin: MP.Units.smallSpacing
-            Layout.bottomMargin: MP.Units.smallSpacing
+            Layout.topMargin: MP.Theme.spaceXs
+            Layout.bottomMargin: MP.Theme.spaceXs
             visible: rootPage.equalizerData?.response !== undefined
             response: rootPage.equalizerData?.response ?? null
             Accessible.name: qsTrId("battery.equalizer_curve")
@@ -676,23 +675,23 @@ Components.ScrollPage {
                     anchors.right: parent.right
                     y: 12.5 - height / 2
                     text: "+12 dB"
-                    font.pixelSize: 11
-                    color: MP.Theme.secondaryText
+                    font: MP.Units.fontDetail
+                    color: MP.Theme.labelSecondary
                 }
                 MP.Label {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     text: "0 dB"
-                    font.pixelSize: 11
-                    color: MP.Theme.secondaryText
+                    font: MP.Units.fontDetail
+                    color: MP.Theme.labelSecondary
                 }
                 MP.Label {
                     id: scaleMin
                     anchors.right: parent.right
                     y: 120 - 12.5 - height / 2
                     text: "−12 dB"
-                    font.pixelSize: 11
-                    color: MP.Theme.secondaryText
+                    font: MP.Units.fontDetail
+                    color: MP.Theme.labelSecondary
                 }
             }
 
@@ -718,8 +717,8 @@ Components.ScrollPage {
                         horizontalAlignment: Text.AlignHCenter
                         // HIG typography: a real minus sign, as wide as the plus
                         text: (bandSlider.value > 0 ? "+" : "") + bandSlider.value.toLocaleString(Qt.locale(), "f", bandSlider.value % 1 ? 1 : 0).replace("-", "\u2212")
-                        font.pixelSize: 11
-                        color: MP.Theme.secondaryText
+                        font: MP.Units.fontDetail
+                        color: MP.Theme.labelSecondary
                     }
                     MP.Slider {
                         id: bandSlider
@@ -740,8 +739,8 @@ Components.ScrollPage {
                         Layout.fillWidth: true // a nested layout is only as wide as its widest filling child
                         horizontalAlignment: Text.AlignHCenter
                         text: band.modelData >= 1000 ? Number(band.modelData / 1000).toLocaleString(Qt.locale(), "f", band.modelData % 1000 ? 1 : 0) + "k" : band.modelData
-                        font.pixelSize: 11
-                        color: MP.Theme.secondaryText
+                        font: MP.Units.fontDetail
+                        color: MP.Theme.labelSecondary
                     }
                 }
             }
@@ -752,8 +751,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.tilt !== undefined
             label: qsTrId("battery.tilt")
-            iconSource: MP.Theme.asset("icons/icon-tilt.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-tilt.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.tilt.info")
 
             MP.Slider {
@@ -776,8 +775,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.spatialAudioData !== null
             label: qsTrId("battery.spatial_audio")
-            iconSource: MP.Theme.asset("icons/icon-cube.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-cube.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.spatial_audio.info")
 
             Components.Picker {
@@ -798,8 +797,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.spatialAudioData?.surround !== undefined
             label: qsTrId("battery.surround")
-            iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-speaker-wave.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.surround.info")
 
             Components.Toggle {
@@ -818,8 +817,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.correction !== undefined
             label: qsTrId("battery.headphone_correction")
-            iconSource: MP.Theme.asset("icons/icon-headphones.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-headphones.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.headphone_correction.info")
 
             Components.Toggle {
@@ -838,8 +837,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.equalizerData?.crossfeed !== undefined
             label: qsTrId("battery.crossfeed")
-            iconSource: MP.Theme.asset("icons/icon-crossfeed.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-crossfeed.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.crossfeed.info")
 
             // spatial audio already lets each ear hear both channels
@@ -867,8 +866,8 @@ Components.ScrollPage {
                 Layout.fillWidth: true
                 visible: rootPage.equalizerData?.[modelData.field] !== undefined
                 label: modelData.label
-                iconSource: MP.Theme.asset("icons/" + modelData.icon)
-                iconColor: MP.Theme.groupSound
+                iconSource: MP.Units.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.categoryAudio
                 info: modelData.info ?? ""
 
                 Components.Toggle {
@@ -895,8 +894,8 @@ Components.ScrollPage {
                 Layout.fillWidth: true
                 visible: (rootPage.equalizerData?.hearing ?? false) && rootPage.equalizerData?.[modelData.field] !== undefined
                 label: modelData.label
-                iconSource: MP.Theme.asset("icons/" + modelData.icon)
-                iconColor: MP.Theme.groupSound
+                iconSource: MP.Units.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.categoryAudio
                 info: modelData.info ?? ""
 
                 MP.TextField {
@@ -920,8 +919,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.personalizedVolumeData !== null
             label: qsTrId("battery.personalized_volume")
-            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.personalized_volume.info")
 
             Components.Toggle {
@@ -940,8 +939,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.hearingAidData !== null
             label: qsTrId("battery.hearing_aid")
-            iconSource: MP.Theme.asset("icons/icon-ear.svg")
-            iconColor: MP.Theme.groupSound
+            iconSource: MP.Units.asset("icons/icon-ear.svg")
+            iconColor: MP.Theme.categoryAudio
             info: qsTrId("battery.hearing_aid.info")
 
             Components.Toggle {
@@ -953,12 +952,12 @@ Components.ScrollPage {
 
         Repeater {
             model: rootPage.zikSwitches.filter(z => z.group === "sound")
-            delegate: ZikSwitch { iconColor: MP.Theme.groupSound }
+            delegate: ZikSwitch { iconColor: MP.Theme.categoryAudio }
         }
 
         Repeater {
             model: rootPage.zikLists.filter(z => z.group === "sound")
-            delegate: ZikList { iconColor: MP.Theme.groupSound }
+            delegate: ZikList { iconColor: MP.Theme.categoryAudio }
         }
     }
 
@@ -970,8 +969,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.earDetectionData !== null
             label: qsTrId("battery.ear_detection")
-            iconSource: MP.Theme.asset("icons/icon-ear.svg")
-            iconColor: MP.Theme.groupDetection
+            iconSource: MP.Units.asset("icons/icon-ear.svg")
+            iconColor: MP.Theme.categoryDetection
             info: qsTrId("battery.ear_detection.info")
 
             Components.Toggle {
@@ -990,8 +989,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.conversationAwarenessData !== null
             label: qsTrId("battery.conversation_awareness")
-            iconSource: MP.Theme.asset("icons/icon-speech.svg")
-            iconColor: MP.Theme.groupDetection
+            iconSource: MP.Units.asset("icons/icon-speech.svg")
+            iconColor: MP.Theme.categoryDetection
             info: qsTrId("battery.conversation_awareness.info")
 
             Components.Toggle {
@@ -1011,12 +1010,12 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.conversationAwarenessData?.duckVolume !== undefined
             label: qsTrId("battery.conversation_awareness_volume")
-            iconSource: MP.Theme.asset("icons/icon-speaker.svg")
-            iconColor: MP.Theme.groupDetection
+            iconSource: MP.Units.asset("icons/icon-speaker.svg")
+            iconColor: MP.Theme.categoryDetection
             info: qsTrId("battery.conversation_awareness_volume.info")
 
             RowLayout {
-                spacing: MP.Units.smallSpacing
+                spacing: MP.Theme.spaceXs
 
                 MP.Slider {
                     id: duckVolumeSlider
@@ -1036,14 +1035,14 @@ Components.ScrollPage {
                 MP.Label {
                     Layout.preferredWidth: 44
                     horizontalAlignment: Text.AlignRight
-                    color: MP.Theme.secondaryText
+                    color: MP.Theme.labelSecondary
                     text: qsTrId("format.percent").arg(Math.round(duckVolumeSlider.value))
                 }
             }
         }
 
         ControlSwitch { key: "sleepDetection"; capability: rootPage.sleepDetectionData; label: qsTrId("battery.sleep_detection"); info: qsTrId("battery.sleep_detection.info")
-                        iconSource: MP.Theme.asset("icons/icon-moon.svg"); iconColor: MP.Theme.groupDetection }
+                        iconSource: MP.Units.asset("icons/icon-moon.svg"); iconColor: MP.Theme.categoryDetection }
     }
 
     Section {
@@ -1054,8 +1053,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.pressSpeedData !== null
             label: qsTrId("battery.press_speed")
-            iconSource: MP.Theme.asset("icons/icon-hand.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-hand.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.press_speed.info")
 
             Components.Picker {
@@ -1075,8 +1074,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.pressAndHoldDurationData !== null
             label: qsTrId("battery.press_and_hold_duration")
-            iconSource: MP.Theme.asset("icons/icon-timer.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-timer.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.press_and_hold_duration.info")
 
             Components.Picker {
@@ -1096,8 +1095,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.volumeSwipeData !== null
             label: qsTrId("battery.volume_swipe")
-            iconSource: MP.Theme.asset("icons/icon-swipe.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-swipe.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.volume_swipe.info")
 
             Components.Toggle {
@@ -1117,8 +1116,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.volumeSwipeLengthData !== null
             label: qsTrId("battery.volume_swipe_length")
-            iconSource: MP.Theme.asset("icons/icon-swipe.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-swipe.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.volume_swipe_length.info")
 
             Components.Picker {
@@ -1135,14 +1134,14 @@ Components.ScrollPage {
         }
 
         ControlSwitch { key: "crownReversed"; capability: rootPage.crownReversedData; label: qsTrId("battery.crown_reversed"); info: qsTrId("battery.crown_reversed.info")
-                        iconSource: MP.Theme.asset("icons/icon-crown.svg"); iconColor: MP.Theme.groupControls }
+                        iconSource: MP.Units.asset("icons/icon-crown.svg"); iconColor: MP.Theme.categoryControls }
 
         MP.FormRow {
             Layout.fillWidth: true
             visible: rootPage.endCallData !== null
             label: qsTrId("battery.end_call")
-            iconSource: MP.Theme.asset("icons/icon-phone.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-phone.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.end_call.info")
 
             Components.Picker {
@@ -1162,8 +1161,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.endCallData !== null
             label: qsTrId("battery.mute_unmute")
-            iconSource: MP.Theme.asset("icons/icon-mic.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-mic.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.mute_unmute.info")
 
             Components.Picker {
@@ -1177,8 +1176,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.micModeData !== null
             label: qsTrId("battery.mic_mode")
-            iconSource: MP.Theme.asset("icons/icon-mic.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-mic.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.mic_mode.info")
 
             Components.Picker {
@@ -1193,12 +1192,12 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.toneVolumeData !== null
             label: qsTrId("battery.tone_volume")
-            iconSource: MP.Theme.asset("icons/icon-speaker.svg")
-            iconColor: MP.Theme.groupControls
+            iconSource: MP.Units.asset("icons/icon-speaker.svg")
+            iconColor: MP.Theme.categoryControls
             info: qsTrId("battery.tone_volume.info")
 
             RowLayout {
-                spacing: MP.Units.smallSpacing
+                spacing: MP.Theme.spaceXs
 
                 MP.Slider {
                     id: toneVolumeSlider
@@ -1222,7 +1221,7 @@ Components.ScrollPage {
                 MP.Label {
                     Layout.preferredWidth: 44
                     horizontalAlignment: Text.AlignRight
-                    color: MP.Theme.secondaryText
+                    color: MP.Theme.labelSecondary
                     text: qsTrId("format.percent").arg(Math.round(toneVolumeSlider.value))
                 }
             }
@@ -1230,7 +1229,7 @@ Components.ScrollPage {
 
         Repeater {
             model: rootPage.zikSwitches.filter(z => z.group === "controls")
-            delegate: ZikSwitch { iconColor: MP.Theme.groupControls }
+            delegate: ZikSwitch { iconColor: MP.Theme.categoryControls }
         }
     }
 
@@ -1242,8 +1241,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.bluetoothCodec !== null
             label: qsTrId("battery.bluetooth_codec")
-            iconSource: MP.Theme.asset("icons/icon-codec.svg")
-            iconColor: MP.Theme.groupConnection
+            iconSource: MP.Units.asset("icons/icon-codec.svg")
+            iconColor: MP.Theme.categoryConnection
             // the explanation, then what each option is (PipeWire's own description)
             info: {
                 var lines = [qsTrId("battery.bluetooth_codec.info")];
@@ -1282,14 +1281,14 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.codecDetails(rootPage.bluetoothCodec?.details) !== ""
             label: qsTrId("battery.codec_details")
-            iconSource: MP.Theme.asset("icons/icon-waveform.svg")
-            iconColor: MP.Theme.groupConnection
+            iconSource: MP.Units.asset("icons/icon-waveform.svg")
+            iconColor: MP.Theme.categoryConnection
             info: qsTrId("battery.codec_details.info")
 
             MP.Label {
                 width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
                 text: rootPage.codecDetails(rootPage.bluetoothCodec?.details)
-                color: MP.Theme.secondaryText
+                color: MP.Theme.labelSecondary
                 elide: Text.ElideRight
             }
         }
@@ -1299,8 +1298,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.bluetoothCodec?.highQuality !== undefined
             label: qsTrId("battery.bluetooth_high_quality")
-            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
-            iconColor: MP.Theme.groupConnection
+            iconSource: MP.Units.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.categoryConnection
             info: qsTrId("battery.bluetooth_high_quality.info")
 
             Components.Toggle {
@@ -1316,14 +1315,14 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.signalPathData !== null
             label: qsTrId("battery.signal_path")
-            iconSource: MP.Theme.asset("icons/icon-route.svg")
-            iconColor: MP.Theme.groupConnection
+            iconSource: MP.Units.asset("icons/icon-route.svg")
+            iconColor: MP.Theme.categoryConnection
             info: qsTrId("battery.signal_path.info") + (rootPage.signalPathData?.playing ? "\n\n" + rootPage.signalPathReasons(rootPage.signalPathData) : "")
 
             MP.Label {
                 width: Math.min(implicitWidth, rootPage.mWidth * 1.5) // FormRow holds its control in a plain Item, no Layout
                 text: rootPage.signalPathText(rootPage.signalPathData)
-                color: MP.Theme.secondaryText
+                color: MP.Theme.labelSecondary
                 elide: Text.ElideRight
                 Accessible.name: text + ". " + rootPage.signalPathReasons(rootPage.signalPathData)
             }
@@ -1333,8 +1332,8 @@ Components.ScrollPage {
             Layout.fillWidth: true
             visible: rootPage.autoSwitchData !== null
             label: qsTrId("battery.auto_switch")
-            iconSource: MP.Theme.asset("icons/icon-arrows.svg")
-            iconColor: MP.Theme.groupConnection
+            iconSource: MP.Units.asset("icons/icon-arrows.svg")
+            iconColor: MP.Theme.categoryConnection
             info: qsTrId("battery.auto_switch.info")
 
             Components.Picker {
@@ -1351,11 +1350,11 @@ Components.ScrollPage {
         }
 
         ControlSwitch { key: "autoConnect"; capability: rootPage.autoConnectData; label: qsTrId("battery.auto_connect"); info: qsTrId("battery.auto_connect.info")
-                        iconSource: MP.Theme.asset("icons/icon-link.svg"); iconColor: MP.Theme.groupConnection }
+                        iconSource: MP.Units.asset("icons/icon-link.svg"); iconColor: MP.Theme.categoryConnection }
 
         Repeater {
             model: rootPage.zikSwitches.filter(z => z.group === "connection")
-            delegate: ZikSwitch { iconColor: MP.Theme.groupConnection }
+            delegate: ZikSwitch { iconColor: MP.Theme.categoryConnection }
         }
     }
 
@@ -1366,8 +1365,8 @@ Components.ScrollPage {
         MP.FormRow {
             Layout.fillWidth: true
             label: qsTrId("battery.device_info.name")
-            iconSource: MP.Theme.asset("icons/icon-tag.svg")
-            iconColor: MP.Theme.groupDevice
+            iconSource: MP.Units.asset("icons/icon-tag.svg")
+            iconColor: MP.Theme.categoryDevice
             // where the headphones take a new name (AirPods) the text says how it is stored, elsewhere only what it is
             info: (rootPage.deviceInfoData?.readonly ?? true) ? qsTrId("battery.device_info.name.info_readonly") : qsTrId("battery.device_info.name.info")
 
@@ -1397,12 +1396,12 @@ Components.ScrollPage {
                 Layout.fillWidth: true
                 visible: modelData.value !== ""
                 label: modelData.label
-                iconSource: MP.Theme.asset("icons/" + modelData.icon)
-                iconColor: MP.Theme.groupDevice
+                iconSource: MP.Units.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.categoryDevice
                 info: modelData.info ?? ""
 
                 MP.Label {
-                    color: MP.Theme.secondaryText
+                    color: MP.Theme.labelSecondary
                     text: modelData.value
                     textFormat: Text.PlainText
                 }
@@ -1411,7 +1410,7 @@ Components.ScrollPage {
 
         Repeater {
             model: rootPage.zikLists.filter(z => z.group === "device")
-            delegate: ZikList { iconColor: MP.Theme.groupDevice }
+            delegate: ZikList { iconColor: MP.Theme.categoryDevice }
         }
     }
 }

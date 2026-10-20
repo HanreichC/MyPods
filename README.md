@@ -165,7 +165,7 @@ While the iPhone plays to its own headphones, the tray popup shows and controls 
 
 </div>
 
-The sidebar, popups and menus are glass panes over the content, in the style of Apple's Liquid Glass. The appearance is light, dark or follows the system, and the tray icon has its own setting. An (i) beside every setting explains what it does. The UI speaks English and German (Qt Linguist).
+The sidebar, popups and menus are glass panes over the content, in the style of Apple's Liquid Glass. The appearance is light, dark or follows the system, and the tray icon has its own setting. A Liquid Glass slider goes from clear to tinted, and Increase contrast, Reduce transparency and Reduce motion work as on a Mac. The look follows [MyStyle](https://github.com/HanreichC/MyStyle): `Theme.qml` is generated there from its design tokens and copied over unchanged. An (i) beside every setting explains what it does. The UI speaks English and German (Qt Linguist).
 
 There is also autostart, a Steam Deck and gamescope mode inherited from MagicPods, and a diagnostics section under About with the logs, the state of Equalizer APO (Windows) and the iPhone.
 
@@ -467,6 +467,8 @@ Most options are set through the UI. Global options live in the `[mypods]` table
 | `logLevel` | Info | Daemon log verbosity (debug builds always log at debug level). |
 | `hiRes` | `false` | Hi-Res playback (Settings): the PipeWire drop-ins described under [Bluetooth sound quality](#bluetooth-sound-quality). Linux only. |
 | `headphoneOutputs` | empty | Outputs marked as headphones (Settings), one sink per line. |
+| `glassLevel` | `0.5` | How much the glass is tinted (Settings › Appearance › Liquid Glass), from 0 (clear) to 1 (tinted). |
+| `increaseContrast`, `reduceTransparency`, `reduceMotion` | unset | The accessibility switches under Settings › Appearance. Unset, contrast follows the system where Qt reports it (6.10 and later); the other two are off. |
 
 Per-device settings (for example the stored `irk`/`enc` keys, switching mode, spatial audio and equalizer choice) are saved in a table named after the device. Deleting the keys makes MyPods request them again on the next connection. These are only set by hand:
 
@@ -565,7 +567,7 @@ python3 tools/sniff.py --selftest
 python3 tools/check_translations.py
 ```
 
-`run_checks.sh` also compiles and runs the standalone checks for the ANC and battery wire paths, the low battery warning, the battery time estimate, the keyboard shortcut actions, the iPhone's now playing values, the menu entry's Exec line, the picker, the lid popup and the (i) explanations ([core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp), [core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp), [ui/tests/LowBatteryCheck.cpp](ui/tests/LowBatteryCheck.cpp), [ui/tests/BatteryEstimateCheck.cpp](ui/tests/BatteryEstimateCheck.cpp), [ui/tests/ActionsCheck.cpp](ui/tests/ActionsCheck.cpp), [ui/tests/AmsCheck.cpp](ui/tests/AmsCheck.cpp), [ui/tests/DesktopCheck.cpp](ui/tests/DesktopCheck.cpp), [ui/tests/tst_picker.qml](ui/tests/tst_picker.qml), [ui/tests/tst_popup.qml](ui/tests/tst_popup.qml), [ui/tests/tst_info.qml](ui/tests/tst_info.qml)). Each file names its own compile command.
+`run_checks.sh` also compiles and runs the standalone checks for the ANC and battery wire paths, the low battery warning, the battery time estimate, the keyboard shortcut actions, the iPhone's now playing values, the menu entry's Exec line, the picker, the lid popup, the (i) explanations and the text styles ([core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp), [core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp), [ui/tests/LowBatteryCheck.cpp](ui/tests/LowBatteryCheck.cpp), [ui/tests/BatteryEstimateCheck.cpp](ui/tests/BatteryEstimateCheck.cpp), [ui/tests/ActionsCheck.cpp](ui/tests/ActionsCheck.cpp), [ui/tests/AmsCheck.cpp](ui/tests/AmsCheck.cpp), [ui/tests/DesktopCheck.cpp](ui/tests/DesktopCheck.cpp), [ui/tests/tst_picker.qml](ui/tests/tst_picker.qml), [ui/tests/tst_popup.qml](ui/tests/tst_popup.qml), [ui/tests/tst_info.qml](ui/tests/tst_info.qml), [ui/tests/tst_theme.qml](ui/tests/tst_theme.qml)). Each file names its own compile command.
 
 Two checks need hardware, because the behavior they guard only exists on a real adapter:
 

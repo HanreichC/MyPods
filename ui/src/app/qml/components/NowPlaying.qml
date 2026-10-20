@@ -32,16 +32,18 @@ ColumnLayout {
     component VolumeStepButton: QQC2.AbstractButton {
         implicitWidth: 26
         implicitHeight: 26
-        opacity: enabled ? 1 : 0.35
+        opacity: enabled ? 1 : MP.Theme.opacityDisabledGlyph
         autoRepeat: true
         background: Rectangle {
             radius: width / 2
-            color: parent.pressed ? MP.Theme.fill : parent.hovered ? MP.Theme.tertiaryFill : "transparent"
+            color: parent.pressed ? MP.Theme.fillSecondary : parent.hovered ? MP.Theme.fillTertiary : "transparent"
+            border.width: parent.visualFocus ? 2 : 0
+            border.color: MP.Theme.focusRing
         }
         contentItem: Impl.IconImage {
-            sourceSize: Qt.size(14, 14)
+            sourceSize: Qt.size(MP.Theme.sizeIconS, MP.Theme.sizeIconS)
             source: parent.icon.source
-            color: MP.Theme.text
+            color: MP.Theme.labelPrimary
         }
     }
 
@@ -63,17 +65,19 @@ ColumnLayout {
                 implicitWidth: primary ? 40 : 34
                 implicitHeight: primary ? 40 : 34
                 enabled: modelData.enabled
-                opacity: enabled ? 1 : 0.35
+                opacity: enabled ? 1 : MP.Theme.opacityDisabledGlyph
                 Accessible.name: modelData.name
                 onClicked: modelData.action()
                 background: Rectangle {
                     radius: width / 2
-                    color: parent.pressed ? MP.Theme.fill : parent.hovered ? MP.Theme.tertiaryFill : "transparent"
+                    color: parent.pressed ? MP.Theme.fillSecondary : parent.hovered ? MP.Theme.fillTertiary : "transparent"
+                    border.width: parent.visualFocus ? 2 : 0
+                    border.color: MP.Theme.focusRing
                 }
                 contentItem: Impl.IconImage {
-                    sourceSize: primary ? Qt.size(26, 26) : Qt.size(20, 20)
-                    source: MP.Theme.asset("icons/" + modelData.icon)
-                    color: MP.Theme.text
+                    sourceSize: primary ? Qt.size(MP.Theme.sizeIconXL, MP.Theme.sizeIconXL) : Qt.size(MP.Theme.sizeIconL, MP.Theme.sizeIconL)
+                    source: MP.Units.asset("icons/" + modelData.icon)
+                    color: MP.Theme.labelPrimary
                 }
             }
         }
@@ -82,22 +86,22 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         visible: root.hasPlayer
-        spacing: 12
+        spacing: MP.Theme.spaceM
 
         Rectangle {
             Layout.preferredWidth: 52
             Layout.preferredHeight: 52
             Layout.alignment: Qt.AlignTop
-            radius: 8
-            color: MP.Theme.tertiaryFill
+            radius: MP.Theme.radiusControl
+            color: MP.Theme.fillTertiary
             clip: true
 
             Impl.IconImage {
                 anchors.centerIn: parent
                 visible: art.status !== Image.Ready
                 sourceSize: Qt.size(24, 24)
-                source: MP.Theme.asset("icons/icon-headphones.svg")
-                color: MP.Theme.secondaryText
+                source: MP.Units.asset("icons/icon-headphones.svg")
+                color: MP.Theme.labelSecondary
             }
             Image {
                 id: art
@@ -117,9 +121,8 @@ ColumnLayout {
             Text {
                 Layout.fillWidth: true
                 text: root.player.title ?? ""
-                color: MP.Theme.text
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
+                color: MP.Theme.labelPrimary
+                font: MP.Units.font(MP.Theme.fontCallout, { weight: Font.DemiBold })
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -128,16 +131,16 @@ ColumnLayout {
                 Layout.fillWidth: true
                 visible: text !== ""
                 text: root.player.artist ?? ""
-                color: MP.Theme.secondaryText
-                font.pixelSize: 12
+                color: MP.Theme.labelSecondary
+                font: MP.Theme.fontCaption
                 elide: Text.ElideRight
             }
             Text {
                 Layout.fillWidth: true
                 visible: !!root.player.source
                 text: qsTrId("tray.popup.playing_on").arg(root.player.source ?? "")
-                color: MP.Theme.secondaryText
-                font.pixelSize: 11
+                color: MP.Theme.labelSecondary
+                font: MP.Units.fontDetail
                 elide: Text.ElideRight
             }
         }
@@ -160,12 +163,14 @@ ColumnLayout {
             onClicked: cppMedia.toggleLike()
             background: Rectangle {
                 radius: width / 2
-                color: star.pressed ? MP.Theme.fill : star.hovered ? MP.Theme.tertiaryFill : "transparent"
+                color: star.pressed ? MP.Theme.fillSecondary : star.hovered ? MP.Theme.fillTertiary : "transparent"
+                border.width: star.visualFocus ? 2 : 0
+                border.color: MP.Theme.focusRing
             }
             contentItem: Impl.IconImage {
-                sourceSize: Qt.size(20, 20)
-                source: MP.Theme.asset(star.liked ? "icons/icon-star-fill.svg" : "icons/icon-star.svg")
-                color: star.liked ? MP.Theme.red : MP.Theme.text
+                sourceSize: Qt.size(MP.Theme.sizeIconL, MP.Theme.sizeIconL)
+                source: MP.Units.asset(star.liked ? "icons/icon-star-fill.svg" : "icons/icon-star.svg")
+                color: star.liked ? MP.Theme.red : MP.Theme.labelPrimary
             }
         }
     }
@@ -184,7 +189,7 @@ ColumnLayout {
         spacing: 4
 
         VolumeStepButton {
-            icon.source: MP.Theme.asset("icons/icon-minus.svg")
+            icon.source: MP.Units.asset("icons/icon-minus.svg")
             enabled: volumeSlider.value > 0
             Accessible.name: qsTrId("tray.popup.volume_down")
             onClicked: cppMedia.setVolume(volumeSlider.neighbour(-1))
@@ -218,7 +223,7 @@ ColumnLayout {
 
             background: Rectangle {
                 radius: height / 2
-                color: MP.Theme.fill
+                color: MP.Theme.fillSecondary
 
                 Text {
                     id: volumeLabel
@@ -228,10 +233,8 @@ ColumnLayout {
                     // the iPhone in its own steps, like its volume buttons
                     text: root.player.volumeStep ? Math.round(volumeSlider.value / root.player.volumeStep) + " / " + Math.round(100 / root.player.volumeStep)
                                                   : qsTrId("format.percent").arg(Math.round(volumeSlider.value))
-                    color: MP.Theme.secondaryText
-                    font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    font.features: { "tnum": 1 }
+                    color: MP.Theme.labelPrimary // C-4: on the track, a filled control
+                    font: MP.Units.font(MP.Units.fontDetail, { weight: Font.DemiBold, features: { "tnum": 1 } })
                 }
                 Rectangle {
                     width: Math.max(parent.height, volumeSlider.visualPosition * parent.width)
@@ -245,7 +248,7 @@ ColumnLayout {
                         x: volumeLabel.x
                         y: volumeLabel.y
                         text: volumeLabel.text
-                        color: "white"
+                        color: MP.Theme.labelOnAccent
                         font: volumeLabel.font
                     }
                 }
@@ -262,19 +265,22 @@ ColumnLayout {
                 onClicked: cppMedia.setMuted(!cppMedia.muted)
                 background: Rectangle {
                     radius: height / 2
+                    // MyStyle: kein Token für Hover/Druck auf einer Akzentfläche
                     color: muteButton.pressed ? Qt.rgba(0, 0, 0, 0.2) : muteButton.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
+                    border.width: muteButton.visualFocus ? 2 : 0
+                    border.color: MP.Theme.focusRing
                 }
                 contentItem: Impl.IconImage {
-                    sourceSize: Qt.size(14, 14)
-                    source: MP.Theme.asset(cppMedia.muted ? "icons/icon-speaker-slash.svg"
+                    sourceSize: Qt.size(MP.Theme.sizeIconS, MP.Theme.sizeIconS)
+                    source: MP.Units.asset(cppMedia.muted ? "icons/icon-speaker-slash.svg"
                                            : volumeSlider.value > 0 ? "icons/icon-speaker-wave.svg" : "icons/icon-speaker.svg")
-                    color: "white"
+                    color: MP.Theme.labelOnAccent
                 }
             }
         }
 
         VolumeStepButton {
-            icon.source: MP.Theme.asset("icons/icon-plus.svg")
+            icon.source: MP.Units.asset("icons/icon-plus.svg")
             enabled: volumeSlider.value < 100
             Accessible.name: qsTrId("tray.popup.volume_up")
             onClicked: cppMedia.setVolume(volumeSlider.neighbour(1))

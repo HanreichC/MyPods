@@ -20,7 +20,8 @@ QQC2.ApplicationWindow {
     property real panelStartX: 0
     property real panelStartY: 0
     property real panelStartOpacity: 0.0
-    property bool useOpacity: animationMode === 0
+    // centered it fades; with Reduce Motion it fades instead of sliding in from its corner (M-5)
+    property bool useOpacity: animationMode === 0 || MP.Theme.reduceMotion
     property bool isClosing: false
     property int showRetryCount: 0
     // Closed by hand or timed out while the lid stays open: like a Mac, not again for that pair until the lid was
@@ -29,7 +30,7 @@ QQC2.ApplicationWindow {
     // KDE blurs the desktop behind the panel (main.cpp, BlurBehind.h): where, and whether it does
     readonly property rect glassRect: Qt.rect(frame.x + frame.shadowMargin, frame.y + frame.shadowMargin,
                                               frame.width - frame.shadowMargin * 2, frame.height - frame.shadowMargin * 2)
-    readonly property real glassRadius: MP.Theme.radius
+    readonly property real glassRadius: MP.Theme.radiusPanel
     property bool desktopBlur: false
 
     function dismiss() {
@@ -62,7 +63,7 @@ QQC2.ApplicationWindow {
         : (Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
     color: "transparent"
     // Material hard-codes Roboto/Noto for controls; the window font overrides it for every control
-    font.family: "Inter"
+    font.family: MP.Theme.fontFamily
     Material.theme: MP.Theme.dark ? Material.Dark : Material.Light
     Material.accent: MP.Theme.accent
     width: frame.implicitWidth
@@ -175,6 +176,10 @@ QQC2.ApplicationWindow {
             break;
         }
 
+        if (MP.Theme.reduceMotion) {
+            panelStartX = 0;
+            panelStartY = 0;
+        }
         panelStartOpacity = useOpacity ? 0.0 : 1.0;
     }
 
@@ -221,8 +226,8 @@ QQC2.ApplicationWindow {
         height: osdDialog.height
         // the transparent margin around the glass carries its shadow
         readonly property int shadowMargin: 28
-        implicitWidth: popupRoot.width + (MP.Units.smallSpacing + shadowMargin) * 2
-        implicitHeight: popupRoot.height + (MP.Units.smallSpacing + shadowMargin) * 2
+        implicitWidth: popupRoot.width + (MP.Theme.spaceXs + shadowMargin) * 2
+        implicitHeight: popupRoot.height + (MP.Theme.spaceXs + shadowMargin) * 2
         padding: 0
         background: Item {
             MP.Glass {
@@ -286,16 +291,22 @@ QQC2.ApplicationWindow {
                 id: closeButton
                 Layout.preferredWidth: 28
                 Layout.preferredHeight: 28
-                Layout.topMargin: 8
-                Layout.rightMargin: 8
+                Layout.topMargin: MP.Theme.spaceS
+                Layout.rightMargin: MP.Theme.spaceS
                 Layout.alignment: Qt.AlignRight | Qt.AlignTop
                 padding: 0
                 flat: true
-                icon.source: MP.Theme.asset("icons/icon-close.svg")
-                icon.width: 16
-                icon.height: 16
-                icon.color: MP.Theme.secondaryText
-                background: Rectangle { radius: 14; color: MP.Theme.tertiaryFill }
+                icon.source: MP.Units.asset("icons/icon-close.svg")
+                icon.width: MP.Theme.sizeIconM
+                icon.height: MP.Theme.sizeIconM
+                icon.color: MP.Theme.labelPrimary // C-4: on a filled control
+                Accessible.name: qsTrId("window.close")
+                background: Rectangle {
+                    radius: height / 2
+                    color: MP.Theme.fillTertiary
+                    border.width: closeButton.visualFocus ? 2 : 0
+                    border.color: MP.Theme.focusRing
+                }
                 onClicked: osdDialog.dismiss()
             }
 
@@ -400,24 +411,24 @@ QQC2.ApplicationWindow {
             target: frame
             property: "x"
             to: 0
-            duration: 350
-            easing.type: Easing.OutCubic
+            duration: MP.Theme.durationSlide
+            easing.type: MP.Theme.easeStandard
         }
 
         NumberAnimation {
             target: frame
             property: "y"
             to: 0
-            duration: 350
-            easing.type: Easing.OutCubic
+            duration: MP.Theme.durationSlide
+            easing.type: MP.Theme.easeStandard
         }
 
         NumberAnimation {
             target: frame
             property: "opacity"
             to: 1.0
-            duration: useOpacity ? 350 : 0
-            easing.type: Easing.OutCubic
+            duration: useOpacity ? MP.Theme.durationSlide : 0
+            easing.type: MP.Theme.easeStandard
         }
     }
 
@@ -429,24 +440,24 @@ QQC2.ApplicationWindow {
             target: frame
             property: "x"
             to: panelStartX
-            duration: 350
-            easing.type: Easing.OutCubic
+            duration: MP.Theme.durationSlide
+            easing.type: MP.Theme.easeStandard
         }
 
         NumberAnimation {
             target: frame
             property: "y"
             to: panelStartY
-            duration: 350
-            easing.type: Easing.OutCubic
+            duration: MP.Theme.durationSlide
+            easing.type: MP.Theme.easeStandard
         }
 
         NumberAnimation {
             target: frame
             property: "opacity"
             to: panelStartOpacity
-            duration: useOpacity ? 350 : 0
-            easing.type: Easing.OutCubic
+            duration: useOpacity ? MP.Theme.durationSlide : 0
+            easing.type: MP.Theme.easeStandard
         }
 
         onStopped: {

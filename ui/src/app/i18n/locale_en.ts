@@ -1427,5 +1427,55 @@ MyPods adds files under ~/.config/pipewire for it (…/60-mypods-hires.conf) and
         <source></source>
         <translation>The name the headphones give over Bluetooth. These headphones don't let it be changed from here.</translation>
     </message>
+    <message id="settings.liquid_glass">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Liquid Glass</translation>
+    </message>
+    <message id="settings.liquid_glass.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>How strongly the glass is tinted: the sidebar, the window buttons, menus and alerts. Clear lets more of the content beneath show through, Tinted makes the glass denser and the text on it easier to read. The middle is the default.</translation>
+    </message>
+    <message id="settings.liquid_glass.clear">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Clear</translation>
+    </message>
+    <message id="settings.liquid_glass.tinted">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Tinted</translation>
+    </message>
+    <message id="settings.increase_contrast">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Increase contrast</translation>
+    </message>
+    <message id="settings.increase_contrast.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Text and separators stand out more, cards and glass get a visible edge, and the glass becomes denser. Until you set it here, MyPods follows the system where it reports a preference for high contrast.</translation>
+    </message>
+    <message id="settings.reduce_transparency">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Reduce transparency</translation>
+    </message>
+    <message id="settings.reduce_transparency.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Glass becomes nearly opaque instead of letting the content behind it show through. That makes text easier to read over a busy background.</translation>
+    </message>
+    <message id="settings.reduce_motion">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Reduce motion</translation>
+    </message>
+    <message id="settings.reduce_motion.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>No bouncing, zooming or sliding: controls move without overshoot, and windows and alerts simply fade in and out briefly.</translation>
+    </message>
 </context>
 </TS>

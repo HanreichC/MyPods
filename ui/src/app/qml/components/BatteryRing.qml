@@ -16,12 +16,12 @@ Column {
     property int size: 56
 
     readonly property real level: Math.max(0, Math.min(100, battery)) / 100
-    readonly property color tint: MP.Theme.batteryColor(battery, isCharging)
+    readonly property color tint: MP.Units.batteryColor(battery, isCharging)
     readonly property real stroke: Math.max(4, size / 11)
 
     visible: status !== 0 && status !== 1
-    opacity: status === 3 ? 0.45 : 1
-    spacing: MP.Units.smallSpacing
+    opacity: status === 3 ? MP.Theme.opacityUnavailable : 1
+    spacing: MP.Theme.spaceXs
 
     Item {
         width: root.size
@@ -52,7 +52,7 @@ Column {
                     radiusX: (root.size - root.stroke) / 2; radiusY: radiusX
                     startAngle: -90
                     sweepAngle: 360 * root.level
-                    Behavior on sweepAngle { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
+                    Behavior on sweepAngle { NumberAnimation { duration: MP.Theme.durationData; easing.type: MP.Theme.easeStandard } }
                 }
             }
         }
@@ -60,9 +60,8 @@ Column {
         Text {
             anchors.centerIn: parent
             text: qsTrId("format.percent").arg(root.battery)
-            color: MP.Theme.text
-            font.pixelSize: Math.round(root.size * 0.24)
-            font.weight: Font.DemiBold
+            color: MP.Theme.labelPrimary
+            font: MP.Units.font(MP.Theme.fontCaption, { pixelSize: Math.round(root.size * 0.24), weight: Font.DemiBold, features: { "tnum": 1 } })
         }
     }
 
@@ -76,13 +75,12 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             width: 12; height: 12
             sourceSize: Qt.size(24, 24)
-            source: MP.Theme.asset("icons/icon-bolt.svg")
+            source: MP.Units.asset("icons/icon-bolt.svg")
         }
         Text {
             text: root.name
-            color: MP.Theme.secondaryText
-            font.pixelSize: MP.Theme.captionSize
-            font.weight: Font.Medium
+            color: MP.Theme.labelSecondary
+            font: MP.Theme.fontCaption
         }
     }
 }

@@ -23,14 +23,14 @@ QQC2.Page {
         // between the bars at the top and the window's rounded corner at the bottom
         QQC2.ScrollBar.vertical: MP.ScrollBar {
             parent: scroll
-            x: scroll.width - width - MP.Units.smallSpacing
-            y: 12 + MP.Theme.barHeight + MP.Units.mediumSpacing
-            height: scroll.height - y - MP.Theme.radius
+            x: scroll.width - width - MP.Theme.spaceXs
+            y: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.spaceS
+            height: scroll.height - y - MP.Theme.radiusPanel
         }
 
         Item {
             width: scroll.availableWidth
-            implicitHeight: column.y + column.implicitHeight + MP.Units.hugeSpacing
+            implicitHeight: column.y + column.implicitHeight + MP.Theme.spaceXl
 
             // Flickable's default wheel/touchpad step is tiny; scroll a fixed distance per notch
             // and amplify touchpad pixel deltas (Wayland reports them roughly 1:1 with finger travel)
@@ -47,22 +47,22 @@ QQC2.Page {
             ColumnLayout {
                 id: column
                 // the page title level with the window buttons
-                y: 12 + (MP.Theme.barHeight - MP.Theme.titleSize * 1.2) / 2
+                y: MP.Theme.sizeWindowInset + (MP.Theme.sizeBarHeight - MP.Theme.lineTitle1) / 2
                 // right of the window's sidebar, which the page slides under
                 readonly property int inset: QQC2.ApplicationWindow.window?.contentInset ?? 0
-                width: Math.min(parent.width - inset - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)
+                width: Math.min(parent.width - inset - MP.Theme.spaceXl * 2, MP.Theme.sizeContentMaxWidth)
                 x: inset + Math.round((parent.width - inset - width) / 2)
-                spacing: MP.Units.mediumSpacing
+                spacing: MP.Theme.spaceS
 
                 MP.Heading {
                     visible: page.showTitle
                     level: 1
                     text: page.title
                     Layout.fillWidth: true
-                    Layout.leftMargin: MP.Units.smallSpacing
+                    Layout.leftMargin: MP.Theme.spaceXs
                     // clear of the window buttons
                     Layout.rightMargin: QQC2.ApplicationWindow.window?.titleInset ?? 0
-                    Layout.bottomMargin: MP.Units.mediumSpacing
+                    Layout.bottomMargin: MP.Theme.spaceS
                     wrapMode: Text.Wrap // a long device name on two lines rather than cut off
                     maximumLineCount: 2
                     elide: Text.ElideRight

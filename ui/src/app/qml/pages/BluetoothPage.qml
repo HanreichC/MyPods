@@ -56,7 +56,7 @@ Components.ScrollPage {
 
     Components.HelpMessage {
         visible: !hasBtAdapter
-        iconSource: MP.Theme.asset("icons/illustration-bluetooth-off.svg")
+        iconSource: MP.Units.asset("icons/illustration-bluetooth-off.svg")
         titleText: qsTrId("headphones.help.bluetooth_not_found.header")
         bodyText: qsTrId("headphones.help.bluetooth_not_found.description")
     }
@@ -67,7 +67,8 @@ Components.ScrollPage {
         MP.FormRow {
             label: qsTrId("headphones.item.bluetooth")
             info: qsTrId("headphones.item.bluetooth.info")
-            iconSource: MP.Theme.asset("icons/icon-bluetooth.svg")
+            iconSource: MP.Units.asset("icons/icon-bluetooth.svg")
+            iconColor: MP.Theme.categoryConnection
 
             Components.Toggle {
                 id: bt
@@ -85,7 +86,7 @@ Components.ScrollPage {
 
     Components.HelpMessage {
         visible: !hasHeadphones && hasBtAdapter
-        iconSource: MP.Theme.asset("icons/illustration-pair.svg")
+        iconSource: MP.Units.asset("icons/illustration-pair.svg")
         titleText: qsTrId("headphones.help.bluetooth_no_paired_headphones.header")
         bodyText: qsTrId("headphones.help.no_paired_headphones.description")
     }
@@ -93,8 +94,8 @@ Components.ScrollPage {
     MP.Heading {
         visible: hasHeadphones && hasBtAdapter
         level: 5
-        Layout.topMargin: MP.Units.largeSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.topMargin: MP.Theme.spaceL
+        Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("headphones.headphones")
     }
 
@@ -107,7 +108,7 @@ Components.ScrollPage {
                 enabled: bt.checked
                 label: modelData.name
                 info: qsTrId("headphones.connect.info")
-                iconSource: MP.Theme.asset("icons/icon-headphones.svg")
+                iconSource: MP.Units.asset("icons/icon-headphones.svg")
                 iconColor: modelData.connected ? MP.Theme.accent : MP.Theme.gray
 
                 Components.Toggle {
@@ -131,8 +132,8 @@ Components.ScrollPage {
     MP.Heading {
         visible: cppMedia.iphones.length > 0 && hasBtAdapter
         level: 5
-        Layout.topMargin: MP.Units.largeSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.topMargin: MP.Theme.spaceL
+        Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("headphones.iphones")
     }
 
@@ -144,12 +145,12 @@ Components.ScrollPage {
             delegate: MP.FormRow {
                 enabled: bt.checked
                 label: modelData.name
-                iconSource: MP.Theme.asset("icons/icon-iphone.svg")
+                iconSource: MP.Units.asset("icons/icon-iphone.svg")
                 iconColor: modelData.connected ? MP.Theme.accent : MP.Theme.gray
 
                 MP.Label {
                     text: modelData.connected ? qsTrId("headphones.iphone.connected") : qsTrId("headphones.iphone.not_connected")
-                    color: MP.Theme.secondaryText
+                    color: MP.Theme.labelSecondary
                 }
             }
         }
@@ -159,11 +160,11 @@ Components.ScrollPage {
     MP.Label {
         visible: cppMedia.iphones.length > 0 && hasBtAdapter
         Layout.fillWidth: true
-        Layout.leftMargin: MP.Units.largeSpacing
-        Layout.rightMargin: MP.Units.largeSpacing
+        Layout.leftMargin: MP.Theme.spaceL
+        Layout.rightMargin: MP.Theme.spaceL
         wrapMode: Text.WordWrap
-        color: MP.Theme.secondaryText
-        font.pixelSize: 13
+        color: MP.Theme.labelSecondary
+        font: MP.Theme.fontCallout
         text: qsTrId("headphones.iphones.footer")
     }
 }

@@ -24,9 +24,9 @@ Image {
         var c = info?.color ?? 0;
         var basePath = "headphones/" + v + "_";
         candidates = [
-            MP.Theme.asset(basePath + m + "_" + c + ".png"),
-            MP.Theme.asset(basePath + m + ".png"),
-            MP.Theme.asset("headphones/0_0_0.png")
+            MP.Units.asset(basePath + m + "_" + c + ".png"),
+            MP.Units.asset(basePath + m + ".png"),
+            MP.Units.asset("headphones/0_0_0.png")
         ];
         candidateIndex = 0;
         tryNext();

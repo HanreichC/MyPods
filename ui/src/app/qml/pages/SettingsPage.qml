@@ -18,6 +18,9 @@ Components.ScrollPage {
 
     title: qsTrId("menu.settings")
 
+    // MyStyle's Liquid Glass level and accessibility switches (Theme.qml); until set here they follow the system
+    readonly property var themeSettings: ["glassLevel", "increaseContrast", "reduceTransparency", "reduceMotion"]
+
     // "auto" | "light" | "dark" <-> picker index; shared by Appearance and Tray icon theme
     function themeTrayStringToIndex(value) {
         if (value === "light") return 1;
@@ -37,6 +40,8 @@ Components.ScrollPage {
             cppBackend.getSetting("mypods", "theme_tray");
             cppBackend.getSetting("mypods", "appearance");
             cppBackend.getSetting("mypods", "hiRes");
+            for (const key of rootPage.themeSettings)
+                cppBackend.getSetting("mypods", key);
             cppBackend.getOutputs();
         }
     }
@@ -56,6 +61,9 @@ Components.ScrollPage {
                     cppTrayIcon.themeMode = rootPage.themeTrayStringToIndex(json.settings.mypods.theme_tray);
                 if (json.settings?.mypods?.appearance != null)
                     MP.Theme.appearance = rootPage.themeTrayIndexToString(rootPage.themeTrayStringToIndex(json.settings.mypods.appearance));
+                for (const key of rootPage.themeSettings)
+                    if (json.settings?.mypods?.[key] != null)
+                        MP.Theme[key] = json.settings.mypods[key];
             }
         }
         function onConnectedChanged() {
@@ -68,15 +76,15 @@ Components.ScrollPage {
 
     MP.Heading {
         level: 5
-        Layout.topMargin: MP.Units.mediumSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.topMargin: MP.Theme.spaceS
+        Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("settings.group.general")
     }
 
     Components.Card {
         MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
-            iconColor: "#AF52DE"
+            iconSource: MP.Units.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.categoryGeneral
             label: qsTrId("settings.headphones_animation")
             info: qsTrId("settings.headphones_animation.info")
 
@@ -96,8 +104,8 @@ Components.ScrollPage {
         // Linux: the autostart entry (on Windows the MSI's)
         MP.FormRow {
             visible: Qt.platform.os !== "windows"
-            iconSource: MP.Theme.asset("icons/icon-timer.svg")
-            iconColor: MP.Theme.green
+            iconSource: MP.Units.asset("icons/icon-timer.svg")
+            iconColor: MP.Theme.categoryGeneral
             label: qsTrId("settings.autostart")
             info: qsTrId("settings.autostart.info")
 
@@ -110,8 +118,8 @@ Components.ScrollPage {
         // Windows has no place to bind a command to a key, so MyPods brings a few (Linux: `mypods --action`, README)
         MP.FormRow {
             visible: Qt.platform.os === "windows"
-            iconSource: MP.Theme.asset("icons/icon-number.svg")
-            iconColor: MP.Theme.gray
+            iconSource: MP.Units.asset("icons/icon-number.svg")
+            iconColor: MP.Theme.categoryGeneral
             label: qsTrId("settings.hotkeys")
             info: qsTrId("settings.hotkeys.info")
 
@@ -124,8 +132,8 @@ Components.ScrollPage {
         // Windows: the MSI is installed by hand, so MyPods says when there is a newer one
         MP.FormRow {
             visible: Qt.platform.os === "windows"
-            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
-            iconColor: MP.Theme.accent
+            iconSource: MP.Units.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.categoryGeneral
             label: qsTrId("settings.check_updates")
             info: qsTrId("settings.check_updates.info")
 
@@ -136,8 +144,8 @@ Components.ScrollPage {
         }
 
         MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-apps.svg")
-            iconColor: MP.Theme.accent
+            iconSource: MP.Units.asset("icons/icon-apps.svg")
+            iconColor: MP.Theme.categoryGeneral
             label: qsTrId("settings.add_shortcut_to_menu")
             info: qsTrId("settings.add_shortcut_to_menu.info")
             // a .desktop entry; on Windows the installer creates the Start menu shortcut
@@ -176,15 +184,15 @@ Components.ScrollPage {
 
     MP.Heading {
         level: 5
-        Layout.topMargin: MP.Units.mediumSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.topMargin: MP.Theme.spaceS
+        Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("settings.group.appearance")
     }
 
     Components.Card {
         MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-theme.svg")
-            iconColor: MP.Theme.indigo
+            iconSource: MP.Units.asset("icons/icon-theme.svg")
+            iconColor: MP.Theme.categoryAppearance
             label: qsTrId("settings.appearance")
             info: qsTrId("settings.appearance.info")
 
@@ -204,9 +212,73 @@ Components.ScrollPage {
             }
         }
 
+        // GQ-2: how much the glass is tinted, live while dragged, saved when let go
         MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-battery-fill.svg")
-            iconColor: MP.Theme.gray
+            iconSource: MP.Units.asset("icons/icon-glass.svg")
+            iconColor: MP.Theme.categoryAppearance
+            label: qsTrId("settings.liquid_glass")
+            info: qsTrId("settings.liquid_glass.info")
+
+            RowLayout {
+                spacing: MP.Theme.spaceS
+
+                MP.Label {
+                    text: qsTrId("settings.liquid_glass.clear")
+                    color: MP.Theme.labelSecondary
+                    font: MP.Theme.fontCallout
+                }
+                Components.Slider {
+                    Layout.preferredWidth: 120
+                    from: 0
+                    to: 1
+                    value: MP.Theme.glassLevel
+                    enabled: cppBackend?.connected ?? false
+                    Accessible.name: qsTrId("settings.liquid_glass")
+                    onMoved: {
+                        MP.Theme.glassLevel = value;
+                        if (!pressed) // the keyboard
+                            cppBackend.setSetting("mypods", "glassLevel", value);
+                    }
+                    onPressedChanged: if (!pressed) cppBackend.setSetting("mypods", "glassLevel", value)
+                }
+                MP.Label {
+                    text: qsTrId("settings.liquid_glass.tinted")
+                    color: MP.Theme.labelSecondary
+                    font: MP.Theme.fontCallout
+                }
+            }
+        }
+
+        // GA-1: MyStyle's accessibility switches
+        Repeater {
+            model: [
+                { key: "increaseContrast", icon: "icon-contrast.svg", label: qsTrId("settings.increase_contrast"), info: qsTrId("settings.increase_contrast.info") },
+                { key: "reduceTransparency", icon: "icon-transparency.svg", label: qsTrId("settings.reduce_transparency"), info: qsTrId("settings.reduce_transparency.info") },
+                { key: "reduceMotion", icon: "icon-motion.svg", label: qsTrId("settings.reduce_motion"), info: qsTrId("settings.reduce_motion.info") }
+            ]
+
+            MP.FormRow {
+                required property var modelData
+                iconSource: MP.Units.asset("icons/" + modelData.icon)
+                iconColor: MP.Theme.categoryAppearance
+                label: modelData.label
+                info: modelData.info
+
+                Components.Toggle {
+                    checked: MP.Theme[modelData.key]
+                    enabled: cppBackend?.connected ?? false
+                    Accessible.name: modelData.label
+                    onToggled: {
+                        MP.Theme[modelData.key] = checked;
+                        cppBackend.setSetting("mypods", modelData.key, checked);
+                    }
+                }
+            }
+        }
+
+        MP.FormRow {
+            iconSource: MP.Units.asset("icons/icon-battery-fill.svg")
+            iconColor: MP.Theme.categoryAppearance
             label: qsTrId("settings.tray_icon_theme")
             info: qsTrId("settings.tray_icon_theme.info")
 
@@ -228,8 +300,8 @@ Components.ScrollPage {
         }
 
         MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-globe.svg")
-            iconColor: MP.Theme.accent
+            iconSource: MP.Units.asset("icons/icon-globe.svg")
+            iconColor: MP.Theme.categoryAppearance
             label: qsTrId("settings.language")
             info: qsTrId("settings.language.info")
 
@@ -249,8 +321,8 @@ Components.ScrollPage {
     MP.Heading {
         visible: Qt.platform.os !== "windows"
         level: 5
-        Layout.topMargin: MP.Units.mediumSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.topMargin: MP.Theme.spaceS
+        Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("settings.group.audio")
     }
 
@@ -258,8 +330,8 @@ Components.ScrollPage {
         visible: Qt.platform.os !== "windows"
 
         MP.FormRow {
-            iconSource: MP.Theme.asset("icons/icon-speaker-wave.svg")
-            iconColor: MP.Theme.purple
+            iconSource: MP.Units.asset("icons/icon-speaker-wave.svg")
+            iconColor: MP.Theme.categoryAudio
             label: qsTrId("settings.hi_res")
             info: qsTrId("settings.hi_res.info")
 
@@ -280,8 +352,8 @@ Components.ScrollPage {
     MP.Heading {
         visible: rootPage.outputs.length > 0
         level: 5
-        Layout.topMargin: MP.Units.mediumSpacing
-        Layout.leftMargin: MP.Units.largeSpacing
+        Layout.topMargin: MP.Theme.spaceS
+        Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("settings.outputs")
     }
 
@@ -293,8 +365,8 @@ Components.ScrollPage {
 
             MP.FormRow {
                 Layout.fillWidth: true
-                iconSource: MP.Theme.asset(modelData.headphones ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
-                iconColor: "#007AFF"
+                iconSource: MP.Units.asset(modelData.headphones ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
+                iconColor: MP.Theme.categoryConnection
                 label: modelData.name
                 info: qsTrId("settings.outputs.info") + (modelData.automatic ? "\n\n" + qsTrId("settings.outputs.automatic") : "")
 

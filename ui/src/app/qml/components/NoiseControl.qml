@@ -37,7 +37,7 @@ ColumnLayout {
     readonly property bool available: ancData !== null && ancTrack.modes.length > 0
 
     visible: available
-    spacing: MP.Units.mediumSpacing
+    spacing: MP.Theme.spaceS
 
     // while a switch is pending, only its confirmation may move the thumb
     onAncDataChanged: {
@@ -81,19 +81,20 @@ ColumnLayout {
         }
 
         enabled: !(root.ancData?.readonly ?? true)
-        opacity: enabled ? 1 : 0.4
+        opacity: enabled ? 1 : MP.Theme.opacityDisabled
         Layout.fillWidth: true
-        implicitHeight: 44
+        implicitHeight: MP.Theme.sizeSegmented
         radius: height / 2
-        color: root.floating ? MP.Theme.material : MP.Theme.tertiaryFill
+        color: root.floating ? MP.Theme.materialFill : MP.Theme.fillTertiary
         border.width: activeFocus ? 2 : root.floating ? 1 : 0
-        border.color: activeFocus ? MP.Theme.accent : MP.Theme.materialBorder
+        border.color: activeFocus ? MP.Theme.focusRing : MP.Theme.materialBorder
 
         RectangularShadow {
             z: -1
             visible: root.floating
             anchors.fill: parent
             radius: parent.radius
+            // MyStyle elevation.card, like the cards around it
             blur: 24
             offset.y: 4
             color: Qt.rgba(0, 0, 0, MP.Theme.dark ? 0 : 0.05)
@@ -108,7 +109,7 @@ ColumnLayout {
         Item {
             id: ancLane
             anchors.fill: parent
-            anchors.margins: 4
+            anchors.margins: MP.Theme.spaceXs
 
             Rectangle {
                 id: ancThumb
@@ -118,22 +119,24 @@ ColumnLayout {
                 width: ancTrack.segmentWidth
                 height: parent.height
                 radius: height / 2
-                scale: ancTrack.glass ? 1.14 : 1
-                color: ancTrack.glass ? Qt.rgba(1, 1, 1, MP.Theme.dark ? 0.12 : 0.3) : MP.Theme.thumb
+                // GM-5: a glass lens while dragged (Reduce Motion: no scaling)
+                scale: ancTrack.glass && !MP.Theme.reduceMotion ? 1.14 : 1
+                // MyStyle: kein Token für die Daumen-Linse (Weiß 30 % / 12 %)
+                color: ancTrack.glass ? Qt.rgba(1, 1, 1, MP.Theme.dark ? 0.12 : 0.3) : MP.Theme.materialThumb
                 border.width: 1
                 border.color: ancTrack.glass ? MP.Theme.glassBorder : "transparent"
 
-                Behavior on x { enabled: !ancMouse.dragging; NumberAnimation { duration: 380; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
-                Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 2 } }
-                Behavior on color { ColorAnimation { duration: 180 } }
-                Behavior on border.color { ColorAnimation { duration: 180 } }
+                Behavior on x { enabled: !ancMouse.dragging; NumberAnimation { duration: MP.Theme.durationGlide; easing.type: MP.Theme.easeSpring; easing.overshoot: MP.Theme.glideOvershoot } }
+                Behavior on scale { NumberAnimation { duration: MP.Theme.durationSpring; easing.type: MP.Theme.easeSpring; easing.overshoot: MP.Theme.springOvershoot } }
+                Behavior on color { ColorAnimation { duration: MP.Theme.durationToggle } }
+                Behavior on border.color { ColorAnimation { duration: MP.Theme.durationToggle } }
 
                 // specular sheen on the upper half of the lens
                 Rectangle {
                     anchors.fill: parent
                     radius: parent.radius
                     opacity: ancTrack.glass ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 180 } }
+                    Behavior on opacity { NumberAnimation { duration: MP.Theme.durationToggle } }
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: MP.Theme.glassSheen }
                         GradientStop { position: 0.55; color: "transparent" }
@@ -166,22 +169,22 @@ ColumnLayout {
                         Rectangle {
                             anchors.fill: parent
                             radius: height / 2
-                            color: MP.Theme.tertiaryFill
+                            color: MP.Theme.fillTertiary
                             visible: parent.hovered && index !== ancTrack.selectedIndex
                         }
 
                         Impl.IconImage {
                             anchors.centerIn: parent
-                            sourceSize: Qt.size(20, 20)
-                            source: MP.Theme.asset("icons/" + modelData.icon)
-                            color: MP.Theme.text
+                            sourceSize: Qt.size(MP.Theme.sizeIconL, MP.Theme.sizeIconL)
+                            source: MP.Units.asset("icons/" + modelData.icon)
+                            color: MP.Theme.labelPrimary
                             // lens magnification under the glass thumb
-                            scale: ancTrack.glass && index === ancTrack.thumbIndex ? 1.2 : 1
-                            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                            scale: ancTrack.glass && index === ancTrack.thumbIndex && !MP.Theme.reduceMotion ? 1.2 : 1
+                            Behavior on scale { NumberAnimation { duration: MP.Theme.durationToggle; easing.type: MP.Theme.easeSpring } }
                         }
 
                         QQC2.ToolTip.visible: hovered
-                        QQC2.ToolTip.delay: 500
+                        QQC2.ToolTip.delay: MP.Theme.durationTooltipDelay
                         QQC2.ToolTip.text: modelData.text
                     }
                 }
@@ -219,9 +222,8 @@ ColumnLayout {
         spacing: 2
 
         MP.Label {
-            color: MP.Theme.secondaryText
-            font.pixelSize: MP.Theme.captionSize
-            font.weight: Font.Medium
+            color: MP.Theme.labelSecondary
+            font: MP.Theme.fontCaption
             text: root.buttons.find(b => b.mode === root.selectedAnc)?.text ?? ""
         }
         InfoButton {

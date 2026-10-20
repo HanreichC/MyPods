@@ -10,31 +10,35 @@ import mypods as MP
 // Switch at desktop size like MyCAD's: 38x22 capsule, white knob, system green when on.
 QQC2.Switch {
     id: control
-    implicitWidth: 38
-    implicitHeight: 22
+    implicitWidth: MP.Theme.sizeSwitchWidth
+    implicitHeight: MP.Theme.sizeSwitchHeight
     padding: 0
     spacing: 0
     contentItem: null
-    opacity: enabled ? 1 : 0.4
+    opacity: enabled ? 1 : MP.Theme.opacityDisabled
 
     indicator: Rectangle {
         x: 0
         y: 0
-        implicitWidth: 38
-        implicitHeight: 22
+        implicitWidth: MP.Theme.sizeSwitchWidth
+        implicitHeight: MP.Theme.sizeSwitchHeight
         radius: height / 2
-        color: control.checked ? MP.Theme.green : MP.Theme.fill
-        Behavior on color { ColorAnimation { duration: 200 } }
+        color: control.checked ? MP.Theme.green : MP.Theme.fillSecondary
+        border.width: control.visualFocus ? 2 : 0
+        border.color: MP.Theme.focusRing
+        Behavior on color { ColorAnimation { duration: MP.Theme.durationToggle } }
 
         Rectangle {
-            x: control.checked ? parent.width - width - 2 : 2
-            y: 2
-            width: control.pressed ? 22 : 18
-            height: 18
+            readonly property int inset: (MP.Theme.sizeSwitchHeight - MP.Theme.sizeSwitchKnob) / 2
+            x: control.checked ? parent.width - width - inset : inset
+            y: inset
+            // a little wider while pressed (22)
+            width: control.pressed ? MP.Theme.sizeSwitchKnob + 2 * inset : MP.Theme.sizeSwitchKnob
+            height: MP.Theme.sizeSwitchKnob
             radius: height / 2
-            color: "white"
-            Behavior on x { NumberAnimation { duration: 280; easing.type: Easing.OutBack; easing.overshoot: 1.3 } }
-            Behavior on width { NumberAnimation { duration: 150 } }
+            color: "#FFFFFF" // C-1: the knob is white in every mode
+            Behavior on x { NumberAnimation { duration: MP.Theme.durationSpring; easing.type: MP.Theme.easeSpring; easing.overshoot: MP.Theme.springOvershoot } }
+            Behavior on width { NumberAnimation { duration: MP.Theme.durationFade } }
             // effects need a shader-capable scene graph; the software renderer drops the item
             layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
             layer.effect: MultiEffect {

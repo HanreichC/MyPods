@@ -36,12 +36,12 @@ QQC2.ApplicationWindow {
     readonly property int topInset: 6
     // KDE blurs the desktop behind the panel (main.cpp, BlurBehind.h): where, and whether it does
     readonly property rect glassRect: Qt.rect(panel.x, panel.y, panel.width, panel.height)
-    readonly property real glassRadius: MP.Theme.radius
+    readonly property real glassRadius: MP.Theme.radiusPanel
     property bool desktopBlur: false
 
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
     color: "transparent"
-    font.family: "Inter"
+    font.family: MP.Theme.fontFamily
     Material.theme: MP.Theme.dark ? Material.Dark : Material.Light
     Material.accent: MP.Theme.accent
     width: 320 + shadowMargin * 2
@@ -97,23 +97,23 @@ QQC2.ApplicationWindow {
         property: "opacity"
         from: 0
         to: 1
-        duration: 140
-        easing.type: Easing.OutCubic
+        duration: MP.Theme.durationFade
+        easing.type: MP.Theme.easeStandard
     }
 
     // A module of the popup like in the Mac's Control Center: a quiet tile with rounded corners
     component Tile: Rectangle {
         default property alias content: tileColumn.data
         Layout.fillWidth: true
-        implicitHeight: tileColumn.implicitHeight + 24
-        radius: MP.Theme.tileRadius
-        color: MP.Theme.tertiaryFill
+        implicitHeight: tileColumn.implicitHeight + 2 * MP.Theme.spaceM
+        radius: MP.Theme.radiusTile
+        color: MP.Theme.fillTertiary
 
         ColumnLayout {
             id: tileColumn
-            x: 12
-            y: 12
-            width: parent.width - 24
+            x: MP.Theme.spaceM
+            y: MP.Theme.spaceM
+            width: parent.width - 2 * MP.Theme.spaceM
             spacing: 10
         }
     }
@@ -136,13 +136,13 @@ QQC2.ApplicationWindow {
             x: 14
             y: 14
             width: parent.width - 28
-            spacing: 12
+            spacing: MP.Theme.spaceM
 
             // Device: render, name and the battery rings
             RowLayout {
                 Layout.fillWidth: true
                 visible: popup.hasInfo
-                spacing: 12
+                spacing: MP.Theme.spaceM
 
                 Components.DeviceImage {
                     Layout.preferredWidth: 48
@@ -158,9 +158,8 @@ QQC2.ApplicationWindow {
                     Text {
                         Layout.fillWidth: true
                         text: popup.infoData?.name ?? ""
-                        color: MP.Theme.text
-                        font.pixelSize: 15
-                        font.weight: Font.DemiBold
+                        color: MP.Theme.labelPrimary
+                        font: MP.Theme.fontHeadline
                         wrapMode: Text.Wrap // long names on two lines rather than cut off
                         maximumLineCount: 2
                         elide: Text.ElideRight
@@ -169,8 +168,8 @@ QQC2.ApplicationWindow {
                         Layout.fillWidth: true
                         text: !popup.infoData?.wired ? qsTrId("tray.popup.connected")
                               : popup.infoData.wired === "usb" ? qsTrId("battery.wired.usb") : qsTrId("battery.wired.jack")
-                        color: MP.Theme.secondaryText
-                        font.pixelSize: 12
+                        color: MP.Theme.labelSecondary
+                        font: MP.Theme.fontCaption
                         elide: Text.ElideRight
                     }
                 }
@@ -179,7 +178,7 @@ QQC2.ApplicationWindow {
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
                 visible: popup.hasInfo
-                spacing: MP.Units.largeSpacing
+                spacing: MP.Theme.spaceL
 
                 Repeater {
                     model: [
@@ -203,19 +202,18 @@ QQC2.ApplicationWindow {
             RowLayout {
                 Layout.fillWidth: true
                 visible: popup.autoSwitchData !== null && !(popup.autoSwitchData?.owns ?? true)
-                spacing: MP.Units.mediumSpacing
+                spacing: MP.Theme.spaceS
 
                 Text {
                     Layout.fillWidth: true
                     text: popup.autoSwitchData?.source ? qsTrId("battery.moved").arg(popup.autoSwitchData.source) : qsTrId("battery.moved_other")
-                    color: MP.Theme.text
-                    font.pixelSize: 13
+                    color: MP.Theme.labelPrimary
+                    font: MP.Theme.fontCallout
                     wrapMode: Text.Wrap
                 }
                 MP.Button {
                     text: qsTrId("battery.move_here")
                     highlighted: true
-                    font.pixelSize: 13
                     onClicked: cppBackend.setCapability("autoSwitch", popup.infoData.address, true, "takeover")
                 }
             }
@@ -235,9 +233,8 @@ QQC2.ApplicationWindow {
                     Text {
                         Layout.fillWidth: true
                         text: qsTrId("battery.conversation_awareness")
-                        color: MP.Theme.text
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        color: MP.Theme.labelPrimary
+                        font: MP.Units.font(MP.Theme.fontCallout, { weight: Font.Medium })
                         elide: Text.ElideRight
                     }
                     Components.Toggle {
@@ -265,9 +262,8 @@ QQC2.ApplicationWindow {
 
                 Text {
                     text: qsTrId("tray.popup.output")
-                    color: MP.Theme.secondaryText
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
+                    color: MP.Theme.labelSecondary
+                    font: MP.Units.font(MP.Theme.fontCaption, { weight: Font.DemiBold })
                 }
                 Repeater {
                     model: popup.outputs
@@ -285,31 +281,33 @@ QQC2.ApplicationWindow {
                         Accessible.checked: modelData.default
                         onClicked: if (!modelData.default) cppBackend.setPlaybackOutput(modelData.sink)
                         background: Rectangle {
-                            radius: 6
-                            color: outputRow.hovered ? MP.Theme.fill : "transparent"
+                            radius: MP.Theme.radiusTile - 6 // R-1: concentric in the tile, 6 in from its edge
+                            color: outputRow.hovered ? MP.Theme.fillSecondary : "transparent"
+                            border.width: outputRow.visualFocus ? 2 : 0
+                            border.color: MP.Theme.focusRing
                         }
                         contentItem: RowLayout {
-                            spacing: 8
+                            spacing: MP.Theme.spaceS
 
                             Impl.IconImage {
                                 Layout.leftMargin: 6
-                                sourceSize: Qt.size(16, 16)
-                                source: MP.Theme.asset(outputRow.modelData.address ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
-                                color: outputRow.modelData.default ? MP.Theme.accent : MP.Theme.secondaryText
+                                sourceSize: Qt.size(MP.Theme.sizeIconM, MP.Theme.sizeIconM)
+                                source: MP.Units.asset(outputRow.modelData.address ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
+                                color: outputRow.modelData.default ? MP.Theme.accentText : MP.Theme.labelSecondary
                             }
                             Text {
                                 Layout.fillWidth: true
                                 text: outputRow.modelData.name
-                                color: MP.Theme.text
-                                font.pixelSize: 13
+                                color: MP.Theme.labelPrimary
+                                font: MP.Theme.fontCallout
                                 elide: Text.ElideRight
                             }
                             Impl.IconImage {
                                 Layout.rightMargin: 6
                                 visible: outputRow.modelData.default
-                                sourceSize: Qt.size(16, 16)
-                                source: MP.Theme.asset("icons/icon-check.svg")
-                                color: MP.Theme.accent
+                                sourceSize: Qt.size(MP.Theme.sizeIconM, MP.Theme.sizeIconM)
+                                source: MP.Units.asset("icons/icon-check.svg")
+                                color: MP.Theme.accentText
                             }
                         }
                     }
@@ -323,22 +321,24 @@ QQC2.ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.topMargin: -4
                 Layout.bottomMargin: -6
-                implicitHeight: 30
+                implicitHeight: MP.Theme.sizeControlDesktop
                 Accessible.name: contentItem.text
                 onClicked: {
                     popup.visible = false;
                     popup.openAppRequested();
                 }
                 background: Rectangle {
-                    radius: 8
-                    color: parent.hovered ? MP.Theme.tertiaryFill : "transparent"
+                    radius: MP.Theme.radiusControl
+                    color: parent.hovered ? MP.Theme.fillTertiary : "transparent"
+                    border.width: parent.visualFocus ? 2 : 0
+                    border.color: MP.Theme.focusRing
                 }
                 contentItem: Text {
-                    leftPadding: 8
+                    leftPadding: MP.Theme.spaceS
                     verticalAlignment: Text.AlignVCenter
                     text: qsTrId("tray.popup.open_app")
-                    color: MP.Theme.text
-                    font.pixelSize: 13
+                    color: MP.Theme.labelPrimary
+                    font: MP.Theme.fontCallout
                 }
             }
         }

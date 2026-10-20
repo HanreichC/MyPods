@@ -1427,5 +1427,55 @@ MyPods legt dafür Dateien in ~/.config/pipewire an (…/60-mypods-hires.conf) u
         <source></source>
         <translation>Der Name, mit dem sich die Kopfhörer per Bluetooth melden. Diese Kopfhörer lassen ihn sich von hier aus nicht ändern.</translation>
     </message>
+    <message id="settings.liquid_glass">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Liquid Glass</translation>
+    </message>
+    <message id="settings.liquid_glass.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Wie stark die Glasflächen getönt sind: die Seitenleiste, die Fensterknöpfe, Menüs und Hinweise. Klar lässt mehr vom Inhalt darunter durchscheinen, Getönt macht das Glas dichter und Text darauf leichter lesbar. Die Mitte ist der Standard.</translation>
+    </message>
+    <message id="settings.liquid_glass.clear">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Klar</translation>
+    </message>
+    <message id="settings.liquid_glass.tinted">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Getönt</translation>
+    </message>
+    <message id="settings.increase_contrast">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Kontrast erhöhen</translation>
+    </message>
+    <message id="settings.increase_contrast.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Text und Trennlinien heben sich stärker ab, Karten und Glas bekommen einen sichtbaren Rand, und das Glas wird dichter. Bis du es hier einstellst, folgt MyPods dem System, sofern es den Wunsch nach hohem Kontrast meldet.</translation>
+    </message>
+    <message id="settings.reduce_transparency">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Transparenz reduzieren</translation>
+    </message>
+    <message id="settings.reduce_transparency.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Glasflächen werden fast deckend, statt den Inhalt dahinter durchscheinen zu lassen. Das erleichtert das Lesen über unruhigem Hintergrund.</translation>
+    </message>
+    <message id="settings.reduce_motion">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Bewegung reduzieren</translation>
+    </message>
+    <message id="settings.reduce_motion.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Ohne Nachfedern, Vergrößern und Hereingleiten: Bedienelemente bewegen sich ohne Überschwingen, Fenster und Hinweise blenden nur kurz ein und aus.</translation>
+    </message>
 </context>
 </TS>

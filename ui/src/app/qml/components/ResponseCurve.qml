@@ -31,12 +31,12 @@ Canvas {
     onPaint: {
         const ctx = getContext("2d");
         ctx.reset();
-        ctx.font = "11px sans-serif";
+        ctx.font = MP.Units.fontDetail.pixelSize + "px " + MP.Theme.fontFamily;
         ctx.lineWidth = 1;
 
         // grid: 0 dB and every 6 dB, 100 Hz / 1 kHz / 10 kHz
         ctx.strokeStyle = MP.Theme.separator;
-        ctx.fillStyle = MP.Theme.secondaryText;
+        ctx.fillStyle = MP.Theme.labelSecondary;
         for (let db = -range; db <= range; db += 6) {
             ctx.globalAlpha = db === 0 ? 1 : 0.5;
             ctx.beginPath();
@@ -66,6 +66,6 @@ Canvas {
         };
         if (splitEars)
             curve(response.right, MP.Theme.orange);
-        curve(response?.left, MP.Theme.accent);
+        curve(response?.left, MP.Theme.accentText); // a line on the card: the accent as foreground (C-2)
     }
 }

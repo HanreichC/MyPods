@@ -5,14 +5,12 @@
 import QtQuick
 import mypods as MP
 
-// Desktop text styles like MyCAD's: 1 = page title, 2 = title, 3 = headline, 4 = body emphasized,
-// 5 = section header (small caps in grey, like MyCAD's LIBRARY)
+// MyStyle's desktop text styles: 1 = page title (Title 1), 2 = title (Title 2), 3 = headline, 4 = body emphasized,
+// 5 = section header (small caps in grey)
 Text {
     id: root
     property int level: 1
-    color: level === 5 ? MP.Theme.secondaryText : MP.Theme.text
-    font.pixelSize: ({ 1: MP.Theme.titleSize, 2: 20, 3: 15, 4: MP.Theme.bodySize })[level] ?? MP.Theme.sectionSize
-    font.weight: level <= 2 ? Font.Bold : Font.DemiBold
-    font.letterSpacing: ({ 1: -0.4, 2: -0.3, 5: 0.5 })[level] ?? 0
-    font.capitalization: level === 5 ? Font.AllUppercase : Font.MixedCase
+    color: level === 5 ? MP.Theme.labelSecondary : MP.Theme.labelPrimary
+    font: [MP.Theme.fontTitle1, MP.Theme.fontTitle2, MP.Theme.fontHeadline, MP.Units.font(MP.Theme.fontBody, { weight: Font.DemiBold })][level - 1]
+          ?? MP.Units.font(MP.Theme.fontSection, { features: { "case": 1 } }) // T-6: Inter's forms for capitals
 }

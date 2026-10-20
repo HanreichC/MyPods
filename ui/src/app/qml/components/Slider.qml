@@ -10,25 +10,25 @@ import mypods as MP
 // The knob's center sits padding + 10.5 px from the ends (the equalizer's scale labels line up with it).
 QQC2.Slider {
     id: control
-    padding: 2
-    implicitWidth: vertical ? 25 : 160
-    implicitHeight: vertical ? 160 : 25
-    opacity: enabled ? 1 : 0.4
+    padding: MP.Theme.spaceXxs
+    implicitWidth: vertical ? MP.Theme.sizeSliderKnob + 2 * padding : 160
+    implicitHeight: vertical ? 160 : MP.Theme.sizeSliderKnob + 2 * padding
+    opacity: enabled ? 1 : MP.Theme.opacityDisabled
 
     background: Rectangle {
         x: control.leftPadding + (control.vertical ? (control.availableWidth - width) / 2 : 0)
         y: control.topPadding + (control.vertical ? 0 : (control.availableHeight - height) / 2)
-        width: control.vertical ? 4 : control.availableWidth
-        height: control.vertical ? control.availableHeight : 4
-        radius: 2
-        color: MP.Theme.fill
+        width: control.vertical ? MP.Theme.sizeSliderTrack : control.availableWidth
+        height: control.vertical ? control.availableHeight : MP.Theme.sizeSliderTrack
+        radius: MP.Theme.sizeSliderTrack / 2
+        color: MP.Theme.fillSecondary
 
         Rectangle {
             // from the bottom when vertical, from the left otherwise
             y: control.vertical ? control.visualPosition * parent.height : 0
             width: control.vertical ? parent.width : control.visualPosition * parent.width
             height: control.vertical ? parent.height - y : parent.height
-            radius: 2
+            radius: parent.radius
             color: MP.Theme.accent
         }
     }
@@ -36,14 +36,15 @@ QQC2.Slider {
     handle: Rectangle {
         x: control.leftPadding + (control.vertical ? (control.availableWidth - width) / 2 : control.visualPosition * (control.availableWidth - width))
         y: control.topPadding + (control.vertical ? control.visualPosition * (control.availableHeight - height) : (control.availableHeight - height) / 2)
-        implicitWidth: 21
-        implicitHeight: 21
+        implicitWidth: MP.Theme.sizeSliderKnob
+        implicitHeight: MP.Theme.sizeSliderKnob
         radius: width / 2
-        color: "white"
+        color: "#FFFFFF" // C-1: the knob is white in every mode
         border.width: control.visualFocus ? 2 : 0
-        border.color: MP.Theme.accent
-        scale: control.pressed ? 1.12 : 1
-        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+        border.color: MP.Theme.focusRing
+        // Reduce Motion: no scaling
+        scale: control.pressed && !MP.Theme.reduceMotion ? 1.12 : 1
+        Behavior on scale { NumberAnimation { duration: MP.Theme.durationSpring; easing.type: MP.Theme.easeSpring; easing.overshoot: MP.Theme.springOvershoot } }
         // effects need a shader-capable scene graph; the software renderer drops the item
         layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
         layer.effect: MultiEffect {

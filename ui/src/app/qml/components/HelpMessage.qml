@@ -11,14 +11,14 @@ ColumnLayout {
     required property string titleText
     required property string bodyText
     Layout.fillWidth: true
-    Layout.topMargin: MP.Units.hugeSpacing * 2
-    spacing: MP.Units.mediumSpacing
+    Layout.topMargin: MP.Theme.spaceXxxl
+    spacing: MP.Theme.spaceS
 
     Image {
-        Layout.preferredWidth: 96
-        Layout.preferredHeight: 96
+        Layout.preferredWidth: MP.Theme.sizeIllustration
+        Layout.preferredHeight: MP.Theme.sizeIllustration
         Layout.alignment: Qt.AlignHCenter
-        Layout.bottomMargin: MP.Units.mediumSpacing
+        Layout.bottomMargin: MP.Theme.spaceS
         sourceSize: Qt.size(224, 224)
         source: iconSource
     }
@@ -33,7 +33,7 @@ ColumnLayout {
 
     MP.Label {
         text: bodyText
-        color: MP.Theme.secondaryText
+        color: MP.Theme.labelSecondary
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         horizontalAlignment: Text.AlignHCenter

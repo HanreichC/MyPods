@@ -30,7 +30,7 @@ Item {
     }
 
     Layout.fillWidth: true
-    implicitHeight: Math.max(40, row.implicitHeight + MP.Units.mediumSpacing)
+    implicitHeight: Math.max(MP.Theme.sizeRowDesktop, row.implicitHeight + MP.Theme.spaceS)
 
     Rectangle {
         visible: root.hasRowAbove
@@ -43,20 +43,20 @@ Item {
     RowLayout {
         id: row
         anchors.fill: parent
-        spacing: MP.Units.mediumSpacing + 2
+        spacing: MP.Theme.spaceS + 2
 
         Rectangle {
             visible: root.iconSource.toString() !== ""
-            implicitWidth: 26
-            implicitHeight: 26
-            radius: MP.Theme.smallRadius - 1
+            implicitWidth: MP.Theme.sizeIconTile
+            implicitHeight: MP.Theme.sizeIconTile
+            radius: MP.Theme.radiusIconTile
             color: root.iconColor
 
             Impl.IconImage {
                 anchors.centerIn: parent
-                sourceSize: Qt.size(16, 16)
+                sourceSize: Qt.size(MP.Theme.sizeIconM, MP.Theme.sizeIconM)
                 source: root.iconSource
-                color: "white"
+                color: MP.Theme.labelOnAccent
             }
         }
 
@@ -66,12 +66,12 @@ Item {
             // as wide as its text, wrapped only when the row runs short; rounded up, as the layout rounds down
             Layout.maximumWidth: Math.ceil(implicitWidth)
             text: root.label
-            color: MP.Theme.text
-            font.pixelSize: MP.Theme.bodySize
+            color: MP.Theme.labelPrimary
+            font: MP.Theme.fontBody
             wrapMode: Text.Wrap // long labels and names wrap rather than being cut off
             maximumLineCount: 3
             elide: Text.ElideRight
-            opacity: root.enabled ? 1 : 0.4
+            opacity: root.enabled ? 1 : MP.Theme.opacityDisabled
         }
 
         InfoButton {

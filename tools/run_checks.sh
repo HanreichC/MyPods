@@ -53,5 +53,6 @@ ln -s "$PWD/ui/src" "$OUT/qml/mypods/src"
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_picker.qml
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_popup.qml
 QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_info.qml
+QT_QPA_PLATFORM=offscreen "$QMLTEST" -import "$OUT/qml" -input ui/tests/tst_theme.qml
 
 echo "All checks passed"

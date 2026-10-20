@@ -5,23 +5,28 @@ import QtQuick
 import QtQuick.Effects
 import mypods as MP
 
-// Liquid Glass like MyCAD's, for the bars, the sidebar and every popup, with a soft shadow a little below
-// (a window needs room around it for that).
-// - blurSource: what lies behind the glass in the same window. MyCAD's clear glass over it (glass.frag):
-//   blurred, bent like a lens towards the edge, a light rim.
-// - translucent: a window of its own whose desktop the compositor already blurs (BlurBehind.h): a tint
-//   and a rim over it; the lens can't reach the desktop.
-// - neither (or the software renderer): MyCAD's glass alert, nearly opaque and light at the top.
+// MyStyle's Liquid Glass (platforms/qml/Glass.qml) for the bars, the sidebar and every popup, with a soft shadow a
+// little below (a window needs room around it for that).
+// - blurSource: what lies behind the glass in the same window -> the full lens (glass.frag).
+// - translucent: a window of its own whose desktop the compositor blurs (BlurBehind.h) -> tint and rim only.
+// - neither, the software renderer, or Reduce Transparency -> frosted, nearly opaque, light at the top.
+// MyPods adds GM-4: while the window is in the background the glass steps back (more tint, half the rim).
 Item {
     id: root
-    property real radius: MP.Theme.radius
+    property real radius: MP.Theme.radiusPanel
     property Item blurSource: null
     property bool translucent: false
-    // how much the tint covers the blurred backdrop: MyCAD's clear glass; popups with text to read take more
-    property real tint: MP.Theme.dark ? 0.24 : 0.17
-    readonly property bool lens: blurSource !== null && GraphicsInfo.api !== GraphicsInfo.Software
+    // menus, popovers, alerts: the denser glass for reading
+    property bool textSurface: false
+    // "thin" (small capsules, transient control glass), "regular" (bars, sidebar), "thick" (menus, popovers, alerts)
+    property string thickness: "regular"
+
+    readonly property var spec: thickness === "thin" ? MP.Theme.glassThin : thickness === "thick" ? MP.Theme.glassThick : MP.Theme.glassRegular
+    readonly property bool windowActive: Window.active
+    readonly property real tint: Math.min(1, MP.Theme.glassTintAmount(textSurface) + (windowActive ? 0 : 0.1))
+    readonly property bool lens: blurSource !== null && GraphicsInfo.api !== GraphicsInfo.Software && !MP.Theme.reduceTransparency
     // the backdrop is captured this much larger, so the blur has something to draw from at the glass's edge
-    readonly property int margin: 24
+    readonly property int margin: Math.round(MP.Theme.glassBlur + spec.extraBlur)
 
     // Holding on to the window's content only while shown, and letting go before the app quits: a reference
     // still held while the window is torn down crashes Qt (QQuickDeliveryAgent, 6.11)
@@ -34,9 +39,9 @@ Item {
     RectangularShadow {
         anchors.fill: parent
         radius: root.radius
-        blur: 28
-        offset.y: 6
-        color: MP.Theme.shadow
+        blur: root.spec.shadowBlur
+        offset.y: root.spec.shadowY
+        color: Qt.rgba(MP.Theme.shadow.r, MP.Theme.shadow.g, MP.Theme.shadow.b, Math.min(1, MP.Theme.shadow.a * root.spec.shadowScale))
     }
 
     ShaderEffectSource {
@@ -82,18 +87,35 @@ Item {
         property real margin: root.margin
         property real dark: MP.Theme.dark ? 1 : 0
         property real tint: root.tint
+        property real lensZone: root.spec.lensZone
+        property real lensStrength: MP.Theme.reduceMotion ? root.spec.lensStrength * 0.5 : root.spec.lensStrength
+        property real chroma: root.spec.chroma
+        property real saturation: MP.Theme.glassSaturation
+        property real rim: MP.Theme.glassRim * (root.windowActive ? 1 : 0.5)
+        property real edge: MP.Theme.glassEdge.a
+        property color tintColor: MP.Theme.glassTint
         fragmentShader: Qt.resolvedUrl("../../shaders/glass.frag.qsb")
+    }
+
+    // Increase Contrast: a clear border around the lens
+    Rectangle {
+        anchors.fill: parent
+        visible: root.lens && MP.Theme.increaseContrast
+        radius: root.radius
+        color: "transparent"
+        border.width: 1
+        border.color: MP.Theme.glassBorder
     }
 
     Rectangle {
         anchors.fill: parent
         visible: !root.lens
         radius: root.radius
-        border.width: root.translucent ? 1.5 : 1
-        border.color: root.translucent ? MP.Theme.glassBorder : MP.Theme.popupBorder
+        border.width: root.translucent && !MP.Theme.reduceTransparency ? 1.5 : 1
+        border.color: root.translucent && !MP.Theme.reduceTransparency ? MP.Theme.glassBorder : MP.Theme.glassPopupBorder
         gradient: Gradient {
-            GradientStop { position: 0; color: root.translucent ? MP.Theme.popupGlass : MP.Theme.popup }
-            GradientStop { position: 1; color: root.translucent ? MP.Theme.popupGlassBottom : MP.Theme.popupBottom }
+            GradientStop { position: 0; color: root.translucent && !MP.Theme.reduceTransparency ? MP.Theme.glassTranslucentTop : MP.Theme.glassOpaqueTop }
+            GradientStop { position: 1; color: root.translucent && !MP.Theme.reduceTransparency ? MP.Theme.glassTranslucentBottom : MP.Theme.glassOpaqueBottom }
         }
     }
 }

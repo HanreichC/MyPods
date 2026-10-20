@@ -95,7 +95,6 @@ qt_add_qml_module(mypods
         src/app/qml/pages/DevicePage.qml
         src/app/qml/pages/BluetoothPage.qml
         src/app/qml/pages/SettingsPage.qml
-        src/app/qml/pages/ColorSample.qml
     RESOURCES
         ${APP_RESOURCE_FILES}
 )

@@ -41,7 +41,7 @@ Item {
         function test_valueReadableInBothAppearances() {
             for (const appearance of ["light", "dark"]) {
                 MP.Theme.appearance = appearance;
-                verify(Qt.colorEqual(picker.contentItem.color, MP.Theme.secondaryText), appearance + ": " + picker.contentItem.color);
+                verify(Qt.colorEqual(picker.contentItem.color, MP.Theme.labelSecondary), appearance + ": " + picker.contentItem.color);
             }
             MP.Theme.appearance = "auto";
         }

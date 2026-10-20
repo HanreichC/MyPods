@@ -5,7 +5,8 @@
 import QtQuick 2.15
 import mypods as MP
 
+// Body text. Another style goes in whole (font: MP.Theme.fontCallout): a single font.pixelSize would drop this one.
 Text {
-    color: MP.Theme.text
-    font.pixelSize: MP.Theme.bodySize
+    color: MP.Theme.labelPrimary
+    font: MP.Theme.fontBody
 }

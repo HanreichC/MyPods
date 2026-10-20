@@ -23,21 +23,21 @@ QQC2.ApplicationWindow {
     // visibility only: set together with visible, visibility wins and --hidden would do nothing
     visibility: startHidden ? Window.Hidden : gameScopeMode ? Window.FullScreen : Window.Windowed
     // Rounded like the popups: the corners outside the backdrop stay see-through
-    color: gameScopeMode ? MP.Theme.base : "transparent"
+    color: gameScopeMode ? MP.Theme.backgroundTop : "transparent"
     // Material hard-codes Roboto/Noto for controls; the window font overrides it for every control
-    font.family: "Inter"
+    font.family: MP.Theme.fontFamily
 
     Material.theme: MP.Theme.dark ? Material.Dark : Material.Light
     Material.accent: MP.Theme.accent
     Material.primary: MP.Theme.accent
 
     property alias currentIndex: swipeView.currentIndex
-    readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.windowRadius
+    readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radiusWindow
     // Pages span the whole window and slide under the glass sidebar; their content starts right of it.
     // contentInset and titleInset (clear of the window buttons) are read by ScrollPage
     readonly property int contentInset: sidebar.x + sidebar.width
-    readonly property int titleInset: windowBar.visible ? Math.max(0, contentInset + (width - contentInset + Math.min(width - contentInset - MP.Units.hugeSpacing * 2, MP.Theme.maxContentWidth)) / 2
-                                                                     - windowBar.x + MP.Units.mediumSpacing) : 0
+    readonly property int titleInset: windowBar.visible ? Math.max(0, contentInset + (width - contentInset + Math.min(width - contentInset - MP.Theme.spaceXl * 2, MP.Theme.sizeContentMaxWidth)) / 2
+                                                                     - windowBar.x + MP.Theme.spaceS) : 0
     readonly property var sections: [
         { page: 1, text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
         { page: 2, text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
@@ -80,23 +80,23 @@ QQC2.ApplicationWindow {
     component WindowButton: QQC2.AbstractButton {
         id: windowButton
         property bool danger: false
-        implicitWidth: 36
-        implicitHeight: 36
+        implicitWidth: MP.Theme.sizeWindowButton
+        implicitHeight: MP.Theme.sizeWindowButton
         focusPolicy: Qt.NoFocus
         Accessible.name: text
         QQC2.ToolTip.visible: hovered
-        QQC2.ToolTip.delay: 600
+        QQC2.ToolTip.delay: MP.Theme.durationTooltipDelay
         QQC2.ToolTip.text: text
         background: Rectangle {
             radius: height / 2
-            color: windowButton.danger && windowButton.hovered ? (windowButton.pressed ? Qt.darker(MP.Theme.closeHover, 1.15) : MP.Theme.closeHover)
-                   : windowButton.pressed ? MP.Theme.fill : windowButton.hovered ? MP.Theme.tertiaryFill : "transparent"
-            Behavior on color { ColorAnimation { duration: 100 } }
+            color: windowButton.danger && windowButton.hovered ? (windowButton.pressed ? Qt.darker(MP.Theme.red, 1.15) : MP.Theme.red)
+                   : windowButton.pressed ? MP.Theme.fillSecondary : windowButton.hovered ? MP.Theme.fillTertiary : "transparent"
+            Behavior on color { ColorAnimation { duration: MP.Theme.durationHover } }
         }
         contentItem: Impl.IconImage {
             sourceSize: Qt.size(18, 18)
             source: windowButton.icon.source
-            color: windowButton.danger && windowButton.hovered ? "white" : MP.Theme.text
+            color: windowButton.danger && windowButton.hovered ? MP.Theme.labelOnAccent : MP.Theme.labelPrimary
         }
     }
 
@@ -109,8 +109,8 @@ QQC2.ApplicationWindow {
             anchors.fill: parent
             radius: root.cornerRadius
             gradient: Gradient {
-                GradientStop { position: 0; color: MP.Theme.base }
-                GradientStop { position: 1; color: MP.Theme.baseBottom }
+                GradientStop { position: 0; color: MP.Theme.backgroundTop }
+                GradientStop { position: 1; color: MP.Theme.backgroundBottom }
             }
         }
 
@@ -125,9 +125,9 @@ QQC2.ApplicationWindow {
             }
 
             Components.InlineMessage {
-                Layout.margins: MP.Units.largeSpacing
-                Layout.leftMargin: root.contentInset + MP.Units.largeSpacing
-                Layout.topMargin: 12 + MP.Theme.barHeight + MP.Units.largeSpacing // under the window buttons
+                Layout.margins: MP.Theme.spaceL
+                Layout.leftMargin: root.contentInset + MP.Theme.spaceL
+                Layout.topMargin: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.spaceL // under the window buttons
                 visible: cppBackend?.unsupportedApi ?? false
                 type: 2
                 text: qsTrId("Error.service_api_wrong")
@@ -187,9 +187,11 @@ QQC2.ApplicationWindow {
         Accessible.description: output ? qsTrId("sidebar.output") : ""
 
         background: Rectangle {
-            radius: MP.Theme.tileRadius
-            color: sidebarItem.current ? MP.Theme.fill : sidebarItem.hovered ? MP.Theme.tertiaryFill : "transparent"
-            Behavior on color { ColorAnimation { duration: 120 } }
+            radius: MP.Theme.radiusTile
+            color: sidebarItem.current ? MP.Theme.fillSecondary : sidebarItem.hovered ? MP.Theme.fillTertiary : "transparent"
+            border.width: sidebarItem.visualFocus ? 2 : 0
+            border.color: MP.Theme.focusRing
+            Behavior on color { ColorAnimation { duration: MP.Theme.durationHover } }
         }
         contentItem: RowLayout {
             spacing: 10
@@ -208,9 +210,9 @@ QQC2.ApplicationWindow {
                 Impl.IconImage {
                     anchors.centerIn: parent
                     visible: !sidebarItem.device
-                    sourceSize: Qt.size(16, 16)
+                    sourceSize: Qt.size(MP.Theme.sizeIconM, MP.Theme.sizeIconM)
                     source: sidebarItem.icon.source
-                    color: sidebarItem.current ? MP.Theme.accent : MP.Theme.secondaryText
+                    color: sidebarItem.current ? MP.Theme.accentText : MP.Theme.labelSecondary
                 }
             }
 
@@ -222,9 +224,8 @@ QQC2.ApplicationWindow {
                 Text {
                     Layout.fillWidth: true
                     text: sidebarItem.text
-                    color: MP.Theme.text
-                    font.pixelSize: 13
-                    font.weight: sidebarItem.current || sidebarItem.device ? Font.DemiBold : Font.Normal
+                    color: MP.Theme.labelPrimary
+                    font: sidebarItem.current || sidebarItem.device ? MP.Units.font(MP.Theme.fontCallout, { weight: Font.DemiBold }) : MP.Theme.fontCallout
                     wrapMode: Text.Wrap // long names on two lines rather than cut off
                     maximumLineCount: 2
                     elide: Text.ElideRight
@@ -233,8 +234,8 @@ QQC2.ApplicationWindow {
                     Layout.fillWidth: true
                     visible: text !== ""
                     text: sidebarItem.detail
-                    color: MP.Theme.secondaryText
-                    font.pixelSize: MP.Theme.sectionSize
+                    color: MP.Theme.labelSecondary
+                    font: MP.Units.fontDetail
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     elide: Text.ElideRight
@@ -244,9 +245,9 @@ QQC2.ApplicationWindow {
             Impl.IconImage {
                 visible: sidebarItem.output
                 Layout.rightMargin: 8
-                sourceSize: Qt.size(14, 14)
-                source: MP.Theme.asset("icons/icon-speaker-wave.svg")
-                color: MP.Theme.accent
+                sourceSize: Qt.size(MP.Theme.sizeIconS, MP.Theme.sizeIconS)
+                source: MP.Units.asset("icons/icon-speaker-wave.svg")
+                color: MP.Theme.accentText
             }
         }
     }
@@ -258,11 +259,11 @@ QQC2.ApplicationWindow {
         // the headphones to list: the connected ones, or the active ones before the list has come
         readonly property var devices: devicePage.connectedHeadphones.length > 0 ? devicePage.connectedHeadphones
                                        : devicePage.hasInfo ? [devicePage.infoData] : []
-        x: 12
-        y: 12
-        width: 232
-        height: parent.height - 24
-        radius: MP.Theme.radius
+        x: MP.Theme.sizeWindowInset
+        y: MP.Theme.sizeWindowInset
+        width: MP.Theme.sizeSidebarWidth
+        height: parent.height - 2 * MP.Theme.sizeWindowInset
+        radius: MP.Theme.radiusPanel
 
         ColumnLayout {
             anchors.fill: parent
@@ -307,7 +308,7 @@ QQC2.ApplicationWindow {
             SidebarItem {
                 visible: sidebar.devices.length === 0
                 text: qsTrId("battery.connect_headphones.header")
-                icon.source: MP.Theme.asset("icons/icon-headphones.svg")
+                icon.source: MP.Units.asset("icons/icon-headphones.svg")
                 current: swipeView.currentIndex === 0
                 onClicked: swipeView.currentIndex = 0
             }
@@ -320,7 +321,7 @@ QQC2.ApplicationWindow {
                     required property var modelData
                     text: modelData.text
                     detail: modelData.page === 3 && desktopManager.updateVersion !== "" ? qsTrId("about.update_available") : ""
-                    icon.source: MP.Theme.asset("icons/" + modelData.icon)
+                    icon.source: MP.Units.asset("icons/" + modelData.icon)
                     current: swipeView.currentIndex === modelData.page
                     onClicked: swipeView.currentIndex = modelData.page
                 }
@@ -331,8 +332,8 @@ QQC2.ApplicationWindow {
             Text {
                 Layout.leftMargin: 10
                 text: "MyPods " + Qt.application.version
-                color: MP.Theme.secondaryText
-                font.pixelSize: MP.Theme.sectionSize
+                color: MP.Theme.labelSecondary
+                font: MP.Theme.fontSection
             }
         }
     }
@@ -344,7 +345,7 @@ QQC2.ApplicationWindow {
         radius: root.cornerRadius
         color: "transparent"
         border.width: 1
-        border.color: MP.Theme.popupBorder
+        border.color: MP.Theme.glassPopupBorder
     }
 
     // Window buttons in a glass capsule at the top right, as in MyCAD: grip to move, minimize, close
@@ -353,9 +354,9 @@ QQC2.ApplicationWindow {
         visible: !gameScopeMode
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.margins: 12
-        width: windowRow.implicitWidth + 12
-        height: MP.Theme.barHeight
+        anchors.margins: MP.Theme.sizeWindowInset
+        width: windowRow.implicitWidth + MP.Theme.sizeBarHeight - MP.Theme.sizeWindowButton
+        height: MP.Theme.sizeBarHeight
 
         DragHandler {
             target: null
@@ -368,27 +369,27 @@ QQC2.ApplicationWindow {
 
             Item {
                 width: 30
-                height: 36
+                height: MP.Theme.sizeWindowButton
                 Accessible.role: Accessible.Grip
                 Accessible.name: qsTrId("window.move")
 
                 Impl.IconImage {
                     anchors.centerIn: parent
                     sourceSize: Qt.size(18, 18)
-                    source: MP.Theme.asset("icons/icon-grip.svg")
-                    color: MP.Theme.secondaryText
+                    source: MP.Units.asset("icons/icon-grip.svg")
+                    color: MP.Theme.labelSecondary
                 }
                 HoverHandler { cursorShape: Qt.OpenHandCursor }
             }
             WindowButton {
                 text: qsTrId("window.minimize")
-                icon.source: MP.Theme.asset("icons/icon-minus.svg")
+                icon.source: MP.Units.asset("icons/icon-minus.svg")
                 onClicked: root.showMinimized()
             }
             WindowButton {
                 danger: true
                 text: qsTrId("window.close")
-                icon.source: MP.Theme.asset("icons/icon-close.svg")
+                icon.source: MP.Units.asset("icons/icon-close.svg")
                 onClicked: root.close()
             }
         }

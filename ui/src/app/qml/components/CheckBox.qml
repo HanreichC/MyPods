@@ -10,27 +10,27 @@ import mypods as MP
 QQC2.CheckBox {
     id: control
     spacing: 6
-    padding: 4
-    font.pixelSize: MP.Theme.bodySize
-    opacity: enabled ? 1 : 0.4
+    padding: MP.Theme.spaceXs
+    font: MP.Theme.fontBody
+    opacity: enabled ? 1 : MP.Theme.opacityDisabled
 
     indicator: Rectangle {
         x: control.leftPadding
         y: control.topPadding + (control.availableHeight - height) / 2
-        implicitWidth: 16
-        implicitHeight: 16
-        radius: 5
-        color: control.checked ? MP.Theme.accent : MP.Theme.fill
+        implicitWidth: MP.Theme.sizeCheckbox
+        implicitHeight: MP.Theme.sizeCheckbox
+        radius: MP.Theme.radiusCheckbox
+        color: control.checked ? MP.Theme.accent : MP.Theme.fillSecondary
         border.width: control.visualFocus ? 2 : 0
-        border.color: MP.Theme.accent
-        Behavior on color { ColorAnimation { duration: 120 } }
+        border.color: MP.Theme.focusRing
+        Behavior on color { ColorAnimation { duration: MP.Theme.durationHover } }
 
         Impl.IconImage {
             anchors.centerIn: parent
             visible: control.checked
             sourceSize: Qt.size(13, 13)
-            source: MP.Theme.asset("icons/icon-check.svg")
-            color: "white"
+            source: MP.Units.asset("icons/icon-check.svg")
+            color: MP.Theme.labelOnAccent
         }
     }
 
@@ -38,7 +38,7 @@ QQC2.CheckBox {
         leftPadding: control.indicator.width + control.spacing
         text: control.text
         font: control.font
-        color: MP.Theme.text
+        color: MP.Theme.labelPrimary
         verticalAlignment: Text.AlignVCenter
     }
 }
