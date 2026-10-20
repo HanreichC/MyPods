@@ -59,3 +59,8 @@ This project uses the **Open Remote - Devcontainer** extension (`mythreyak.open-
 When a task needs new dependencies or a different runtime, update `devcontainer.json` (or add a `Dockerfile`) instead of installing anything globally.
 
 (Yes, this file also applies to agents working on the ponytail repo itself. Especially to them.)
+
+## Design
+UI folgt MyStyle: /home/chris/Dokumente/GitHub/MyStyle/STYLEGUIDE.md
+Werte nur aus /home/chris/Dokumente/GitHub/MyStyle/tokens/mystyle.tokens.json, Referenzcode in platforms/.
+Vor dem Abschluss einer UI-Änderung die Checkliste in § 14 durchgehen.
