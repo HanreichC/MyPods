@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 6.9: RectangularShadow
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Linguist ShaderTools)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets WebSockets Network Linguist ShaderTools)
 if(NOT WIN32)
     # MPRIS for the tray popup's now playing (Windows asks the system media sessions instead)
     find_package(Qt6 6.9 REQUIRED COMPONENTS DBus)
@@ -127,6 +127,7 @@ target_link_libraries(mypods PRIVATE
     Qt6::QuickControls2
     Qt6::Widgets
     Qt6::WebSockets
+    Qt6::Network
 )
 
 if(WIN32)

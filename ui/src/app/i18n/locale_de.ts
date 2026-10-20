@@ -324,6 +324,31 @@
         <source></source>
         <translation>Ob dieser Computer das iPhone über Bluetooth LE erreicht. Darüber zeigt das Tray-Popup, was auf dem iPhone läuft.</translation>
     </message>
+    <message id="about.update_available">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Update verfügbar</translation>
+    </message>
+    <message id="about.update">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>MyPods %1 ist verfügbar</translation>
+    </message>
+    <message id="about.update.download">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Herunterladen</translation>
+    </message>
+    <message id="settings.check_updates">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Nach Updates suchen</translation>
+    </message>
+    <message id="settings.check_updates.info">
+        <location filename="../qml/pages/AboutPage.qml" line="0"/>
+        <source></source>
+        <translation>Fragt beim Start und dann täglich bei GitHub nach, ob es eine neuere Version von MyPods gibt, und zeigt sie unter „Über“. Installiert wird nichts von selbst.</translation>
+    </message>
     <message id="about.packages">
         <location filename="../qml/pages/AboutPage.qml" line="65"/>
         <source></source>

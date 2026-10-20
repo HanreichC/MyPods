@@ -63,6 +63,18 @@ Components.ScrollPage {
     Components.Card {
 
         MP.FormRow {
+            visible: desktopManager.updateVersion !== ""
+            label: qsTrId("about.update").arg(desktopManager.updateVersion)
+            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.accent
+            MP.Button {
+                text: qsTrId("about.update.download")
+                highlighted: true
+                onClicked: Qt.openUrlExternally(desktopManager.updateUrl)
+            }
+        }
+
+        MP.FormRow {
             label: "MyPods"
             iconSource: MP.Theme.asset("icons/icon-apps.svg")
             iconColor: MP.Theme.accent

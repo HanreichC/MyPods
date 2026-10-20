@@ -319,6 +319,7 @@ QQC2.ApplicationWindow {
                 delegate: SidebarItem {
                     required property var modelData
                     text: modelData.text
+                    detail: modelData.page === 3 && desktopManager.updateVersion !== "" ? qsTrId("about.update_available") : ""
                     icon.source: MP.Theme.asset("icons/" + modelData.icon)
                     current: swipeView.currentIndex === modelData.page
                     onClicked: swipeView.currentIndex = modelData.page

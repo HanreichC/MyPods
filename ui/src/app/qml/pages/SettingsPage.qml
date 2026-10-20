@@ -93,6 +93,20 @@ Components.ScrollPage {
             }
         }
 
+        // Windows: the MSI is installed by hand, so MyPods says when there is a newer one
+        MP.FormRow {
+            visible: Qt.platform.os === "windows"
+            iconSource: MP.Theme.asset("icons/icon-sparkles.svg")
+            iconColor: MP.Theme.accent
+            label: qsTrId("settings.check_updates")
+            info: qsTrId("settings.check_updates.info")
+
+            Components.Toggle {
+                checked: desktopManager.checkUpdates
+                onToggled: desktopManager.checkUpdates = checked
+            }
+        }
+
         MP.FormRow {
             iconSource: MP.Theme.asset("icons/icon-apps.svg")
             iconColor: MP.Theme.accent

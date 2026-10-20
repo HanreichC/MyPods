@@ -6,7 +6,14 @@
 
 #include <QDesktopServices>
 #include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QSettings>
+#include <QTimer>
 #include <QUrl>
+#include <QVersionNumber>
 #include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
@@ -16,6 +23,12 @@
 DesktopManager::DesktopManager(QObject *parent)
     : QObject(parent)
 {
+#ifdef Q_OS_WIN
+    QTimer::singleShot(30 * 1000, this, &DesktopManager::checkForUpdate);
+    auto *daily = new QTimer(this);
+    connect(daily, &QTimer::timeout, this, &DesktopManager::checkForUpdate);
+    daily->start(24 * 60 * 60 * 1000);
+#endif
     // MyPods was called MagicPods: a menu entry made then moves to the new name
     const QString data = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     if (QFile::remove(data + "/applications/app.magicpods.desktop")) {
@@ -37,6 +50,52 @@ void DesktopManager::openLogDir() const
 {
     QDir().mkpath(logDir());
     QDesktopServices::openUrl(QUrl::fromLocalFile(logDir()));
+}
+
+bool DesktopManager::checkUpdates() const
+{
+    return QSettings().value(QStringLiteral("checkUpdates"), true).toBool();
+}
+
+void DesktopManager::setCheckUpdates(bool check)
+{
+    QSettings().setValue(QStringLiteral("checkUpdates"), check);
+    if (!check) {
+        m_updateVersion.clear();
+        m_updateUrl.clear();
+    }
+    emit updateChanged();
+    if (check)
+        checkForUpdate();
+}
+
+void DesktopManager::checkForUpdate()
+{
+#ifdef Q_OS_WIN
+    if (!checkUpdates())
+        return;
+    QNetworkRequest request(QUrl(QStringLiteral("https://api.github.com/repos/HanreichC/MyPods/releases/latest")));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("MyPods")); // GitHub's API wants one
+    if (!m_network)
+        m_network = new QNetworkAccessManager(this);
+    QNetworkReply *reply = m_network->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError)
+            return; // offline: tomorrow again
+        const QJsonObject release = QJsonDocument::fromJson(reply->readAll()).object();
+        const QString tag = release.value(QStringLiteral("tag_name")).toString(); // "v1.0.50"
+        const QVersionNumber latest = QVersionNumber::fromString(tag.mid(tag.startsWith(QLatin1Char('v')) ? 1 : 0));
+        const QString url = release.value(QStringLiteral("html_url")).toString();
+        // only ever a page of this repository's releases is opened, whatever came back
+        if (latest.isNull() || latest <= QVersionNumber::fromString(QCoreApplication::applicationVersion()) ||
+            !url.startsWith(QStringLiteral("https://github.com/HanreichC/MyPods/releases/")))
+            return;
+        m_updateVersion = latest.toString();
+        m_updateUrl = url;
+        emit updateChanged();
+    });
+#endif
 }
 
 static QString iconInstallPath()
