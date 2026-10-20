@@ -621,6 +621,11 @@
         <source></source>
         <translation>Undo Favorite</translation>
     </message>
+    <message id="tray.popup.output">
+        <location filename="../qml/TrayPopup.qml" line="0"/>
+        <source></source>
+        <translation>Output</translation>
+    </message>
     <message id="tray.popup.open_app">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>

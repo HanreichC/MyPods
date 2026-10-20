@@ -92,6 +92,13 @@ namespace MyPods {
         // headphones by themselves (a plugged jack, a USB headset), the others as the user marks them. Blocking.
         nlohmann::json GetOutputs();
         void SetOutputHeadphones(const std::string& sink, bool headphones);
+        // Every output the sound can go to: {"sink", "name", "address" (the connected headphones it belongs to, "" for
+        // another output), "default"}; headphones go by their name. Blocking.
+        nlohmann::json GetPlaybackOutputs();
+        // Plays the sound on `sink`; headphones through SetActiveDevice, so their effects come along. Blocking
+        bool SetPlaybackOutput(const std::string& sink);
+        // The output after the one playing now (keyboard shortcut "output-next"). Blocking
+        bool NextPlaybackOutput();
 
         void Connect(const std::string& deviceAddress);
         void Disconnect(const std::string& deviceAddress);

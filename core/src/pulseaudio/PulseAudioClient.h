@@ -104,8 +104,9 @@ namespace MyPods{
             std::optional<SinkDetails> GetSinkDetails(const std::string& name);
             // Wired headphones that are plugged in and active; blocking
             std::vector<WiredOutput> GetWiredHeadphones();
-            // Every output that isn't Bluetooth (speakers, monitors, jacks, USB), for the user to say which are headphones; blocking
-            std::vector<WiredOutput> GetOutputs();
+            // Every output that isn't Bluetooth (speakers, monitors, jacks, USB), for the user to say which are headphones;
+            // `bluetooth`: the Bluetooth headphones' too, for picking where the sound goes. Blocking
+            std::vector<WiredOutput> GetOutputs(bool bluetooth = false);
             // The applications' streams; blocking. Windows: none (shared mode hides them)
             std::vector<StreamInfo> GetStreams();
 #ifndef _WIN32

@@ -329,6 +329,43 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         _settingsService->SaveSetting("mypods", "headphoneOutputs", text); // the setting event refreshes the devices
     }
 
+    nlohmann::json DevicesInfoFetcher::GetPlaybackOutputs() {
+        auto current = _audioClient->GetDefaultSink();
+        auto output = GetOutputAddress();
+        std::map<std::string, std::shared_ptr<Device>> owners; // sink -> the connected headphones playing there
+        for (const auto& device : GetDevices())
+            if (auto sink = device->GetConnected() ? device->HeadphonesSink() : std::nullopt)
+                owners[*sink] = device;
+        auto outputs = nlohmann::json::array();
+        for (const auto& sink : _audioClient->GetOutputs(true)) {
+            auto owner = owners.find(sink.sink);
+            if (owner == owners.end())
+                outputs.push_back({{"sink", sink.sink}, {"name", sink.name}, {"address", ""}, {"default", current == sink.sink}});
+            else // also through the effect chain (Linux), which RefreshOutput sees through
+                outputs.push_back({{"sink", sink.sink}, {"name", owner->second->GetName()}, {"address", owner->second->GetAddress()},
+                                   {"default", owner->second->GetAddress() == output}});
+        }
+        return outputs;
+    }
+
+    bool DevicesInfoFetcher::SetPlaybackOutput(const std::string& sink) {
+        for (const auto& output : GetPlaybackOutputs())
+            if (output["sink"] == sink)
+                return output["address"] != "" ? SetActiveDevice(output["address"].get<std::string>()) : _audioClient->SetDefaultSink(sink);
+        return false;
+    }
+
+    bool DevicesInfoFetcher::NextPlaybackOutput() {
+        auto outputs = GetPlaybackOutputs();
+        if (outputs.empty())
+            return false;
+        size_t next = 0;
+        for (size_t i = 0; i < outputs.size(); i++)
+            if (outputs[i]["default"] == true)
+                next = (i + 1) % outputs.size();
+        return SetPlaybackOutput(outputs[next]["sink"].get<std::string>());
+    }
+
     void DevicesInfoFetcher::RefreshWired(bool startup) {
         std::lock_guard guard{_wiredLock};
         std::set<std::string> plugged;

@@ -214,6 +214,19 @@ void Backend::setOutputHeadphones(const QString &sink, bool headphones)
     });
 }
 
+void Backend::getPlaybackOutputs()
+{
+    sendJson({{QStringLiteral("method"), QStringLiteral("GetPlaybackOutputs")}});
+}
+
+void Backend::setPlaybackOutput(const QString &sink)
+{
+    sendJson({
+        {QStringLiteral("method"), QStringLiteral("SetPlaybackOutput")},
+        {QStringLiteral("arguments"), QVariantMap{{QStringLiteral("sink"), sink}}},
+    });
+}
+
 void Backend::getDevices()
 {
     sendJson({{QStringLiteral("method"), QStringLiteral("GetDevices")}});

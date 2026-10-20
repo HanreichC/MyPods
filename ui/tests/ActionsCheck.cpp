@@ -23,6 +23,7 @@ int main()
     assert(Actions::nextNoiseMode(16, 1 | 2 | 4 | 16) == 1); // wraps around
     assert(Actions::nextNoiseMode(2, 2 | 16) == 16);          // skips modes the model lacks
     assert(Actions::nextNoiseMode(2, 2) == -1);               // nothing to switch to
+    assert(Actions::request("output-next", {}).value("method").toString() == "NextPlaybackOutput"); // also without headphones
 
     auto next = Actions::request("noise-next", Info(2, 2 | 16, false));
     assert(next.value("method").toString() == "SetCapabilities");

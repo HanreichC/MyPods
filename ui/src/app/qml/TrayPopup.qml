@@ -28,6 +28,8 @@ QQC2.ApplicationWindow {
     // the music on the iPhone opens the popup even without headphones here
     readonly property bool canShow: hasInfo || !!player.source
     property double hiddenAt: 0
+    // {sink, name, address, default} per output (core: GetPlaybackOutputs)
+    property var outputs: []
 
     // room for the shadow around the panel; the panel itself sits just under the menu bar
     readonly property int shadowMargin: 28
@@ -55,6 +57,7 @@ QQC2.ApplicationWindow {
         if (Date.now() - hiddenAt < 300)
             return;
         cppMedia.refresh();
+        cppBackend.getPlaybackOutputs();
         panel.opacity = 0;
         show();
         raise();
@@ -74,6 +77,11 @@ QQC2.ApplicationWindow {
                 popup.infoData = ({});
             else if (json.info)
                 popup.infoData = json.info;
+            if (json?.playbackOutputs)
+                popup.outputs = json.playbackOutputs;
+            // the device list comes with every connection and every change of the output
+            else if (json?.headphones && popup.visible)
+                cppBackend.getPlaybackOutputs();
         }
     }
     Component.onCompleted: if (cppBackend.connected) cppBackend.getInfo()
@@ -251,9 +259,66 @@ QQC2.ApplicationWindow {
                 }
             }
 
+            // Where the sound goes, like the Mac's Sound module: every output, the one playing ticked
+            Tile {
+                visible: popup.outputs.length > 1
+
+                Text {
+                    text: qsTrId("tray.popup.output")
+                    color: MP.Theme.secondaryText
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                }
+                Repeater {
+                    model: popup.outputs
+
+                    QQC2.AbstractButton {
+                        id: outputRow
+                        required property var modelData
+                        Layout.fillWidth: true
+                        Layout.topMargin: -6
+                        Layout.leftMargin: -6
+                        Layout.rightMargin: -6
+                        implicitHeight: 28
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: modelData.name
+                        Accessible.checked: modelData.default
+                        onClicked: if (!modelData.default) cppBackend.setPlaybackOutput(modelData.sink)
+                        background: Rectangle {
+                            radius: 6
+                            color: outputRow.hovered ? MP.Theme.fill : "transparent"
+                        }
+                        contentItem: RowLayout {
+                            spacing: 8
+
+                            Impl.IconImage {
+                                Layout.leftMargin: 6
+                                sourceSize: Qt.size(16, 16)
+                                source: MP.Theme.asset(outputRow.modelData.address ? "icons/icon-headphones.svg" : "icons/icon-speaker-wave.svg")
+                                color: outputRow.modelData.default ? MP.Theme.accent : MP.Theme.secondaryText
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: outputRow.modelData.name
+                                color: MP.Theme.text
+                                font.pixelSize: 13
+                                elide: Text.ElideRight
+                            }
+                            Impl.IconImage {
+                                Layout.rightMargin: 6
+                                visible: outputRow.modelData.default
+                                sourceSize: Qt.size(16, 16)
+                                source: MP.Theme.asset("icons/icon-check.svg")
+                                color: MP.Theme.accent
+                            }
+                        }
+                    }
+                }
+            }
+
             Components.Separator { Layout.fillWidth: true }
 
-            // Menu item, HIG: the ellipsis says it opens a window
+            // Menu item that opens the window
             QQC2.AbstractButton {
                 Layout.fillWidth: true
                 Layout.topMargin: -4

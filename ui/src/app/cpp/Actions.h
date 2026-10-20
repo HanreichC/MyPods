@@ -19,7 +19,7 @@ inline const QStringList names = {
     QStringLiteral("noise-next"), QStringLiteral("noise-off"), QStringLiteral("noise-anc"),
     QStringLiteral("noise-transparency"), QStringLiteral("noise-adaptive"),
     QStringLiteral("conversation-awareness"), QStringLiteral("move-here"),
-    QStringLiteral("eq-next"), QStringLiteral("effects-bypass"),
+    QStringLiteral("eq-next"), QStringLiteral("effects-bypass"), QStringLiteral("output-next"),
 };
 
 // Noise control modes as the daemon sends them (DeviceAncModes): bits, cycled in this order
@@ -45,6 +45,10 @@ inline int nextNoiseMode(int current, int options)
 // empty when the headphones can't do it
 inline QJsonObject request(const QString &action, const QJsonObject &info)
 {
+    // where the sound goes, with or without headphones
+    if (action == QStringLiteral("output-next"))
+        return {{QStringLiteral("method"), QStringLiteral("NextPlaybackOutput")}};
+
     const QJsonObject caps = info.value(QStringLiteral("capabilities")).toObject();
     const QJsonObject anc = caps.value(QStringLiteral("anc")).toObject();
     QJsonObject change;

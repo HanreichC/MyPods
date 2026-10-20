@@ -331,22 +331,23 @@ namespace MyPods
         return outputs;
     }
 
-    std::vector<WiredOutput> PulseAudioClient::GetOutputs()
+    std::vector<WiredOutput> PulseAudioClient::GetOutputs(bool bluetooth)
     {
         if (!Usable()) return {};
 
-        std::vector<WiredOutput> outputs;
+        // hardware only: the effect chain and MyPods' silent sink are no place to pick
+        std::pair<std::vector<WiredOutput>, bool> query{{}, bluetooth};
         Lock lock{ml};
         Wait(pa_context_get_sink_info_list(ctx,
             [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                auto *q = static_cast<std::pair<std::vector<WiredOutput>, bool>*>(userdata);
                 const char *api = info && !eol ? pa_proplist_gets(info->proplist, "device.api") : nullptr;
-                if (!api || std::string(api) != "alsa" || !info->name)
+                if (!api || !info->name || (std::string(api) != "alsa" && !(q->second && std::string(api) == "bluez5")))
                     return;
                 const char *bus = pa_proplist_gets(info->proplist, "device.bus");
-                static_cast<std::vector<WiredOutput>*>(userdata)->push_back(
-                    {info->name, info->description ? info->description : info->name, bus && std::string(bus) == "usb"});
-            }, &outputs));
-        return outputs;
+                q->first.push_back({info->name, info->description ? info->description : info->name, bus && std::string(bus) == "usb"});
+            }, &query));
+        return query.first;
     }
 
     bool PulseAudioClient::SetSinkVolume(const std::string &name, double volume)

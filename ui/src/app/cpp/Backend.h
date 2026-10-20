@@ -36,6 +36,9 @@ public:
     // Outputs that aren't Bluetooth, answered as {"outputs": [{sink, name, headphones, automatic}]}
     Q_INVOKABLE void getOutputs();
     Q_INVOKABLE void setOutputHeadphones(const QString &sink, bool headphones);
+    // Every output the sound can go to ({"playbackOutputs": [...]}), and the pick of one
+    Q_INVOKABLE void getPlaybackOutputs();
+    Q_INVOKABLE void setPlaybackOutput(const QString &sink);
     Q_INVOKABLE void getDefaultBluetoothAdapter();
     Q_INVOKABLE void getSetting(const QString &containerName, const QString &settingName);
     Q_INVOKABLE void setSetting(const QString &containerName, const QString &settingName, const QVariant &newValue);

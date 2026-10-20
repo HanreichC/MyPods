@@ -160,11 +160,11 @@ namespace MyPods
         return Output(endpoint);
     }
 
-    std::vector<WiredOutput> PulseAudioClient::GetOutputs()
+    std::vector<WiredOutput> PulseAudioClient::GetOutputs(bool bluetooth)
     {
         std::vector<WiredOutput> outputs;
         for (const auto &endpoint : _native->ActiveEndpoints())
-            if (!Bluetooth(endpoint))
+            if (bluetooth || !Bluetooth(endpoint))
                 outputs.push_back(Output(endpoint));
         return outputs;
     }

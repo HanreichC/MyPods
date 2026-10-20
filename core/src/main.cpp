@@ -193,6 +193,17 @@ void HandleGetOutputsRequest(auto *ws, uWS::OpCode opCode, DevicesInfoFetcher& d
     ws->send(response, opCode, response.length() < 16 * 1024);
 }
 
+// Where the sound goes, for the tray's output list and the "output-next" shortcut; answers with the outputs. A pick
+// that worked also brings the device list (OnConnectedChanged), which says which headphones play.
+void HandlePlaybackOutputRequest(auto *ws, const nlohmann::json& json, const std::string& method, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
+    if (method == "SetPlaybackOutput")
+        devicesInfoFetcher.SetPlaybackOutput(json.at("arguments").at("sink").template get<std::string>());
+    else if (method == "NextPlaybackOutput")
+        devicesInfoFetcher.NextPlaybackOutput();
+    auto response = nlohmann::json{{"playbackOutputs", devicesInfoFetcher.GetPlaybackOutputs()}}.dump();
+    ws->send(response, opCode, response.length() < 16 * 1024);
+}
+
 // Marks an output as headphones or not, answers with the outputs; the device list follows on its own
 void HandleSetOutputHeadphonesRequest(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, DevicesInfoFetcher& devicesInfoFetcher) {
     const auto& arguments = json.at("arguments");
@@ -342,6 +353,8 @@ void HandleRequest(auto *ws, std::string_view message, uWS::OpCode opCode, uWS::
                 HandleGetOutputsRequest(ws, opCode, devicesInfoFetcher);
             else if (methodName == "SetOutputHeadphones")
                 HandleSetOutputHeadphonesRequest(ws, json, opCode, devicesInfoFetcher);
+            else if (methodName == "GetPlaybackOutputs" || methodName == "SetPlaybackOutput" || methodName == "NextPlaybackOutput")
+                HandlePlaybackOutputRequest(ws, json, methodName, opCode, devicesInfoFetcher);
             else if (methodName == "GetAll")
                 HandleGetAllRequest(ws, json, opCode, devicesInfoFetcher);
             else if (methodName == "GetSettingsAll")
