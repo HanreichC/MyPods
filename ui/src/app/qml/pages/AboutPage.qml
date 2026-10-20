@@ -13,6 +13,10 @@ Components.ScrollPage {
     title: qsTrId("menu.about")
     showTitle: false
 
+    // The file next to the app, asked once: asked whenever the connection drops, it started the daemon while
+    // Windows shut down (which ends the daemon first), and that start fails with a 0xc0000142 popup
+    readonly property string fileVersion: backendManager ? backendManager.version() : ""
+
     Item {
         Layout.fillWidth: true
         Layout.topMargin: MP.Units.hugeSpacing
@@ -72,8 +76,7 @@ Components.ScrollPage {
             iconColor: MP.Theme.gray
             MP.Label {
                 color: MP.Theme.secondaryText
-                text: (cppBackend && cppBackend.backendVersion)
-                      || (backendManager ? backendManager.version() || qsTrId("about.not_installed") : "")
+                text: (cppBackend && cppBackend.backendVersion) || rootPage.fileVersion || qsTrId("about.not_installed")
             }
         }
     }
