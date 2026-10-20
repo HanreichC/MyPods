@@ -405,6 +405,22 @@
         <source></source>
         <translation>Audio</translation>
     </message>
+    <message id="settings.hotkeys">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Tastenkürzel</translation>
+    </message>
+    <message id="settings.hotkeys.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Überall in Windows, auch wenn MyPods im Hintergrund läuft:
+
+Strg+Alt+Umschalt+N: nächste Geräuschkontrolle
+Strg+Alt+Umschalt+O: nächste Ausgabe
+Strg+Alt+Umschalt+H: AirPods vom iPhone hierher holen
+
+Ist eine Kombination schon von einem anderen Programm belegt, bleibt sie bei diesem.</translation>
+    </message>
     <message id="settings.appearance">
         <location filename="../qml/pages/SettingsPage.qml" line="1"/>
         <source></source>

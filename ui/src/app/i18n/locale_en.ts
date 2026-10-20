@@ -405,6 +405,22 @@
         <source></source>
         <translation>Audio</translation>
     </message>
+    <message id="settings.hotkeys">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Keyboard Shortcuts</translation>
+    </message>
+    <message id="settings.hotkeys.info">
+        <location filename="../qml/pages/SettingsPage.qml" line="0"/>
+        <source></source>
+        <translation>Anywhere in Windows, also while MyPods runs in the background:
+
+Ctrl+Alt+Shift+N: next noise control mode
+Ctrl+Alt+Shift+O: next output
+Ctrl+Alt+Shift+H: take the AirPods over from the iPhone
+
+A combination another program already uses stays with that program.</translation>
+    </message>
     <message id="settings.appearance">
         <location filename="../qml/pages/SettingsPage.qml" line="1"/>
         <source></source>

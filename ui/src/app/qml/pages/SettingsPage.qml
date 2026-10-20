@@ -93,6 +93,20 @@ Components.ScrollPage {
             }
         }
 
+        // Windows has no place to bind a command to a key, so MyPods brings a few (Linux: `mypods --action`, README)
+        MP.FormRow {
+            visible: Qt.platform.os === "windows"
+            iconSource: MP.Theme.asset("icons/icon-number.svg")
+            iconColor: MP.Theme.gray
+            label: qsTrId("settings.hotkeys")
+            info: qsTrId("settings.hotkeys.info")
+
+            Components.Toggle {
+                checked: desktopManager.hotkeys
+                onToggled: desktopManager.hotkeys = checked
+            }
+        }
+
         // Windows: the MSI is installed by hand, so MyPods says when there is a newer one
         MP.FormRow {
             visible: Qt.platform.os === "windows"

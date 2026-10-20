@@ -20,6 +20,31 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <QAbstractNativeEventFilter>
+#include <QProcess>
+
+// Ctrl+Alt+Shift with a letter: Ctrl+Alt alone is AltGr, which types characters on many layouts
+static const struct { int id; UINT key; const char *action; } kHotkeys[] = {
+    {1, 'N', "noise-next"}, {2, 'O', "output-next"}, {3, 'H', "move-here"},
+};
+
+// WM_HOTKEY comes to the GUI thread's queue (RegisterHotKey without a window); the action runs like a shortcut
+// bound to `mypods --action` would, in a process of its own that talks to the daemon and exits
+struct HotkeyFilter : QAbstractNativeEventFilter {
+    bool nativeEventFilter(const QByteArray &, void *message, qintptr *) override {
+        const MSG *msg = static_cast<const MSG *>(message);
+        if (msg->message != WM_HOTKEY)
+            return false;
+        for (const auto &hotkey : kHotkeys)
+            if (static_cast<int>(msg->wParam) == hotkey.id)
+                QProcess::startDetached(QCoreApplication::applicationFilePath(), {QStringLiteral("--action"), QString::fromLatin1(hotkey.action)});
+        return true;
+    }
+};
+#endif
+
 DesktopManager::DesktopManager(QObject *parent)
     : QObject(parent)
 {
@@ -28,6 +53,7 @@ DesktopManager::DesktopManager(QObject *parent)
     auto *daily = new QTimer(this);
     connect(daily, &QTimer::timeout, this, &DesktopManager::checkForUpdate);
     daily->start(24 * 60 * 60 * 1000);
+    applyHotkeys();
 #endif
     // MyPods was called MagicPods: a menu entry made then moves to the new name
     const QString data = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
@@ -95,6 +121,32 @@ void DesktopManager::checkForUpdate()
         m_updateUrl = url;
         emit updateChanged();
     });
+#endif
+}
+
+bool DesktopManager::hotkeys() const
+{
+    return QSettings().value(QStringLiteral("hotkeys"), false).toBool();
+}
+
+void DesktopManager::setHotkeys(bool on)
+{
+    QSettings().setValue(QStringLiteral("hotkeys"), on);
+    applyHotkeys();
+    emit hotkeysChanged();
+}
+
+void DesktopManager::applyHotkeys()
+{
+#ifdef Q_OS_WIN
+    static HotkeyFilter filter;
+    static const bool installed = (QCoreApplication::instance()->installNativeEventFilter(&filter), true);
+    Q_UNUSED(installed);
+    for (const auto &hotkey : kHotkeys) {
+        UnregisterHotKey(nullptr, hotkey.id);
+        if (hotkeys() && !RegisterHotKey(nullptr, hotkey.id, MOD_CONTROL | MOD_ALT | MOD_SHIFT | MOD_NOREPEAT, hotkey.key))
+            qWarning("Shortcut Ctrl+Alt+Shift+%c is taken by another program", static_cast<char>(hotkey.key));
+    }
 #endif
 }
 

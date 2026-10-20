@@ -32,6 +32,8 @@ class DesktopManager : public QObject
     Q_PROPERTY(QString updateUrl READ updateUrl NOTIFY updateChanged)
     // the person may not want MyPods to ask GitHub; stored with the language (QSettings)
     Q_PROPERTY(bool checkUpdates READ checkUpdates WRITE setCheckUpdates NOTIFY updateChanged)
+    // Windows: Ctrl+Alt+Shift+N/O/H anywhere run the actions of `mypods --action` (noise-next, output-next, move-here)
+    Q_PROPERTY(bool hotkeys READ hotkeys WRITE setHotkeys NOTIFY hotkeysChanged)
 
 public:
     explicit DesktopManager(QObject *parent = nullptr);
@@ -49,13 +51,18 @@ public:
     // Asks GitHub for the latest release, 30 s after the start and then daily (Windows)
     Q_INVOKABLE void checkForUpdate();
 
+    bool hotkeys() const;
+    void setHotkeys(bool on);
+
 signals:
     void updateChanged();
+    void hotkeysChanged();
 
 private:
     QNetworkAccessManager *m_network = nullptr; // made on the first check; QtNetwork stays out of this header
     QString m_updateVersion;
     QString m_updateUrl;
     QString desktopFilePath() const;
+    void applyHotkeys();
     bool createDesktopFile();
 };
