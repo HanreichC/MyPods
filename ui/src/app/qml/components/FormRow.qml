@@ -8,7 +8,7 @@ import QtQuick.Controls.impl as Impl
 import QtQuick.Layouts
 import magicpods as MP
 
-// Inset-grouped list row: [icon tile] label [info] ........ control
+// Inset-grouped list row: [icon tile] label [info] ........ control; the (i) stays with its label, like the Mac's
 // Draws a separator above itself when a visible row precedes it in the same section.
 Item {
     id: root
@@ -63,6 +63,8 @@ Item {
         Label {
             id: labelText
             Layout.fillWidth: true
+            // as wide as its text, wrapped only when the row runs short; rounded up, as the layout rounds down
+            Layout.maximumWidth: Math.ceil(implicitWidth)
             text: root.label.replace(/:\s*$/, "")
             color: MP.Theme.text
             font.pixelSize: MP.Theme.bodySize
@@ -77,6 +79,8 @@ Item {
             title: root.label
             info: root.info
         }
+
+        Item { Layout.fillWidth: true }
 
         Item {
             id: contentHolder

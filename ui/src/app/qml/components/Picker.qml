@@ -27,6 +27,12 @@ QQC2.ComboBox {
         property: "color"
         value: MP.Theme.secondaryText
     }
+    // next to the chevron, so the values of a group's pickers line up whatever their widths
+    Binding {
+        target: control.contentItem
+        property: "horizontalAlignment"
+        value: Text.AlignRight
+    }
 
     // A new model (language switch, refreshed options) resets ComboBox to index 0 without
     // re-running the caller's currentIndex binding; overriding it for a moment re-applies it.
