@@ -34,6 +34,9 @@ $CXX -std=c++20 -Icore/src -Icore/dependencies/json/include core/src/tests/Batte
 $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/LowBatteryCheck.cpp $QTCORE -o "$OUT/lowbat"
 "$OUT/lowbat"
 # shellcheck disable=SC2086
+$CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/BatteryEstimateCheck.cpp $QTCORE -o "$OUT/estimate"
+"$OUT/estimate"
+# shellcheck disable=SC2086
 $CXX -std=c++20 -fPIC -Iui/src/app/cpp ui/tests/ActionsCheck.cpp $QTCORE -o "$OUT/actions"
 "$OUT/actions"
 # shellcheck disable=SC2086

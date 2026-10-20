@@ -6,8 +6,11 @@
 
 #include <functional>
 
+#include "BatteryEstimate.h"
+
 #include <QIcon>
 #include <QObject>
+#include <QHash>
 #include <QSet>
 #include <QVariantList>
 #include <QVariantMap>
@@ -62,6 +65,8 @@ private:
     QVariantList headphonesData;
     QVariantMap infoData;
     QSet<QString> lowBatteryNotified; // LowBattery.h
+    QHash<QString, BatteryEstimate::Track> batteryTracks; // per address
+    int minutesLeft = -1; // the active headphones', for the tooltip
     bool menuOpen = false;
     QMenu *equalizerMenu = nullptr; // submenu, rebuilt with the menu
 };

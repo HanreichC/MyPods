@@ -637,6 +637,11 @@ A combination another program already uses stays with that program.</translation
         <source></source>
         <translation>Audio output</translation>
     </message>
+    <message id="tray.time_left">
+        <location filename="../cpp/TrayIconManager.cpp" line="0"/>
+        <source></source>
+        <translation>about %1 left</translation>
+    </message>
     <message id="tray.popup.connected">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>

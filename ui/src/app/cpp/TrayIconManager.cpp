@@ -5,6 +5,7 @@
 #include "TrayIconManager.h"
 
 #include "Backend.h"
+#include "BatteryEstimate.h"
 #include "LowBattery.h"
 #include "MediaController.h"
 #include "TrayIcon.h"
@@ -12,6 +13,7 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QDateTime>
 #include <QIcon>
 #include <QMenu>
 #include <QStringList>
@@ -94,6 +96,10 @@ TrayIconManager::TrayIconManager(TrayIcon *trayIcon,
 void TrayIconManager::handleDataReceived(const QVariant &json)
 {
     updateState(json.toMap());
+    bool charging = false;
+    const int level = BatteryEstimate::lowestWorn(batteryDataFromInfo(infoData), charging);
+    minutesLeft = BatteryEstimate::update(batteryTracks[infoData.value(QStringLiteral("address")).toString()], level, charging,
+                                          QDateTime::currentMSecsSinceEpoch());
     updateTrayIcon();
     rebuildMenu();
 
@@ -308,6 +314,8 @@ QString TrayIconManager::trayTooltipText() const
     if (parts.isEmpty()) {
         return qtTrId("tray.disconnected");
     }
+    if (minutesLeft >= 0)
+        return parts.join(QLatin1Char(' ')) + QStringLiteral(" · ") + qtTrId("tray.time_left").arg(BatteryEstimate::format(minutesLeft));
 
     return parts.join(QLatin1Char(' '));
 }

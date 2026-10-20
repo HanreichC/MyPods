@@ -637,6 +637,11 @@ Ist eine Kombination schon von einem anderen Programm belegt, bleibt sie bei die
         <source></source>
         <translation>Audioausgabe</translation>
     </message>
+    <message id="tray.time_left">
+        <location filename="../cpp/TrayIconManager.cpp" line="0"/>
+        <source></source>
+        <translation>noch ca. %1</translation>
+    </message>
     <message id="tray.popup.connected">
         <location filename="../qml/TrayPopup.qml" line="0"/>
         <source></source>
