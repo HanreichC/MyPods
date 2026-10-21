@@ -18,6 +18,7 @@ layout(std140, binding = 0) uniform buf {
     float tint;         // how much tintColor covers the backdrop: Theme.glassTintAmount()
     float lensZone;     // px from the edge in which the lens bends (thickness)
     float lensStrength; // px the backdrop is pulled in at the very edge (thickness)
+    float edgeBlur;     // px the backdrop additionally blurs towards the edge (thickness)
     float chroma;       // red/blue split of the lens
     float saturation;   // vibrancy
     float rim;          // specular rim strength
@@ -37,6 +38,12 @@ vec3 blurred(vec2 p)
     return texture(source, clamp((p + margin) / (panel + 2.0 * margin), 0.0, 1.0)).rgb;
 }
 
+// the backdrop seen through the glass at p, shifted by off; red and blue a little apart (dispersion)
+vec3 refracted(vec2 p, vec2 off)
+{
+    return vec3(blurred(p - off * (1.0 + chroma)).r, blurred(p - off).g, blurred(p - off * (1.0 - chroma)).b);
+}
+
 void main()
 {
     vec2 p = qt_TexCoord0 * panel;
@@ -49,10 +56,20 @@ void main()
     float inside = clamp(0.5 - d, 0.0, 1.0);
     float t = -d; // how far into the glass
 
-    // lens: towards the edge the backdrop is pulled inwards, red and blue a little apart
-    float bend = 1.0 - smoothstep(0.0, lensZone, t);
-    vec2 off = n * bend * bend * lensStrength;
-    vec3 col = vec3(blurred(p - off * (1.0 + chroma)).r, blurred(p - off).g, blurred(p - off * (1.0 - chroma)).b);
+    // lens like a rounded glass edge (quarter circle): the slope, and with it the refraction, stays gentle inside the
+    // lens zone and turns steep at the very edge; there the curved glass also scatters, the backdrop blurs more
+    float u = clamp(1.0 - t / lensZone, 0.0, 1.0);
+    float k = 0.97 * u;
+    vec2 off = n * (k / sqrt(1.0 - k * k) / 3.99) * lensStrength;
+    vec3 col = refracted(p, off);
+    float scatter = u * u * edgeBlur;
+    if (scatter > 0.5) {
+        for (int i = 0; i < 8; ++i) {
+            float a = float(i) * 0.7853982;
+            col += refracted(p + scatter * vec2(cos(a), sin(a)), off);
+        }
+        col /= 9.0;
+    }
 
     // vibrancy, then the tint
     float l = dot(col, vec3(0.299, 0.587, 0.114));

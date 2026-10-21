@@ -64,7 +64,7 @@ QtObject {
     readonly property color glassTranslucentTop: pick("#8CFFFFFF", "#8C34343A", "#8CFFFFFF", "#8C34343A")
     readonly property color glassTranslucentBottom: pick("#8CF4F5F8", "#8C26262B", "#8CF4F5F8", "#8C26262B")
     readonly property color glassPopupBorder: pick("#17000000", "#21FFFFFF", "#66000000", "#73FFFFFF")
-    readonly property color shadow: pick("#21000000", "#73000000", "#21000000", "#73000000")
+    readonly property color shadow: pick("#21000000", "#40000000", "#21000000", "#40000000")
     readonly property color scrim: pick("#24000000", "#59000000", "#24000000", "#59000000")
     readonly property color mediaScrim: pick("#59000000", "#59000000", "#59000000", "#59000000")
     readonly property color categoryGeneral: pick("#CB30E0", "#DB34F2", "#B02FC2", "#EA8DFF")
@@ -82,7 +82,7 @@ QtObject {
     readonly property color statusCritical: pick("#FF383C", "#FF4245", "#E9152D", "#FF6165")
 
     // ---- glass
-    // tint coverage of the blurred backdrop; textSurface = menus, popovers, alerts, sidebars
+    // tint coverage of the blurred backdrop; textSurface = menus, popovers, alerts (not sidebars)
     function piecewise(a) {
         return a[0] + (a[1] - a[0]) * 2 * Math.min(glassLevel, 0.5) + (a[2] - a[1]) * 2 * Math.max(glassLevel - 0.5, 0);
     }
@@ -94,9 +94,9 @@ QtObject {
     readonly property real glassBlur: piecewise([12, 24, 36])
     readonly property real glassSaturation: 1.5
     readonly property real glassRim: dark ? 0.42 : 0.7
-    readonly property var glassThin: ({lensZone: 12, lensStrength: 10, chroma: 0.06, extraBlur: 0, shadowBlur: 16, shadowY: 3, shadowScale: 0.8})
-    readonly property var glassRegular: ({lensZone: 20, lensStrength: 18, chroma: 0.08, extraBlur: 0, shadowBlur: 28, shadowY: 6, shadowScale: 1.0})
-    readonly property var glassThick: ({lensZone: 28, lensStrength: 26, chroma: 0.1, extraBlur: 8, shadowBlur: 40, shadowY: 10, shadowScale: 1.3})
+    readonly property var glassThin: ({lensZone: 18, lensStrength: 18, edgeBlur: 4, chroma: 0.06, extraBlur: 0, shadowBlur: 16, shadowY: 3, shadowScale: 0.8})
+    readonly property var glassRegular: ({lensZone: 30, lensStrength: 32, edgeBlur: 8, chroma: 0.08, extraBlur: 0, shadowBlur: 28, shadowY: 6, shadowScale: 1.0})
+    readonly property var glassThick: ({lensZone: 42, lensStrength: 46, edgeBlur: 12, chroma: 0.1, extraBlur: 8, shadowBlur: 40, shadowY: 10, shadowScale: 1.3})
 
     // ---- shape, space, size
     readonly property int radiusWindow: 32

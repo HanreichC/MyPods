@@ -16,7 +16,7 @@ Item {
     property real radius: MP.Theme.radiusPanel
     property Item blurSource: null
     property bool translucent: false
-    // menus, popovers, alerts: the denser glass for reading
+    // menus, popovers, alerts: the denser glass for reading (not sidebars: they stay regular, the content shows through)
     property bool textSurface: false
     // "thin" (small capsules, transient control glass), "regular" (bars, sidebar), "thick" (menus, popovers, alerts)
     property string thickness: "regular"
@@ -88,6 +88,7 @@ Item {
         property real dark: MP.Theme.dark ? 1 : 0
         property real tint: root.tint
         property real lensZone: root.spec.lensZone
+        property real edgeBlur: root.spec.edgeBlur
         property real lensStrength: MP.Theme.reduceMotion ? root.spec.lensStrength * 0.5 : root.spec.lensStrength
         property real chroma: root.spec.chroma
         property real saturation: MP.Theme.glassSaturation
