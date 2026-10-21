@@ -93,7 +93,7 @@ QtObject {
     }
     readonly property real glassBlur: piecewise([12, 24, 36])
     readonly property real glassSaturation: 1.5
-    readonly property real glassRim: piecewise(dark ? [0.2, 0.2, 0.04] : [0.7, 0.7, 0.7])
+    readonly property real glassRim: piecewise(dark ? [0.07, 0.07, 0.07] : [0.7, 0.7, 0.7])
     readonly property var glassThin: ({lensZone: 18, lensStrength: 18, edgeBlur: 4, chroma: 0.06, extraBlur: 0, shadowBlur: 16, shadowY: 3, shadowScale: 0.8})
     readonly property var glassRegular: ({lensZone: 30, lensStrength: 32, edgeBlur: 8, chroma: 0.08, extraBlur: 0, shadowBlur: 28, shadowY: 6, shadowScale: 1.0})
     readonly property var glassThick: ({lensZone: 42, lensStrength: 46, edgeBlur: 12, chroma: 0.1, extraBlur: 8, shadowBlur: 40, shadowY: 10, shadowScale: 1.3})
