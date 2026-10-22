@@ -242,8 +242,9 @@ QQC2.ApplicationWindow {
             id: popupRoot
             anchors.centerIn: parent
             width: 248
-            // taller by a second line of a long name
+            // taller by a second line of a long name, shorter without the Connect button
             height: (isExt ? 290 + 18 : 290) + (osdName.lineCount - 1) * 22
+                    - (connectButton.visible ? 0 : connectButton.implicitHeight + connectButton.Layout.topMargin)
             clip: true
 
             MP.Animations {
@@ -383,7 +384,11 @@ QQC2.ApplicationWindow {
                 }
 
                 MP.Button {
+                    id: connectButton
+                    objectName: "connectButton"
                     Layout.topMargin: 12
+                    // with automatic switching they connect on their own once worn and something plays here
+                    visible: popupRoot.connected || !(popupRoot.device?.autoSwitch ?? false)
                     highlighted: !popupRoot.connected
                     text: popupRoot.connected ? qsTrId("tray.disconnect") : qsTrId("tray.connect")
                     Layout.fillWidth: true

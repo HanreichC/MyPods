@@ -101,7 +101,13 @@ namespace MyPods
             std::optional<bleData> toFire{};
             {
                 std::lock_guard<std::mutex> lock(locker);
-                if (cachedData.has_value() && cachedData.value().animation == true && mac != ""){
+                // Gone while the lid is open: they were put away (or another device took them). Like an iPhone, no
+                // popup for that; the next one comes once the lid has closed. A mac no address matches waits for it.
+                if (!isConnected){
+                    mac = "-";
+                    return;
+                }
+                if (cachedData.has_value() && cachedData.value().animation == true && mac != "" && mac != "-"){
                     toFire = cachedData.value();
                     Logger::Debug("Connection animation");
                 }
@@ -141,6 +147,8 @@ namespace MyPods
             animationJson["model"] = device.GetProductId();
             animationJson["vendor"] = device.GetVendorId();
             animationJson["connected"] = device.GetConnected();
+            // automatic switching connects them once they're worn and this computer plays: no Connect needed then
+            animationJson["autoSwitch"] = Client::SupportsL2CAP() && device.LoadSettingInt("autoSwitch").value_or(0) == 0;
             animationJson["color"] = bleData.color;
             animationJson["show"] = bleData.animation;
 
