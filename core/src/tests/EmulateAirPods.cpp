@@ -548,7 +548,10 @@ int EmulateAirPods()
         Check("Pro 3: playing here, the silent output is gone", output() == BLUEZ_SINK && WaitFor([&] { return !silentOutput(); }, 3000), output());
         pods.Receive(owns(false));
         Check("Pro 3: nor in the 3 s after it", pods.ownsAudio);
-        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        pods.ClearSent();
+        std::this_thread::sleep_for(std::chrono::milliseconds(4200)); // past the grace, and a look of the hold worker
+        Check("Pro 3: that last word of the grace isn't lost: claimed once more while playing here",
+              pods.ownsAudio && pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)) && pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)));
         pods.Receive(owns(false));
         Check("Pro 3: the AirPods say another device owns them: let go", !pods.ownsAudio);
         fallBack();
@@ -601,6 +604,24 @@ int EmulateAirPods()
         playHere();
         Check("Pro 3: taking them over pauses only this computer's players", pods.ownsAudio && phone.pauses == 0 && phone.Status() == "Playing",
               std::to_string(phone.pauses));
+
+        // Reconnected, and the AirPods never report their ear state on the new connection: the last advertisement,
+        // from before they connected, still says worn, however old, so Play here takes them back without "Move here"
+        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        pods.Receive(iphoneTakes());
+        pods.SaveSettingString("irk", "0123456789abcdef0123456789abcdef");
+        {
+            std::vector<uint8_t> message(27, 0x00);
+            message[0] = 0x07; message[1] = 0x19; message[2] = 0x01; message[3] = 0x27; message[4] = 0x20; // Pro 3
+            message[5] = 0x0B;                                                                         // both in ears
+            std::string address = "52:34:56:7B:C4:03"; // resolves with that IRK (TestsAapBle)
+            pods.GetLeDataReceived().FireEvent(BleAdvertisingData(address, -50, {{0x004C, message}}));
+        }
+        pods.podsInEar = -1;
+        std::this_thread::sleep_for(std::chrono::milliseconds(15500));
+        took = playHere();
+        Check("Pro 3: no ear report on this connection, the last advertisement stands: Play here takes them",
+              took && pods.ownsAudio, json().dump());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
         Sh("pactl unload-module " + speakers);

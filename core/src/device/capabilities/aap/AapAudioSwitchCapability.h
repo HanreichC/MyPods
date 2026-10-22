@@ -33,6 +33,9 @@ namespace MyPods
         std::atomic<int64_t> bleInEarAt{0};
         std::atomic<int64_t> bleInCaseAt{0};
         std::atomic<bool> routeWhenWorn{false}; // connected in the case: their audio stayed off until they're worn
+        std::atomic<bool> claimed{false};       // "owns connection" sent on this connection
+        std::atomic<int> ownsReport{-1};        // the AirPods' last "owns connection" since the claim: 1, 0, -1 = none
+        std::atomic<bool> reclaimed{false};     // claimed once more after an "owns connection 0" in the grace
         std::atomic<int64_t> takeoverAt{0};
         size_t playbackEventId{};
         size_t leEventId{};
@@ -56,6 +59,8 @@ namespace MyPods
         bool InEar();
         bool InCase();
         void TakeOver(bool manual);
+        // "owns connection" and the hijack to every other device on the AirPods; returns how many were asked
+        size_t Claim();
         void Release(bool answerRequest);
 
     protected:

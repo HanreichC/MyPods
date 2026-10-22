@@ -292,6 +292,9 @@ namespace MyPods
         sourceType = 0;
         cardSeen = false;
         routeWhenWorn = false;
+        claimed = false;
+        reclaimed = false;
+        ownsReport = -1;
         device.StopEffects();
         WakeHold();
         AapCapability::Reset();
@@ -341,6 +344,22 @@ namespace MyPods
         // while this computer has them (connected, not taken by another device), the output is the user's to pick
         bool otherHasThem = !device.ownsAudio || !device.GetConnected();
 
+        // An "owns connection 0" in a takeover's grace is put aside, not forgotten: still the AirPods' last word once
+        // the grace is over, this computer claims them once more while it plays to them, else lets go. Seen ~1 s
+        // after a takeover with the iPhone playing; ignored, it left this computer sure it had them while the AirPods
+        // had moved on: Play here did nothing, and the next switch to the iPhone dropped this computer entirely.
+        if (device.ownsAudio && claimed && !busy && ownsReport == 0 && NowMs() - takeoverAt >= 3000)
+        {
+            ownsReport = -1;
+            if (playsHere && !reclaimed.exchange(true))
+                Logger::Info("AutoSwitch: another device owns them since the takeover, claiming once more (asked %zu)", Claim());
+            else
+            {
+                Logger::Info("AutoSwitch: another device owns them since the takeover: let go");
+                Release(false);
+            }
+        }
+
         if (holding)
         {
             // mid-takeover the AirPods are ours before they play: giving the speakers back now would let them blare,
@@ -389,6 +408,11 @@ namespace MyPods
         int pods = device.podsInEar;
         if (device.GetConnected() && pods >= 0)
             return pods > 0;
+        // Connected, but the AirPods haven't reported their ear state on this connection (seen after a reconnect):
+        // the advertisements stopped with the connection, so their last word stands, however old. Aged out, Play here
+        // was refused as "nobody wears them" and only "Move here" took them.
+        if (device.GetConnected())
+            return bleInEarAt != 0;
         return NowMs() - bleInEarAt < 15000;
     }
 
@@ -421,6 +445,7 @@ namespace MyPods
             {
                 bool owns = data[7] == 0x01;
                 Logger::Info("AutoSwitch: owns connection %d", owns);
+                ownsReport = owns ? 1 : 0; // one in the grace waits there for UpdateHold
                 if (!owns && !grace)
                     Release(false);
             }
@@ -472,7 +497,14 @@ namespace MyPods
                         break;
                     }
             }
-            Logger::Info("AutoSwitch: smart routing message from %s", FormatMac(&data[6], true).c_str());
+            // what the other device says, readable: hijack, reverse, banner keys
+            std::string readable;
+            for (size_t i = 14; i < data.size() && readable.size() < 200; i++)
+                if (data[i] >= 0x20 && data[i] < 0x7F)
+                    readable += static_cast<char>(data[i]);
+                else if (!readable.empty() && readable.back() != ' ')
+                    readable += ' ';
+            Logger::Info("AutoSwitch: smart routing message from %s: %s", FormatMac(&data[6], true).c_str(), readable.c_str());
             if (text.find("SetOwnershipToFalse") != std::string::npos && !grace)
                 Release(true);
             break;
@@ -485,6 +517,7 @@ namespace MyPods
         if (answerRequest)
             device.SendData(OwnsConnection(false));
         device.ownsAudio = false;
+        claimed = false;
         if (released.exchange(true))
             return;
         Logger::Info("AutoSwitch: another device took the audio");
@@ -506,6 +539,29 @@ namespace MyPods
         }).detach();
     }
 
+    size_t AapAudioSwitchCapability::Claim()
+    {
+        device.SendData(OwnsConnection(true));
+        claimed = true;
+        ownsReport = -1;
+        std::vector<std::string> others;
+        {
+            std::lock_guard lock{stateLock};
+            for (auto &mac : connectedDevices)
+                if (mac != localMac)
+                    others.push_back(mac);
+            otherDevice.clear();
+        }
+        auto name = LocalName();
+        for (auto &other : others)
+        {
+            device.SendData(MediaInformation(other, localMac, name));
+            device.SendData(ShowNearbyUI(other));
+            device.SendData(HijackRequest(other));
+        }
+        return others.size();
+    }
+
     void AapAudioSwitchCapability::TakeOver(bool manual)
     {
         if (busy.exchange(true))
@@ -518,7 +574,9 @@ namespace MyPods
             auto info = device.GetConnected() ? pac->GetCardInfoByName(card) : std::nullopt;
             bool streaming = info && info->activeProfile.starts_with("a2dp");
 
-            if (!manual && (device.ownsAudio && streaming))
+            // streaming here isn't enough: without the claim, or after the AirPods said another device owns them, Play
+            // here has to claim them (again), or the next switch drops this computer instead of handing over
+            if (!manual && device.ownsAudio && streaming && claimed && ownsReport != 0)
             {
                 busy = false; // already ours
                 return;
@@ -553,8 +611,8 @@ namespace MyPods
 
             // The hijack goes to the devices from the 0x2E list. The AirPods send it once the AAP handshake is through
             // (its packets go out 300 ms apart after connecting), so it also says the channel is ready: measured
-            // ~2 s after the Bluetooth connection, 5 s at most here.
-            for (int i = 0; i < 50; i++)
+            // ~2 s after the Bluetooth connection, 4+ s when the channel took long; 10 s at most here.
+            for (int i = 0; i < 100; i++)
             {
                 {
                     std::lock_guard lock{stateLock};
@@ -565,23 +623,8 @@ namespace MyPods
             }
 
             takeoverAt = NowMs();
-            device.SendData(OwnsConnection(true));
-            std::vector<std::string> others;
-            {
-                std::lock_guard lock{stateLock};
-                for (auto &mac : connectedDevices)
-                    if (mac != localMac)
-                        others.push_back(mac);
-                otherDevice.clear();
-            }
-            Logger::Info("AutoSwitch: asking %zu other device(s) to let go", others.size());
-            auto name = LocalName();
-            for (auto &other : others)
-            {
-                device.SendData(MediaInformation(other, localMac, name));
-                device.SendData(ShowNearbyUI(other));
-                device.SendData(HijackRequest(other));
-            }
+            reclaimed = false;
+            Logger::Info("AutoSwitch: asking %zu other device(s) to let go", Claim());
             device.ownsAudio = true;
             released = false;
             sourceType = 0;
