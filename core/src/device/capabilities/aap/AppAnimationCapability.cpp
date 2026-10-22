@@ -64,7 +64,10 @@ namespace MyPods
                         auto parsedData = AppAnimationCapability::ParseBle(bytes, this->device.GetProductId(), enc);
                         if (parsedData && (!cachedData.has_value() || cachedData.value() != parsedData.value())){
                             //animation state controlled by mac
-                            if (parsedData->animation == true && mac == ""){
+                            if (parsedData->animation == true && mac == "" && std::chrono::steady_clock::now() < quietUntil){
+                                // just put away: no popup (the next lid opening shows one)
+                            }
+                            else if (parsedData->animation == true && mac == ""){
                                 mac = adData.GetAddress();
                                 cachedData = parsedData.value();
                                 
@@ -101,10 +104,12 @@ namespace MyPods
             std::optional<bleData> toFire{};
             {
                 std::lock_guard<std::mutex> lock(locker);
-                // Gone while the lid is open: they were put away (or another device took them). Like an iPhone, no
-                // popup for that; the next one comes once the lid has closed. A mac no address matches waits for it.
+                // Gone: put away (or another device took them). Like an iPhone, no popup for that lid opening.
+                // Waiting for the lid to close instead never ended: a closed case advertises nothing.
+                // ponytail: 10 s; a lid left open longer after putting them away shows the popup then
                 if (!isConnected){
-                    mac = "-";
+                    mac = "";
+                    quietUntil = std::chrono::steady_clock::now() + std::chrono::seconds(10);
                     return;
                 }
                 // Connected: the popup did its job and closes, like the iPhone's card. That "lid closed" also lifts

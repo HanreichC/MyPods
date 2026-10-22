@@ -8,6 +8,7 @@
 #include "sdk/aap/enums/AapModelIds.h"
 #include "device/structs/DeviceBatteryData.h"
 #include <string>
+#include <chrono>
 #include <optional>
 #include <sstream>
 #include <iomanip>
@@ -93,6 +94,7 @@ namespace MyPods
 
         std::optional<bleData> cachedData;
         std::string mac {};
+        std::chrono::steady_clock::time_point quietUntil{}; // no popup until then: they were just put away
         mutable std::mutex locker;
 
         std::string irk; 

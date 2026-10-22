@@ -48,10 +48,18 @@ QQC2.ApplicationWindow {
             return;
         }
         if (animation.show === false) {
-            hideOsd();
             dismissed = ""; // the lid is closed: opening it shows the popup again
+            // taken straight out of the case: it stays long enough to be seen
+            var left = minimumShown - (Date.now() - shownAt);
+            if (animationShown && left > 0) {
+                lateHide.interval = left;
+                lateHide.restart();
+                return;
+            }
+            hideOsd();
             return;
         }
+        lateHide.stop();
         animationData = animation;
         if (!animationShown && dismissed !== animation.address) {
             showOsd();
@@ -92,6 +100,7 @@ QQC2.ApplicationWindow {
         visible = true;
         osdHide.restart();
         animationShown = true;
+        shownAt = Date.now();
         Qt.callLater(function() {
             if (visible) {
                 showAnimation.start();
@@ -211,6 +220,15 @@ QQC2.ApplicationWindow {
         function onDataReceived(json) {
             osdDialog.handleAnimation(json?.animation);
         }
+    }
+
+    // shown at least this long, even when the pods leave the case right after the lid opens
+    readonly property int minimumShown: 3000
+    property double shownAt: 0
+    Timer {
+        id: lateHide
+        repeat: false
+        onTriggered: osdDialog.hideOsd()
     }
 
     Timer {

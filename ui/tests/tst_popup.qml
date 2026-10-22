@@ -43,6 +43,17 @@ Item {
             tryCompare(popup, "animationShown", false);
         }
 
+        function test_takenStraightOutStaysLongEnoughToBeSeen() {
+            popup.finishClose(); // the previous test may leave its pair's popup open, and that one would stay first
+            lid("D", true);
+            verify(popup.animationShown);
+            lid("D", false);
+            verify(popup.animationShown, "not gone at once");
+            wait(1500);
+            verify(popup.animationShown, "still there after 1.5 s");
+            tryCompare(popup, "animationShown", false, 3000, "gone after its 3 s");
+        }
+
         function test_connectOnlyWithoutAutomaticSwitching() {
             let button = findChild(popup.contentItem, "connectButton");
             verify(button);
