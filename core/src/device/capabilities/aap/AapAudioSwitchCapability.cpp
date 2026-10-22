@@ -281,13 +281,12 @@ namespace MyPods
         bool worn = InEar();
         if (!worn)
             holdBlocked = false;
+        // A takeover, not just RouteAudio: without "owns connection" and the hijack the AirPods don't know this computer
+        // has them, and the next switch to the iPhone drops it entirely instead of handing over.
         // ponytail: waits for the ear detection; AirPods that report no in-ear state never get here and stay off
         // until the user picks them (MakeDefaultOutput routes them like any output)
         if (worn && device.GetConnected() && device.ownsAudio && !busy && routeWhenWorn.exchange(false))
-        {
-            Logger::Info("AutoSwitch: AirPods worn, their audio comes on");
-            std::thread([this, keep = device.KeepAlive()]() { device.RouteAudio(); }).detach();
-        }
+            TakeOver(true);
         auto current = pac->GetDefaultSink().value_or("");
         bool playsHere = device.ownsAudio && (PulseAudioClient::SinkOf(current, device.SinkPart()) ||
                          (current == AudioEffects::SINK_NAME && AudioEffects::Instance().PlaysInto(device.SinkPart())));
