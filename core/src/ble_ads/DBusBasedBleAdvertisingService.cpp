@@ -16,10 +16,46 @@ DBusBasedBleAdvertisingService::DBusBasedBleAdvertisingService(DBusService& dbus
             this->OnAdapterPowerChanged(listenerId, isPowered);
         }
     );
+
+    // A discovery always scans actively from a random address, and the controller then drops directed
+    // advertisements, which is how a paired LE mouse or keyboard asks to reconnect after a long link loss
+    // (after every boot): it stays away for as long as we discover. Without our session the kernel scans
+    // passively from the public address and connects it; btmon showed the MX Master back 1.1 s after the
+    // stop. So the discovery pauses briefly now and then.
+    // ponytail: a fixed duty cycle; a popup can come up to 1.5 s late. The directed ads are never reported
+    // to the host while we scan, so there is nothing to pause on demand, and with MX Anywhere and the Xbox
+    // controller paired some LE input device is always disconnected anyway.
+    _gapper = std::jthread([this](std::stop_token stop) {
+        std::mutex m;
+        std::unique_lock lock{m};
+        while (true) {
+            // after a stop request wait_for returns false at once, so the stop has to end the loop itself
+            _gapWake.wait_for(lock, stop, std::chrono::seconds(15), [] { return false; });
+            if (stop.stop_requested())
+                return;
+            if (!_scanDesired)
+                continue;
+            _dbusService.StopDiscovery();
+            _gapWake.wait_for(lock, stop, std::chrono::milliseconds(1500), [] { return false; });
+            if (stop.stop_requested())
+                return;
+            std::lock_guard scan{_scanMutex};
+            if (!_scanDesired) // StopScan ran during the pause
+                continue;
+            try {
+                StartDiscoverySession();
+            } catch (const sdbus::Error& e) {
+                std::cerr << "[DBus] Failed to resume scan after pause: " << e.getMessage() << std::endl;
+            }
+        }
+    });
 }
 
 DBusBasedBleAdvertisingService::~DBusBasedBleAdvertisingService()
 {
+    _gapper.request_stop();
+    _gapper.join();
+
     if (_adapterPoweredSubscriptionId != 0) {
         _dbusService.IsBluetoothAdapterPowered().GetEvent().Unsubscribe(_adapterPoweredSubscriptionId);
         _adapterPoweredSubscriptionId = 0;
@@ -98,15 +134,18 @@ void DBusBasedBleAdvertisingService::OnAdapterPowerChanged(size_t listenerId, bo
 
 void DBusBasedBleAdvertisingService::StartScan(bool isPassive)
 {
+    std::lock_guard lock{_scanMutex};
+    StartDiscoverySession();
+    _scanDesired = true;
+}
+
+void DBusBasedBleAdvertisingService::StartDiscoverySession()
+{
     std::map<std::string, sdbus::Variant> filter;
-    // Deliberately no "Transport" filter. An LE-only discovery scans without a gap, and
-    // the kernel then never gets to finish the allowlist auto-connect that paired LE
-    // devices (mice, keyboards) need -- they stay disconnected for as long as we scan.
-    // The default transport interleaves BR/EDR inquiry with the LE scan, which leaves
-    // exactly those gaps. Measured on real hardware: with "le" the MX Master did not
-    // reconnect in 71s; without it, it was back in 19s while 78 Apple advertisements
-    // still arrived in the same window.
-    filter.emplace("DuplicateData", sdbus::Variant(true)); // Add this line to receive duplicate data
+    // No "Transport" filter: an LE-only discovery starved paired LE mice even more (see the pause in the
+    // constructor). DuplicateData is what makes BlueZ pass on every advertisement: without it, not one
+    // ManufacturerData update arrived in 70 s, and the popup and automatic switching live on them.
+    filter.emplace("DuplicateData", sdbus::Variant(true));
     try {
         _dbusService.SetDiscoveryFilter(filter);
     } catch (const sdbus::Error& e) {
@@ -122,18 +161,15 @@ void DBusBasedBleAdvertisingService::StartScan(bool isPassive)
             std::cout << "Note: Discovery already in progress (joining existing scan)" << std::endl;
         } else if (errorName.find("NotReady") != std::string::npos) {
             std::cerr << "Warning: Bluetooth adapter is powered OFF. Waiting for adapter to be enabled..." << std::endl;
-            _scanDesired = true;
-            return;
         } else {
             throw;
         }
     }
-
-    _scanDesired = true;
 }
 
 void DBusBasedBleAdvertisingService::StopScan()
 {
+    std::lock_guard lock{_scanMutex};
     _scanDesired = false;
 
     if (_onDeviceAddedSubscriptionId != 0) {

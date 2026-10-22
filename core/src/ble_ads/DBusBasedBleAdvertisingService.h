@@ -9,8 +9,10 @@
 #include "BleAdvertisingData.h"
 #include <memory>
 #include <atomic>
+#include <condition_variable>
 #include <map>
 #include <mutex>
+#include <thread>
 
 namespace MyPods
 {
@@ -30,7 +32,12 @@ private:
     std::atomic<bool> _scanDesired{false};
     std::map<std::string, DeviceSubscriptions> _deviceSubscriptions{};
     std::mutex _deviceSubscriptionsMutex{};
+    std::mutex _scanMutex{}; // _scanDesired and our discovery session change together
+    std::condition_variable_any _gapWake{};
+    std::jthread _gapper{}; // last: stopped before the members it uses go
 
+    // SetDiscoveryFilter + StartDiscovery; BlueZ drops a client's filter when it stops discovering
+    void StartDiscoverySession();
     // Follows the device's advertisements; `emitNow` also passes on the data it has already
     void OnDeviceAdded(std::shared_ptr<DBusDeviceInfo> deviceInfo, bool emitNow = true);
     void OnAdapterPowerChanged(size_t listenerId, bool isPowered);
