@@ -2,6 +2,7 @@
 // License: GPL-3.0
 
 #include "AapAudioSwitchCapability.h"
+#include "AppAnimationCapability.h"
 #include "media/MprisClient.h"
 #include "dbus/DBusService.h"
 #include "sdk/aap/Aes.h"
@@ -161,8 +162,16 @@ namespace MyPods
         // In-ear state while not connected comes from the (RPA-verified) proximity advertisement, byte 5 bits 1 and 3
         leEventId = this->device.GetLeDataReceived().Subscribe([this](size_t, const BleAdvertisingData &ad)
         {
-            if (auto message = this->device.OwnProximityMessage(ad))
-                bleInEarAt = ((*message)[5] & 0x0A) ? NowMs() : 0; // taken out counts at once, not 15 s later
+            auto message = this->device.OwnProximityMessage(ad);
+            if (!message)
+                return;
+            bleInEarAt = ((*message)[5] & 0x0A) ? NowMs() : 0; // taken out counts at once, not 15 s later
+            // only the case charges both pods
+            auto data = AppAnimationCapability::ParseBle(*message, this->device.GetProductId());
+            auto charging = [&](DeviceBatteryType type) {
+                return data && std::ranges::any_of(data->batteryData, [&](const auto &b) { return b.Type == type && b.IsCharging; });
+            };
+            bleInCaseAt = charging(DeviceBatteryType::Left) && charging(DeviceBatteryType::Right) ? NowMs() : 0;
         });
 
         cardEventId = device.GetAudioClient()->GetAudioCardPropertyChangedEvent().Subscribe([this](size_t, const CardInfo &info)
@@ -180,10 +189,24 @@ namespace MyPods
                 std::lock_guard lock{stateLock};
                 lastA2dp = info.activeProfile;
             }
+            if (!this->device.ownsAudio || busy)
+                return;
+            // Connected straight from the open case: a stream started now (by us, or by WirePlumber, which restores
+            // them as the default output) goes unanswered, and the AirPods drop every channel and come back without
+            // audio. So their audio stays off until they are worn, like on an iPhone; UpdateHold switches it on.
+            if (InCase())
+            {
+                routeWhenWorn = true;
+                Logger::Info("AutoSwitch: AirPods in the case, their audio waits until they're worn");
+                if (a2dp)
+                    std::thread([this, card = info.name, keep = this->device.KeepAlive()]() {
+                        this->device.GetAudioClient()->SetCardProfile(card, "off");
+                    }).detach();
+                return;
+            }
             // headphones connected on their own or profile changed: keep effects and default sink in step.
             // Off the PulseAudio thread, RouteAudio waits for PulseAudio replies.
-            if (this->device.ownsAudio && !busy)
-                std::thread([this, keep = this->device.KeepAlive()]() { this->device.RouteAudio(); }).detach();
+            std::thread([this, keep = this->device.KeepAlive()]() { this->device.RouteAudio(); }).detach();
         });
 
         holdWorker = std::thread([this]() { HoldWorker(); });
@@ -220,6 +243,7 @@ namespace MyPods
         released = false;
         sourceType = 0;
         cardSeen = false;
+        routeWhenWorn = false;
         device.StopEffects();
         WakeHold();
         AapCapability::Reset();
@@ -257,6 +281,13 @@ namespace MyPods
         bool worn = InEar();
         if (!worn)
             holdBlocked = false;
+        // ponytail: waits for the ear detection; AirPods that report no in-ear state never get here and stay off
+        // until the user picks them (MakeDefaultOutput routes them like any output)
+        if (worn && device.GetConnected() && device.ownsAudio && !busy && routeWhenWorn.exchange(false))
+        {
+            Logger::Info("AutoSwitch: AirPods worn, their audio comes on");
+            std::thread([this, keep = device.KeepAlive()]() { device.RouteAudio(); }).detach();
+        }
         auto current = pac->GetDefaultSink().value_or("");
         bool playsHere = device.ownsAudio && (PulseAudioClient::SinkOf(current, device.SinkPart()) ||
                          (current == AudioEffects::SINK_NAME && AudioEffects::Instance().PlaysInto(device.SinkPart())));
@@ -312,6 +343,12 @@ namespace MyPods
         if (device.GetConnected() && pods >= 0)
             return pods > 0;
         return NowMs() - bleInEarAt < 15000;
+    }
+
+    // The advertisements stop once they're connected (the scan pauses), so the last one counts for a while
+    bool AapAudioSwitchCapability::InCase()
+    {
+        return !InEar() && NowMs() - bleInCaseAt < 15000;
     }
 
     void AapAudioSwitchCapability::OnReceivedData(const std::vector<unsigned char> &data)

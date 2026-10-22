@@ -31,6 +31,8 @@ namespace MyPods
         std::atomic<bool> released{false};
         std::atomic<bool> cardSeen{false}; // their PipeWire card since they connected
         std::atomic<int64_t> bleInEarAt{0};
+        std::atomic<int64_t> bleInCaseAt{0};
+        std::atomic<bool> routeWhenWorn{false}; // connected in the case: their audio stayed off until they're worn
         std::atomic<int64_t> takeoverAt{0};
         size_t playbackEventId{};
         size_t leEventId{};
@@ -52,6 +54,7 @@ namespace MyPods
         void WakeHold();
 
         bool InEar();
+        bool InCase();
         void TakeOver(bool manual);
         void Release(bool answerRequest);
 
