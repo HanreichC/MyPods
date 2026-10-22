@@ -107,9 +107,14 @@ namespace MyPods
                     mac = "-";
                     return;
                 }
-                if (cachedData.has_value() && cachedData.value().animation == true && mac != "" && mac != "-"){
+                // Connected: the popup did its job and closes, like the iPhone's card. That "lid closed" also lifts
+                // the UI's hold on a popup closed by hand or timed out, which waits for the lid to close, and that is
+                // never seen while they're connected (no scan then): the next lid opening shows it again.
+                if (cachedData.has_value() && cachedData.value().animation == true && mac != ""){
+                    cachedData->animation = false;
                     toFire = cachedData.value();
-                    Logger::Debug("Connection animation");
+                    mac = "";
+                    Logger::Debug("Connected, popup closes");
                 }
             }
             if (toFire.has_value())

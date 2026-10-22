@@ -506,6 +506,10 @@ int EmulateAirPods()
             }
             return body;
         }()));
+        Check("Pro 3: the iPhone on the list learns of this computer, this computer not of itself",
+              pods.Sent(AapAudioSwitchCapability::NewDeviceInformation(IPHONE, LOCAL, "chris-p1")) &&
+              pods.Sent(AapAudioSwitchCapability::AddTiPiDevice(IPHONE, LOCAL, "chris-p1")) &&
+              !pods.Sent(AapAudioSwitchCapability::AddTiPiDevice(LOCAL, LOCAL, "chris-p1")));
         pods.Receive(Aap(0x09, {0x0A, 0x01, 0x00, 0x00, 0x00})); // ear detection on
         pods.Receive(inEar(0x00, 0x00));
         Check("Pro 3: both worn", pods.podsInEar == 2 && json()["owns"] == true, json().dump());

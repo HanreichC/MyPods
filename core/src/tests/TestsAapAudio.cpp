@@ -23,6 +23,12 @@ TestsAapAudio::TestsAapAudio()
     Test("ShowNearbyUI matches LibrePods", AapAudioSwitchCapability::ShowNearbyUI(target) == StringUtils::HexStringToBytes(
         "040004001000ffeeddccbbaa7e0001e65b536d617274526f7574696e674b657953686f774e65617262795549014a6c6f63616c73636f7265312d0146726561736f6e4868696a61636b763251617564696f526f7574696e6753636f7265a25f617564696f526f7574696e675365744f776e657273686970546f46616c7365014b72656d6f746573636f7265a2"));
 
+    // createMediaInformationNewDevicePacket / createAddTiPiDevicePacket, with LibrePods' fixed name "Android"
+    Test("NewDeviceInformation matches LibrePods", AapAudioSwitchCapability::NewDeviceInformation(target, "11:22:33:44:55:66", "Android") == StringUtils::HexStringToBytes(
+        "040004001000ffeeddccbbaa6c0001e54a706c6179696e67417070424e4152686f737453747265616d696e675374617465424e4f496274416464726573735131313a32323a33333a34343a35353a36364662744e616d6547416e64726f6964586f74686572446576696365417564696f43617465676f72793064"));
+    Test("AddTiPiDevice matches LibrePods", AapAudioSwitchCapability::AddTiPiDevice(target, "11:22:33:44:55:66", "Android") == StringUtils::HexStringToBytes(
+        "040004001000ffeeddccbbaa520001e54869646c6554696d6508476e65775469706901496274416464726573735131313a32323a33333a34343a35353a36364662744e616d6547416e64726f6964506e6561726279417564696f53636f72650e"));
+
     auto info = AapAudioSwitchCapability::MediaInformation(target, "11:22:33:44:55:66", "Linux");
     Test("MediaInformation length field", info.size() == 14u + (info[12] | (info[13] << 8)));
     Test("MediaInformation btName encoded", std::string(info.begin(), info.end()).find("\x46" "btName" "\x45" "Linux") != std::string::npos);

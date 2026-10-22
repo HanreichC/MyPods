@@ -74,6 +74,13 @@ namespace MyPods
         // cut on a UTF-8 character boundary; "Linux" if there is none
         static std::string BannerName(const std::string &name);
         static std::vector<unsigned char> MediaInformation(const std::string &targetMac, const std::string &selfMac, const std::string &selfName);
+        // To a device that newly connected to the AirPods (0x2E): who this computer is and that it's a multipoint
+        // ("TiPi") peer. Without them a device that connects after this computer never learns of it and holds back:
+        // the iPhone then needs the AirPods picked by hand instead of taking them back on its own.
+        static std::vector<unsigned char> NewDeviceInformation(const std::string &targetMac, const std::string &selfMac, const std::string &selfName);
+        static std::vector<unsigned char> AddTiPiDevice(const std::string &targetMac, const std::string &selfMac, const std::string &selfName);
+        // The adapter's name, as the iPhone shows it ("Moved to ...")
+        static std::string LocalName();
         static std::vector<unsigned char> ShowNearbyUI(const std::string &targetMac);
         static std::vector<unsigned char> HijackRequest(const std::string &targetMac);
         static std::optional<std::pair<std::string, int>> ParseAudioSource(const std::vector<unsigned char> &data);

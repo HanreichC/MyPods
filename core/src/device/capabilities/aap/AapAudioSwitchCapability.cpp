@@ -90,6 +90,54 @@ namespace MyPods
         return SmartRouting(targetMac, b);
     }
 
+    // Both from LibrePods (createMediaInformationNewDevicePacket / createAddTiPiDevicePacket), sent to every device
+    // that shows up in the connected list
+    std::vector<unsigned char> AapAudioSwitchCapability::NewDeviceInformation(const std::string &targetMac, const std::string &selfMac, const std::string &selfName)
+    {
+        std::vector<unsigned char> b{0x01, 0xE5};
+        Str(b, "playingApp");
+        Str(b, "NA");
+        Str(b, "hostStreamingState");
+        Str(b, "NO");
+        Str(b, "btAddress");
+        Str(b, selfMac);
+        Str(b, "btName");
+        Str(b, selfName);
+        Str(b, "otherDeviceAudioCategory");
+        b.insert(b.end(), {0x30, 0x64});
+        return SmartRouting(targetMac, b);
+    }
+
+    std::vector<unsigned char> AapAudioSwitchCapability::AddTiPiDevice(const std::string &targetMac, const std::string &selfMac, const std::string &selfName)
+    {
+        std::vector<unsigned char> b{0x01, 0xE5};
+        Str(b, "idleTime");
+        b.push_back(0x08); // OPACK small int 0
+        Str(b, "newTipi");
+        b.push_back(0x01);
+        Str(b, "btAddress");
+        Str(b, selfMac);
+        Str(b, "btName");
+        Str(b, selfName);
+        Str(b, "nearbyAudioScore");
+        b.push_back(0x0E); // small int 6
+        return SmartRouting(targetMac, b);
+    }
+
+    std::string AapAudioSwitchCapability::LocalName()
+    {
+        std::string name;
+        try
+        {
+            name = DBusService::GetAdapterAlias(); // what the iPhone already calls this computer
+        }
+        catch (const std::exception &e)
+        {
+            Logger::Debug("AutoSwitch: no adapter name: %s", e.what());
+        }
+        return BannerName(name);
+    }
+
     std::vector<unsigned char> AapAudioSwitchCapability::ShowNearbyUI(const std::string &targetMac)
     {
         std::vector<unsigned char> b{0x01, 0xE6};
@@ -389,8 +437,25 @@ namespace MyPods
         case 0x2E:
         {
             auto devices = ParseConnectedDevices(data);
-            std::lock_guard lock{stateLock};
-            connectedDevices = devices;
+            std::vector<std::string> added;
+            {
+                std::lock_guard lock{stateLock};
+                for (auto &mac : devices)
+                    if (mac != localMac && std::ranges::find(connectedDevices, mac) == connectedDevices.end())
+                        added.push_back(mac);
+                connectedDevices = devices;
+            }
+            Logger::Info("AutoSwitch: %zu device(s) on the AirPods, %zu new", devices.size(), added.size());
+            // like LibrePods: every device that shows up learns of this computer, whichever connected first
+            if (!added.empty() && !localMac.empty())
+            {
+                auto name = LocalName();
+                for (auto &mac : added)
+                {
+                    device.SendData(NewDeviceInformation(mac, localMac, name));
+                    device.SendData(AddTiPiDevice(mac, localMac, name));
+                }
+            }
             break;
         }
         case 0x11:
@@ -510,16 +575,7 @@ namespace MyPods
                 otherDevice.clear();
             }
             Logger::Info("AutoSwitch: asking %zu other device(s) to let go", others.size());
-            std::string name;
-            try
-            {
-                name = DBusService::GetAdapterAlias(); // what the iPhone already calls this computer
-            }
-            catch (const std::exception &e)
-            {
-                Logger::Debug("AutoSwitch: no adapter name: %s", e.what());
-            }
-            name = BannerName(name);
+            auto name = LocalName();
             for (auto &other : others)
             {
                 device.SendData(MediaInformation(other, localMac, name));
