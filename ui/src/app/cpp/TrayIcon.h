@@ -12,9 +12,9 @@ class TrayIcon final : public QSystemTrayIcon {
     Q_PROPERTY(int themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged)
 
 public:
-    // A monochrome glyph like a menu bar extra: the app logo (dimmed while nothing is connected) or the
+    // A monochrome glyph like a menu bar extra: the app logo while nothing is connected, or the
     // headphones in a ring that shows their battery, red when low. A badge says where music plays, else
-    // a bolt that they charge.
+    // a bolt that they charge; a warning triangle on the logo, that the daemon can't be reached.
     enum class Kind { Offline, Idle, Headphones };
     enum class Badge { None, Play, Phone };
     struct State {

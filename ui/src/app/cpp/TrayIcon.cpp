@@ -16,10 +16,6 @@
 #include <QDebug>
 
 namespace {
-QString iconPath(const QString &name) {
-    return QStringLiteral(":/qt/qml/mypods/src/app/qml/assets/icons/") + name;
-}
-
 // Drawn for each size a panel may ask for rather than scaled: 16 px on Windows at 100 % up to 64 on a
 // large KDE panel. The shapes sit on a 16-unit grid.
 QImage render(const TrayIcon::State &state, int size, bool darkPanel)
@@ -29,8 +25,9 @@ QImage render(const TrayIcon::State &state, int size, bool darkPanel)
     QPainter p(&image);
     p.setRenderHint(QPainter::Antialiasing);
     p.scale(size / 16.0, size / 16.0);
-    const QColor fg = darkPanel ? QColor(Qt::white) : QColor(0x1a, 0x1a, 0x1a);
-    const QColor red = darkPanel ? QColor(0xff, 0x45, 0x3a) : QColor(0xe0, 0x28, 0x1e); // system red
+    // MyStyle color.label.primary and color.system.red (light, dark)
+    const QColor fg = darkPanel ? QColor(0xf5, 0xf5, 0xf7) : QColor(0x1d, 0x1d, 0x1f);
+    const QColor red = darkPanel ? QColor(0xff, 0x42, 0x45) : QColor(0xff, 0x38, 0x3c);
     p.setPen(Qt::NoPen);
     p.setBrush(fg);
 
@@ -68,26 +65,37 @@ QImage render(const TrayIcon::State &state, int size, bool darkPanel)
         p.drawRoundedRect(QRectF(15.5, 13, 6, 8.5), 2.6, 2.6);
         p.restore();
     } else {
-        // the app logo (logo-dark.svg), dimmed like an inactive menu bar extra
-        p.setOpacity(0.45);
+        // the app logo (logo-dark.svg) as it is: dimmed, its stems came to only 2:1 on a light panel
         p.drawEllipse(QPointF(3.69, 5.69), 3.69, 3.69);
         p.drawEllipse(QPointF(12.31, 5.69), 3.69, 3.69);
-        p.setOpacity(0.45 * 0.66);
+        p.setOpacity(0.66);
         p.drawRoundedRect(QRectF(4.92, 5.08, 2.46, 9.85), 1.23, 1.23);
         p.drawRoundedRect(QRectF(8.62, 5.08, 2.46, 9.85), 1.23, 1.23);
         p.setOpacity(1);
     }
 
     const bool bolt = state.kind == TrayIcon::Kind::Headphones && state.charging && state.badge == TrayIcon::Badge::None;
-    if (state.badge != TrayIcon::Badge::None || bolt) {
-        // cut a gap around the badge, then draw it: a play triangle for here, a phone for the iPhone, a
-        // bolt while charging and no music plays
+    const bool warning = state.kind == TrayIcon::Kind::Offline;
+    if (state.badge != TrayIcon::Badge::None || bolt || warning) {
+        // cut a gap around the badge, then draw it: a warning triangle without the daemon, a play triangle for
+        // here, a phone for the iPhone, a bolt while charging and no music plays. Monochrome like every menu
+        // bar extra (MyStyle C-9): the shape says it, orange wouldn't reach 3:1 on a light panel.
         p.setPen(Qt::NoPen);
         p.setBrush(fg);
         p.setCompositionMode(QPainter::CompositionMode_Clear);
         p.drawEllipse(QPointF(12.6, 12.6), 4.4, 4.4);
         p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        if (bolt) {
+        if (warning) {
+            QPen pen(fg, 1.0);
+            pen.setJoinStyle(Qt::RoundJoin);
+            p.setPen(pen);
+            p.drawPolygon(QPolygonF({QPointF(12.6, 9.0), QPointF(16.0, 15.2), QPointF(9.2, 15.2)}));
+            p.setCompositionMode(QPainter::CompositionMode_Clear);
+            pen.setCapStyle(Qt::RoundCap);
+            p.setPen(pen);
+            p.drawLine(QPointF(12.6, 11.4), QPointF(12.6, 12.8));
+            p.drawPoint(QPointF(12.6, 14.3));
+        } else if (bolt) {
             QPen pen(fg, 0.6);
             pen.setJoinStyle(Qt::RoundJoin);
             p.setPen(pen);
@@ -182,10 +190,6 @@ bool TrayIcon::isDarkTheme() const {
 
 void TrayIcon::updateIcon() {
     const bool darkPanel = isDarkTheme();
-    if (m_state.kind == Kind::Offline) {
-        setIcon(QIcon(iconPath(darkPanel ? QStringLiteral("logo-warning_dark.svg") : QStringLiteral("logo-warning_light.svg"))));
-        return;
-    }
     QIcon icon;
     for (int size : {16, 20, 22, 24, 32, 40, 44, 48, 64})
         icon.addPixmap(QPixmap::fromImage(render(m_state, size, darkPanel)));

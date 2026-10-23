@@ -99,7 +99,7 @@ ColumnLayout {
             Impl.IconImage {
                 anchors.centerIn: parent
                 visible: art.status !== Image.Ready
-                sourceSize: Qt.size(24, 24)
+                sourceSize: Qt.size(MP.Theme.sizeIconXL, MP.Theme.sizeIconXL)
                 source: MP.Units.asset("icons/icon-headphones.svg")
                 color: MP.Theme.labelSecondary
             }

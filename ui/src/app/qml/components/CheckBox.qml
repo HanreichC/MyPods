@@ -28,7 +28,7 @@ QQC2.CheckBox {
         Impl.IconImage {
             anchors.centerIn: parent
             visible: control.checked
-            sourceSize: Qt.size(13, 13)
+            sourceSize: Qt.size(13, 13) // MyStyle: no token for the check inside the 16 px box
             source: MP.Units.asset("icons/icon-check.svg")
             color: MP.Theme.labelOnAccent
         }

@@ -3,6 +3,7 @@
 // License: GPL-3.0
 
 import QtQuick
+import QtQuick.Controls.impl as Impl
 import QtQuick.Shapes
 import mypods as MP
 
@@ -70,12 +71,12 @@ Column {
         spacing: 2
         visible: root.name !== "" || root.isCharging
 
-        Image {
+        Impl.IconImage {
             visible: root.isCharging
             anchors.verticalCenter: parent.verticalCenter
-            width: 12; height: 12
-            sourceSize: Qt.size(24, 24)
+            sourceSize: Qt.size(MP.Theme.sizeIconS, MP.Theme.sizeIconS)
             source: MP.Units.asset("icons/icon-bolt.svg")
+            color: root.tint // green while charging (C-6), like the ring
         }
         Text {
             text: root.name
