@@ -220,6 +220,12 @@ QQC2.ApplicationWindow {
         function onDataReceived(json) {
             osdDialog.handleAnimation(json?.animation);
         }
+
+        // a daemon that (re)started knows no lid from before: neither does a popup closed back then still hold
+        function onConnectedChanged() {
+            if (cppBackend.connected)
+                osdDialog.dismissed = "";
+        }
     }
 
     // shown at least this long, even when the pods leave the case right after the lid opens

@@ -679,6 +679,46 @@ int EmulateAirPods()
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
     }
 
+    // The lid popup of a pair that isn't connected: a closed case advertises nothing, so 5 s without one close the
+    // lid; the UI only shows the next popup after a "lid closed"
+    std::filesystem::remove(settingsPath);
+    if (bluez)
+    {
+        auto settings = std::make_shared<SettingsService>(settingsPath.string());
+        settings->SaveSetting("AA_BB_CC_DD_EE_FF", "irk", std::string("0123456789abcdef0123456789abcdef"));
+        settings->SaveSetting("AA_BB_CC_DD_EE_FF", "enc", std::string("0123456789abcdef0123456789abcdef"));
+        std::map<std::string, std::map<std::string, sdbus::Variant>> interfaces{{"org.bluez.Device1", {
+            {"Address", sdbus::Variant{MAC}},
+            {"Name", sdbus::Variant{std::string("AirPods Pro von Chris")}},
+            {"Modalias", sdbus::Variant{std::string("bluetooth:v004Cp2027d0001")}},
+            {"Connected", sdbus::Variant{false}},
+        }}};
+        auto info = std::make_shared<DBusDeviceInfo>(sdbus::ObjectPath{"/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"}, interfaces);
+        auto lidPods = AapDevice::Create(info, std::make_shared<PulseAudioClient>(), settings, nullptr);
+        std::mutex showsLock;
+        std::vector<bool> shows;
+        lidPods->GetAnimationTriggered().Subscribe([&](size_t, const nlohmann::json &json)
+        {
+            std::lock_guard lock{showsLock};
+            shows.push_back(json["animation"]["show"].get<bool>());
+        });
+        auto lastShow = [&] { std::lock_guard lock{showsLock}; return shows.empty() ? -1 : int(shows.back()); };
+        std::vector<uint8_t> message(27, 0x00);
+        message[0] = 0x07; message[1] = 0x19; message[2] = 0x01; message[3] = 0x27; message[4] = 0x20; // Pro 3
+        message[5] = 0x05; // both in the case
+        message[8] = 0x01; // lid open
+        for (int i = 0; i < 3; i++)
+        {
+            std::string address = "52:34:56:7B:C4:03"; // resolves with that IRK (TestsAapBle)
+            lidPods->GetLeDataReceived().FireEvent(BleAdvertisingData(address, -50, {{0x004C, message}}));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+        Check("Lid: opened, the popup comes", lastShow() == 1, std::to_string(lastShow()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+        Check("Lid: 3 s without an advertisement is no closing yet (the scan pauses 1.5 s)", lastShow() == 1);
+        Check("Lid: 5 s without one, it closed", WaitFor([&] { return lastShow() == 0; }, 4000), std::to_string(lastShow()));
+    }
+
     if (!previousDefault.empty())
         Sh("pactl set-default-sink " + previousDefault);
     Sh("pactl unload-module " + module);

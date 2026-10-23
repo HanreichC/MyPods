@@ -61,6 +61,7 @@ namespace MyPods
                     std::optional<bleData> toFire{};
                     {
                         std::lock_guard<std::mutex> lock(locker);
+                        lastAdAt = std::chrono::steady_clock::now();
                         auto parsedData = AppAnimationCapability::ParseBle(bytes, this->device.GetProductId(), enc);
                         if (parsedData && (!cachedData.has_value() || cachedData.value() != parsedData.value())){
                             //animation state controlled by mac
@@ -139,10 +140,43 @@ namespace MyPods
                                                         this->irk = newIrk;
                                                         this->enc = newEnc;
                                                     });
+
+        // An open lid advertises several times a second, a closed case nothing: 5 s of silence is the lid closing
+        // (the scan's own pause is 1.5 s). Never seen otherwise, and a popup closed by hand or timed out stays held
+        // in the UI until the lid closes, so the next opening showed none (also after a daemon restart).
+        lidWatch = std::jthread([this](std::stop_token stop)
+        {
+            std::mutex m;
+            std::unique_lock wait{m};
+            while (true)
+            {
+                // after a stop request wait_for returns false at once, so the stop has to end the loop itself
+                lidWake.wait_for(wait, stop, std::chrono::seconds(1), [] { return false; });
+                if (stop.stop_requested())
+                    return;
+                std::optional<bleData> toFire{};
+                {
+                    std::lock_guard<std::mutex> lock(locker);
+                    // connected, no scan runs and nothing advertises: the connection closed the popup already
+                    if (mac != "" && cachedData.has_value() && cachedData->animation && !this->device.GetConnected() &&
+                        std::chrono::steady_clock::now() - lastAdAt > std::chrono::seconds(5))
+                    {
+                        cachedData->animation = false;
+                        toFire = cachedData.value();
+                        mac = "";
+                        Logger::Debug("No advertisement for 5 s: lid closed");
+                    }
+                }
+                if (toFire.has_value())
+                    FireAnimation(toFire.value());
+            }
+        });
     }
 
     AppAnimationCapability::~AppAnimationCapability()
     {
+        lidWatch.request_stop();
+        lidWatch.join();
         watcher.GetEvent().Unsubscribe(watcherEventId);
         this->device.GetConnectedPropertyChangedEvent().Unsubscribe(connectionEventId);
         this->device.GetLeDataReceived().Unsubscribe(leEventId);

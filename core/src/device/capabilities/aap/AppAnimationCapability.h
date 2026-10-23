@@ -9,6 +9,8 @@
 #include "device/structs/DeviceBatteryData.h"
 #include <string>
 #include <chrono>
+#include <condition_variable>
+#include <thread>
 #include <optional>
 #include <sstream>
 #include <iomanip>
@@ -95,7 +97,10 @@ namespace MyPods
         std::optional<bleData> cachedData;
         std::string mac {};
         std::chrono::steady_clock::time_point quietUntil{}; // no popup until then: they were just put away
+        std::chrono::steady_clock::time_point lastAdAt{};   // their last proximity advertisement
         mutable std::mutex locker;
+        std::condition_variable_any lidWake{};
+        std::jthread lidWatch{}; // a closed case advertises nothing: silence closes the lid
 
         std::string irk; 
         std::string enc; 
