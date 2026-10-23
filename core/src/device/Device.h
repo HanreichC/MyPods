@@ -132,7 +132,7 @@ namespace MyPods {
         }
 
 
-        void Connect(); // TODO: Async only?
+        virtual void Connect(); // TODO: Async only? Virtual for the emulator
         void ConnectAsync(BtCallback&& callback);
 
         void Disconnect(); // TODO: Async only?

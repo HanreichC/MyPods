@@ -75,6 +75,7 @@ namespace MyPods
 
         // Shared by the ear-detection and audio-switch capabilities
         std::atomic<int> podsInEar{-1};    // from AAP ear detection, -1 = unknown
+        std::atomic<bool> aapReady{false}; // the control channel is up, handshake sent: what goes out now arrives
 
         bool HasHeadTracking() const override;
         // AutoEQ correction to the Harman target for the model, empty if nobody measured it

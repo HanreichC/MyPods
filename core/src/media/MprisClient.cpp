@@ -113,33 +113,6 @@ namespace MyPods
         proxy->callMethod(method).onInterface(MPRIS_PLAYER);
     }
 
-    bool MprisClient::IsPlaying()
-    {
-        std::lock_guard lock{_callsLock};
-        if (!_calls)
-            return false;
-        try
-        {
-            for (auto &player : Players())
-            {
-                try
-                {
-                    if (Status(player) == "Playing")
-                        return true;
-                }
-                catch (const sdbus::Error &e)
-                {
-                    Logger::Debug("MPRIS: %s: %s", player.c_str(), e.getMessage().c_str());
-                }
-            }
-        }
-        catch (const sdbus::Error &e)
-        {
-            Logger::Debug("MPRIS: %s", e.getMessage().c_str());
-        }
-        return false;
-    }
-
     std::vector<std::string> MprisClient::PausePlaying()
     {
         std::vector<std::string> paused;

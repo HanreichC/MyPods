@@ -91,16 +91,48 @@ namespace
     struct EmulatedPods : AapDevice
     {
         EmulatedPods(std::shared_ptr<DBusDeviceInfo> info, std::shared_ptr<PulseAudioClient> pac, std::shared_ptr<SettingsService> settings)
-            : AapDevice(info, pac, settings, nullptr)
+            : AapDevice(info, pac, settings, nullptr), info(info)
         {
             _client = Client::CreateL2CAP(MAC, 0x1001); // never started: sent packets just queue
+            aapReady = true;                            // connected from the start, its channel up
+        }
+        ~EmulatedPods() override
+        {
+            if (connectThread.joinable())
+                connectThread.join();
         }
         void Receive(const std::vector<unsigned char> &packet) { GetResponseDataRecived().FireEvent(packet); }
 
+        // Connected as BlueZ reports it, and told to the capabilities as Device::Init's listener does
+        std::shared_ptr<DBusDeviceInfo> info;
+        void SetConnected(bool connected)
+        {
+            aapReady = connected;
+            info->GetConnectionStatus().SetValue(connected);
+            GetConnectedPropertyChangedEvent().FireEvent(connected);
+        }
+        // Connect: connected at once, then what the AirPods (and the iPhone) do after a connection plays out
+        std::function<void()> afterConnect;
+        std::thread connectThread;
+        std::atomic<int> connects{0};
+        void Connect() override
+        {
+            connects++;
+            if (connectThread.joinable())
+                connectThread.join();
+            if (afterConnect) // BlueZ's Connect returns at once, link and control channel come later (afterConnect)
+                connectThread = std::thread(afterConnect);
+            else
+                SetConnected(true);
+        }
+
         std::mutex sentLock;
         std::vector<std::vector<unsigned char>> sent;
+        std::atomic<bool> claimedEarly{false}; // "owns connection" sent before the control channel was up
         void SendData(const std::vector<unsigned char> &data) override
         {
+            if (!aapReady && data == AapAudioSwitchCapability::OwnsConnection(true))
+                claimedEarly = true;
             std::lock_guard lock{sentLock};
             sent.push_back(data);
         }
@@ -623,9 +655,21 @@ int EmulateAirPods()
         Check("Pro 3: no ear report on this connection, the last advertisement stands: Play here takes them",
               took && pods.ownsAudio, json().dump());
 
-        // Put in while this computer already plays and they aren't connected here: no "playback started" comes, so
-        // putting them in takes them (the takeover pauses the player first). A pair that stayed worn and dropped this
-        // computer for the iPhone is no putting in and stays there.
+        // R10: connected, but no device list came on this connection (10-23 19:06): Play here doesn't wait for one,
+        // and the iPhone, known from its own report of what it plays, is asked all the same
+        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        pods.SetConnected(false);
+        pods.SetConnected(true);                                      // a new connection, no list on it
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        pods.Receive(source(2));                                      // the iPhone plays: it took the audio
+        fallBack();
+        pods.ClearSent();
+        took = playHere();
+        Check("R10: no list on this connection: Play here doesn't wait for one, the iPhone is asked",
+              took && pods.ownsAudio && pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)));
+
+        // Worn, not connected here, this computer starts playing: taken here, with the real connect timing. Putting
+        // them in while it already plays takes nothing (removed R8: the iPhone then never switched on its own).
         auto advertise = [&](unsigned char status, int ms)
         {
             std::vector<uint8_t> message(27, 0x00);
@@ -639,20 +683,47 @@ int EmulateAirPods()
             }
         };
         std::this_thread::sleep_for(std::chrono::milliseconds(3100));
-        info->GetConnectionStatus().SetValue(false);
-        pods.GetConnectedPropertyChangedEvent().FireEvent(false);
-        int pausesBefore = music.pauses, playsBefore = music.plays;
-        // the scan comes back a moment after the drop: the hold worker looks once with nothing fresh, "not worn"
+        pods.SetConnected(false); // the control channel goes with the link (OnClientStopped)
+        int connectsBefore = pods.connects;
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        advertise(0x0B, 2500); // both in ears all along
-        Check("Put in: still worn after dropping this computer, not pulled back", music.pauses == pausesBefore && music.Status() == "Playing",
-              std::to_string(music.pauses - pausesBefore));
         advertise(0x01, 1500); // taken out
         advertise(0x0B, 2500); // and put in
-        Check("Put in: put in while this computer plays, taken here", music.pauses > pausesBefore, std::to_string(music.pauses - pausesBefore));
-        // the takeover runs to its end (here it waits out the device list, then resumes the player twice) before the
-        // pair goes
-        WaitFor([&] { return music.plays >= playsBefore + 2; }, 15000);
+        Check("Put in while this computer plays: not taken, the iPhone keeps them", pods.connects == connectsBefore && music.Status() == "Playing",
+              std::to_string(pods.connects - connectsBefore));
+        // An iPhone already on the AirPods: the first list after the connection names it, and it's asked to let go
+        auto list = [&](std::vector<const std::string *> macs)
+        {
+            std::vector<unsigned char> body{0x00, 0x00, static_cast<unsigned char>(macs.size())};
+            for (auto *mac : macs)
+            {
+                auto bytes = MacBytes(*mac, false);
+                body.insert(body.end(), bytes.begin(), bytes.end());
+                body.insert(body.end(), {0x01, 0x01});
+            }
+            return Aap(0x2E, body);
+        };
+        // as measured on 10-23 19:46: the link 1.6 s after Connect, the control channel 2.2 s after that (R12)
+        pods.afterConnect = [&]
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1600));
+            pods.SetConnected(true);
+            pods.aapReady = false;
+            std::this_thread::sleep_for(std::chrono::milliseconds(2200));
+            pods.aapReady = true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            pods.Receive(list({&LOCAL, &IPHONE}));
+        };
+        pods.claimedEarly = false;
+        pods.ClearSent();
+        int playsBefore = music.plays;
+        music.Set("Paused");
+        music.Set("Playing");
+        // the takeover runs to its end (it resumes the player twice) before the pair goes
+        took = WaitFor([&] { return music.plays >= playsBefore + 2; }, 15000);
+        Check("Not connected: playback here connects them", took && pods.connects > connectsBefore, std::to_string(pods.connects - connectsBefore));
+        Check("Not connected: the iPhone on the AirPods is asked to let go", pods.Sent(AapAudioSwitchCapability::HijackRequest(IPHONE)) && pods.ownsAudio);
+        Check("R12: the claim only once the control channel is up", !pods.claimedEarly && pods.Sent(AapAudioSwitchCapability::OwnsConnection(true)));
+        pods.afterConnect = nullptr;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
         Sh("pactl unload-module " + speakers);

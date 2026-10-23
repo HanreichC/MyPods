@@ -26,6 +26,10 @@ TestsAapBle::TestsAapBle()
                                                DBusDeviceInfo::ParseVidPid(R"(BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}_LOCALMFG&0002)") == std::array<unsigned short, 2>{0, 0});
 #else
     Test("VID/PID from a BlueZ modalias", DBusDeviceInfo::ParseVidPid("bluetooth:v004Cp200Ad0001") == std::array<unsigned short, 2>{0x004C, 0x200A});
+    // AirPods Pro 3 right after the lid opened (10-23 18:45:50): "both active" not yet set, both pods report a battery
+    auto lidJustOpened = AppAnimationCapability::ParseBle(StringUtils::HexStringToBytes("0719012720349ab51100002accced00dc72463635b396a65570371"),
+                                                          static_cast<unsigned short>(AapModelIds::airpodspro3));
+    Test("Lid just opened, pods not up yet: the popup comes at once", lidJustOpened && lidJustOpened->animation);
     // the pair the emulator's AirPods advertise from (EmulateAirPods.cpp)
     Test("RPA resolves with its IRK, not with a changed hash", Aes::VerifyRPA("52:34:56:7B:C4:03", "0123456789abcdef0123456789abcdef") &&
                                                               !Aes::VerifyRPA("52:34:56:7B:C4:04", "0123456789abcdef0123456789abcdef"));

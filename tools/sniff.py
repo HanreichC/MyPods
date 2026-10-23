@@ -94,7 +94,7 @@ def decode(data):
         "lid_open": not bool((lid >> 3) & 0x01),
         # MagicPodsCore's popup heuristic (AppAnimationCapability::ParseBle)
         "popup": (lid >> 4) == 8 if model_id in MAX_MODELS
-                 else both_in_case and two_pods_active and (lid & 0x0F) <= 8,
+                 else both_in_case and (two_pods_active or (left_nib <= 10 and right_nib <= 10)) and (lid & 0x0F) <= 8,
         "conn": CONN_STATES.get(data[10], f"0x{data[10]:02x}"),
         "status_byte": status,
         "lid_byte": lid,
@@ -218,6 +218,9 @@ def selftest():
         # Beats Solo 4: single unit, 90%
         ("07190125200009800400041ed3edebd0bc052b11618fc29f861d8a",
          {"model_id": 0x2025}),
+        # AirPods Pro 3, the lid just opened: "both active" not set yet, but both pods report a battery -> popup
+        ("0719012720349ab51100002accced00dc72463635b396a65570371",
+         {"model_id": 0x2027, "both_in_case": True, "lid_open": True, "popup": True}),
     ]
     for hexed, expected in cases:
         got = decode(bytes.fromhex(hexed))

@@ -283,7 +283,11 @@ namespace MyPods
         else
         {
             auto lowNibble = capCount & 0x0f;
-            data.animation = _bothAirPodsInCase && _twoAirPodActive && lowNibble <= 8 ? true : false;
+            // Awake: the "both active" bit, or both pods reporting a battery level. The bit alone comes only ~6 s
+            // after the lid opens, so opening the case and taking them straight out showed no popup at all
+            // (10-23 18:45:50 vs :56); pods that report no battery (0xF) are asleep and show none.
+            bool podsReport = (buffer[6] & 0x0F) <= 10 && (buffer[6] >> 4) <= 10;
+            data.animation = _bothAirPodsInCase && (_twoAirPodActive || podsReport) && lowNibble <= 8;
         }
 
         std::vector<uint8_t> encPayload{};

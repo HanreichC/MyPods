@@ -19,6 +19,7 @@ fi
 
 "$BUILD/modules/mypodscore" --selftest
 python3 tools/sniff.py --selftest
+python3 tools/check_switch_log.py --selftest
 python3 tools/check_translations.py
 
 $CXX -std=c++20 -Icore/src -Icore/dependencies/json/include core/src/tests/AncSelfCheck.cpp \

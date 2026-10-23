@@ -25,14 +25,14 @@ namespace MyPods
         std::string otherDevice; // "iPhone", "iPad", "Mac" … whoever took the audio
         std::string lastA2dp;
         std::vector<std::string> connectedDevices;
+        std::vector<std::string> talkingDevices; // sent us their audio source or smart routing: connected to the AirPods
+        void Talking(const std::string &mac);
         std::mutex stateLock;
         std::atomic<int> sourceType{0}; // 0 none, 1 call, 2 media (from 0x0E)
         std::atomic<bool> busy{false};
         std::atomic<bool> released{false};
         std::atomic<bool> cardSeen{false}; // their PipeWire card since they connected
         std::atomic<int64_t> bleInEarAt{0};
-        std::atomic<int64_t> bleOutAt{0}; // their advertisement last said: in no ear (in the case, on the table)
-        bool wasWorn = false;             // at the hold worker's last look
         std::atomic<int64_t> bleInCaseAt{0};
         std::atomic<bool> routeWhenWorn{false}; // connected in the case: their audio stayed off until they're worn
         std::atomic<bool> claimed{false};       // "owns connection" sent on this connection

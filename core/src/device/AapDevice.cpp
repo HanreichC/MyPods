@@ -85,6 +85,7 @@ namespace MyPods
 
     void AapDevice::OnClientStarted()
     {
+        aapReady = true;
         if (!_attClient || _attClient->IsStarted())
             return;
         // Runs on the client worker, so the connect may block. Without it only these settings stay hidden.
@@ -100,6 +101,7 @@ namespace MyPods
 
     void AapDevice::OnClientStopped()
     {
+        aapReady = false;
         if (!_attClient)
             return;
         _attClient->Stop();

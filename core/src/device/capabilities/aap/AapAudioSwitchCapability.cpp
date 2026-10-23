@@ -215,8 +215,6 @@ namespace MyPods
                 return;
             bool inEar = (*message)[5] & 0x0A;
             bleInEarAt = inEar ? NowMs() : 0; // taken out counts at once, not 15 s later
-            if (!inEar)
-                bleOutAt = NowMs();
             // only the case charges both pods
             auto data = AppAnimationCapability::ParseBle(*message, this->device.GetProductId());
             auto charging = [&](DeviceBatteryType type) {
@@ -288,6 +286,7 @@ namespace MyPods
         {
             std::lock_guard lock{stateLock};
             connectedDevices.clear();
+            talkingDevices.clear();
             otherDevice.clear();
         }
         device.ownsAudio = true;
@@ -335,16 +334,6 @@ namespace MyPods
         bool worn = InEar();
         if (!worn)
             holdBlocked = false;
-        // Put in while this computer already plays: no "playback started" comes then, so, like with a Mac, putting
-        // them in takes them here. Only a real putting in, seen as out of the ears shortly before (case, table): not
-        // worn ones that dropped this computer for the iPhone, which would then be pulled straight back.
-        bool putIn = worn && !wasWorn && NowMs() - bleOutAt < 60000;
-        wasWorn = worn;
-        if (putIn && mode == 0 && !device.GetConnected() && !busy && !holdBlocked && MprisClient::Instance().IsPlaying())
-        {
-            Logger::Info("AutoSwitch: put in while this computer plays");
-            TakeOver(false);
-        }
         // A takeover, not just RouteAudio: without "owns connection" and the hijack the AirPods don't know this computer
         // has them, and the next switch to the iPhone drops it entirely instead of handing over.
         // ponytail: waits for the ear detection; AirPods that report no in-ear state never get here and stay off
@@ -400,7 +389,9 @@ namespace MyPods
             return std::ranges::any_of(outputs, [&](const auto &o) { return o.sink == current; }) &&
                    std::ranges::none_of(wired, [&](const auto &o) { return o.sink == current; });
         };
-        if (mode != 0 || !worn || !otherHasThem || holdBlocked || playsHere || current.empty() || !isSpeakers())
+        // not while a takeover is under way: they're about to play here, and one that keeps the music playing lets it
+        // go on from the speakers until then
+        if (mode != 0 || !worn || !otherHasThem || holdBlocked || playsHere || current.empty() || !isSpeakers() || busy)
             return;
         AudioEffects::Instance().HoldSink(true);
         for (int i = 0; i < 20 && !pac->FindSink(AudioEffects::HOLD_SINK); i++)
@@ -468,6 +459,8 @@ namespace MyPods
             {
                 sourceType = source->second;
                 Logger::Info("AutoSwitch: audio source %s type %d", source->first.c_str(), source->second);
+                if (source->first != "00:00:00:00:00:00")
+                    Talking(source->first);
                 if (source->second != 0 && !localMac.empty() && source->first != localMac && !grace)
                     Release(true);
             }
@@ -500,6 +493,7 @@ namespace MyPods
         {
             if (data.size() < 12)
                 break;
+            Talking(FormatMac(&data[6], true));
             std::string text(data.begin(), data.end());
             {
                 std::lock_guard lock{stateLock};
@@ -552,6 +546,13 @@ namespace MyPods
         }).detach();
     }
 
+    void AapAudioSwitchCapability::Talking(const std::string &mac)
+    {
+        std::lock_guard lock{stateLock};
+        if (mac != localMac && std::ranges::find(talkingDevices, mac) == talkingDevices.end())
+            talkingDevices.push_back(mac);
+    }
+
     size_t AapAudioSwitchCapability::Claim()
     {
         device.SendData(OwnsConnection(true));
@@ -560,9 +561,11 @@ namespace MyPods
         std::vector<std::string> others;
         {
             std::lock_guard lock{stateLock};
-            for (auto &mac : connectedDevices)
-                if (mac != localMac)
-                    others.push_back(mac);
+            // R10: the list, and whoever talked to us through the AirPods: once no list came on a connection at all
+            for (auto *devices : {&connectedDevices, &talkingDevices})
+                for (auto &mac : *devices)
+                    if (mac != localMac && std::ranges::find(others, mac) == others.end())
+                        others.push_back(mac);
             otherDevice.clear();
         }
         auto name = LocalName();
@@ -589,7 +592,9 @@ namespace MyPods
 
             // streaming here isn't enough: without the claim, or after the AirPods said another device owns them, Play
             // here has to claim them (again), or the next switch drops this computer instead of handing over
-            if (!manual && device.ownsAudio && streaming && claimed && ownsReport != 0)
+            // R12: only once the AirPods confirmed the claim ("owns connection 1"): one sent into a channel that
+            // wasn't up yet got lost (10-23 19:46:39), and the next Play here then did nothing at all
+            if (!manual && device.ownsAudio && streaming && claimed && ownsReport == 1)
             {
                 busy = false; // already ours
                 return;
@@ -622,10 +627,17 @@ namespace MyPods
                 }
             }
 
+            // R12: the claim only into a channel that is up. Sent while the control channel was still coming up (the
+            // Bluetooth link is there a second or two before it), it got lost and the AirPods stayed the iPhone's.
+            for (int i = 0; i < 50 && !device.aapReady; i++)
+                std::this_thread::sleep_for(milliseconds(100));
             // The hijack goes to the devices from the 0x2E list. The AirPods send it once the AAP handshake is through
-            // (its packets go out 300 ms apart after connecting), so it also says the channel is ready: measured
-            // ~2 s after the Bluetooth connection, 4+ s when the channel took long; 10 s at most here.
-            for (int i = 0; i < 100; i++)
+            // (its packets go out 300 ms apart after connecting), ~1-2 s after a fresh connection: wait for it then,
+            // so an iPhone already on the AirPods is asked, 3 s at most (once no list came at all). Already connected
+            // (R10) no wait: a list that hasn't come doesn't come by waiting; whoever talked to us through the AirPods
+            // is asked instead (Claim). Waiting longer for the iPhone to join (R1, R11) was tried and disproven: it
+            // joins by who had the AirPods last, not by this computer's timing (docs/airpods-switching.md).
+            for (int i = 0; connecting && i < 30; i++)
             {
                 {
                     std::lock_guard lock{stateLock};
