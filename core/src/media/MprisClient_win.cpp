@@ -31,6 +31,22 @@ namespace MyPods
 
     MprisClient::MprisClient() = default;
 
+    bool MprisClient::IsPlaying()
+    {
+        std::lock_guard lock{_callsLock};
+        try
+        {
+            for (const auto &session : Manager().GetSessions())
+                if (session.GetPlaybackInfo().PlaybackStatus() == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing)
+                    return true;
+        }
+        catch (const winrt::hresult_error &e)
+        {
+            Logger::Error("Media: %s", winrt::to_string(e.message()).c_str());
+        }
+        return false;
+    }
+
     std::vector<std::string> MprisClient::PausePlaying()
     {
         std::vector<std::string> paused;

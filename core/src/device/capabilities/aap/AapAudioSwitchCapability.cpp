@@ -213,7 +213,10 @@ namespace MyPods
             auto message = this->device.OwnProximityMessage(ad);
             if (!message)
                 return;
-            bleInEarAt = ((*message)[5] & 0x0A) ? NowMs() : 0; // taken out counts at once, not 15 s later
+            bool inEar = (*message)[5] & 0x0A;
+            bleInEarAt = inEar ? NowMs() : 0; // taken out counts at once, not 15 s later
+            if (!inEar)
+                bleOutAt = NowMs();
             // only the case charges both pods
             auto data = AppAnimationCapability::ParseBle(*message, this->device.GetProductId());
             auto charging = [&](DeviceBatteryType type) {
@@ -332,6 +335,16 @@ namespace MyPods
         bool worn = InEar();
         if (!worn)
             holdBlocked = false;
+        // Put in while this computer already plays: no "playback started" comes then, so, like with a Mac, putting
+        // them in takes them here. Only a real putting in, seen as out of the ears shortly before (case, table): not
+        // worn ones that dropped this computer for the iPhone, which would then be pulled straight back.
+        bool putIn = worn && !wasWorn && NowMs() - bleOutAt < 60000;
+        wasWorn = worn;
+        if (putIn && mode == 0 && !device.GetConnected() && !busy && !holdBlocked && MprisClient::Instance().IsPlaying())
+        {
+            Logger::Info("AutoSwitch: put in while this computer plays");
+            TakeOver(false);
+        }
         // A takeover, not just RouteAudio: without "owns connection" and the hijack the AirPods don't know this computer
         // has them, and the next switch to the iPhone drops it entirely instead of handing over.
         // ponytail: waits for the ear detection; AirPods that report no in-ear state never get here and stay off

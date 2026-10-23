@@ -26,6 +26,8 @@ namespace MyPods
 
         // Pauses every playing player and returns their bus names, so exactly those can be resumed.
         std::vector<std::string> PausePlaying();
+        // Whether one of this computer's players plays now (not a phone's, mirrored by KDE Connect)
+        bool IsPlaying();
         void Play(const std::vector<std::string> &players);
 
         // Fired with the player's bus name when it switches to "Playing". Runs on the D-Bus thread.

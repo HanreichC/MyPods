@@ -623,6 +623,37 @@ int EmulateAirPods()
         Check("Pro 3: no ear report on this connection, the last advertisement stands: Play here takes them",
               took && pods.ownsAudio, json().dump());
 
+        // Put in while this computer already plays and they aren't connected here: no "playback started" comes, so
+        // putting them in takes them (the takeover pauses the player first). A pair that stayed worn and dropped this
+        // computer for the iPhone is no putting in and stays there.
+        auto advertise = [&](unsigned char status, int ms)
+        {
+            std::vector<uint8_t> message(27, 0x00);
+            message[0] = 0x07; message[1] = 0x19; message[2] = 0x01; message[3] = 0x27; message[4] = 0x20; // Pro 3
+            message[5] = status;
+            for (int t = 0; t < ms; t += 200)
+            {
+                std::string address = "52:34:56:7B:C4:03";
+                pods.GetLeDataReceived().FireEvent(BleAdvertisingData(address, -50, {{0x004C, message}}));
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+        };
+        std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+        info->GetConnectionStatus().SetValue(false);
+        pods.GetConnectedPropertyChangedEvent().FireEvent(false);
+        int pausesBefore = music.pauses, playsBefore = music.plays;
+        // the scan comes back a moment after the drop: the hold worker looks once with nothing fresh, "not worn"
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        advertise(0x0B, 2500); // both in ears all along
+        Check("Put in: still worn after dropping this computer, not pulled back", music.pauses == pausesBefore && music.Status() == "Playing",
+              std::to_string(music.pauses - pausesBefore));
+        advertise(0x01, 1500); // taken out
+        advertise(0x0B, 2500); // and put in
+        Check("Put in: put in while this computer plays, taken here", music.pauses > pausesBefore, std::to_string(music.pauses - pausesBefore));
+        // the takeover runs to its end (here it waits out the device list, then resumes the player twice) before the
+        // pair goes
+        WaitFor([&] { return music.plays >= playsBefore + 2; }, 15000);
+
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // detached workers finish before the device goes
         Sh("pactl unload-module " + speakers);
     }
