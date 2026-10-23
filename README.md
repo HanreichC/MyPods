@@ -22,9 +22,9 @@ AirPods the way they behave on a Mac, on Linux and Windows. For AirPods, Beats a
 
 > [!NOTE]
 > MyPods is a personal project in active development, running on CachyOS (Arch-based). It has been tested with
-> AirPods Max and Parrot Zik 2.0. AirPods Pro 3 support comes from protocol research and has not been tested on
-> real hardware yet, and neither have the other models listed below. Features marked *unverified* fall into the
-> same category.
+> AirPods Pro 3, AirPods Max and Parrot Zik 2.0, the AirPods Pro 3 together with an iPhone. The other models
+> listed below have not been tested on real hardware yet. Features marked *unverified* fall into the same
+> category.
 
 > [!WARNING]
 > **This project is vibe-coded.** Large parts of the new code were written with an AI coding assistant and
@@ -46,6 +46,8 @@ Contents: [Features](#lid-open-there-they-are) Â· [Devices](#not-just-airpods) Â
 </div>
 
 Open the case near your computer and the popup you know from the Mac appears, with the animation and the battery of the left and right AirPod and the case. MyPods reads the BLE advertisements AirPods broadcast all the time, so the popup shows up before the AirPods are even connected. Connect in the popup connects them and puts the sound on the AirPods.
+
+The popup comes as soon as the lid is open and both AirPods are awake, and stays for at least 3 s. When you put the AirPods away and they disconnect, no popup comes for the next 10 s. Once they connect, it closes.
 
 <br>
 
@@ -74,6 +76,8 @@ When a player starts on the computer (a browser, Spotify, anything with MPRIS), 
 While you wear the AirPods and another device has them, the speakers stay silent: what plays here goes to a silent output until the AirPods play it. Take them out or pick an output to get the speakers back. The iPhone's banner names this computer by its Bluetooth name.
 
 When the AirPods are playing on the iPhone, the device page says "Playing on iPhone" and offers Move here. If you'd rather switch by hand, choose "When Last Connected to This Computer".
+
+A switch takes about 2 s when the AirPods are already connected to the computer, a few seconds more when they have to connect first. The iPhone takes them back by itself only while it is connected to them too. Whether it connects alongside the computer is up to iOS; when it doesn't, pick the AirPods once in the iPhone's Bluetooth menu. Only playback that starts makes the switch: if music already plays on the computer when you put the AirPods in, they stay with the iPhone, and pause and play once brings them over. What the AirPods do during a switch, as read off a real pair, and what was tried and dropped, is in [docs/airpods-switching.md](docs/airpods-switching.md).
 
 On Linux this needs BlueZ to present itself as an Apple device once, see [Setup](#set-it-up-once-switch-from-then-on).
 
@@ -219,7 +223,7 @@ Any paired device with the Hands-Free profile (or A2DP only) shows its battery w
 | Family | Models | Status |
 |--------|--------|--------|
 | AirPods Max | Max (`0x200A`), Max USB-C (`0x201F`), Max 2 (`0x202D`) | Tested (AirPods Max). The Max 2 popup trigger is *unverified*. |
-| AirPods Pro | AirPods Pro 3 (A3063 / A3064 / A3065, model ID `0x2027`) | Implemented, *not tested on hardware* |
+| AirPods Pro | AirPods Pro 3 (A3063 / A3064 / A3065, model ID `0x2027`) | Tested (AirPods Pro 3, with an iPhone). Loud Sound Reduction and customized transparency are *unverified*. |
 | Other AirPods | AirPods 1 to 4, AirPods 4 ANC, AirPods Pro, Pro 2, Pro 2 USB-C | Recognized by the inherited AAP stack, not tested by this project |
 | Beats | Powerbeats Pro / Pro 2 / 3 / 4 / Fit, Beats Fit Pro, Studio Buds / Buds+, Studio Pro, Studio 3, Solo 3 / Pro / 4 / Buds, Flex, BeatsX | Recognized by the inherited AAP stack, not tested by this project |
 | Parrot | Zik 2.0 | Tested |
@@ -263,7 +267,7 @@ Apple headphones talk to their host over two separate channels, and most tools o
 1. Over BLE, AirPods constantly broadcast Apple manufacturer data (`0x004C`). The Proximity Pairing message contains the model, lid counter, in-ear and in-case bits, coarse battery nibbles and a 16-byte AES-128 encrypted block with the exact battery. That is why the popup appears instantly, even before the AirPods are connected. On Linux the scan pauses while AirPods are connected: AAP then delivers the same information, and the scan's classic inquiry can make A2DP audio stutter.
 2. Once connected, the daemon opens an L2CAP socket on PSM `0x1001`, sends the handshake and subscribes to notifications. From then on the AirPods push battery, noise control, ear detection and more, and accept settings changes. If the AirPods close the channel while the Bluetooth link stays up, the daemon opens it again (up to five times per connection). AirPods Pro 2 and 3 keep a few more settings (Loud Sound Reduction, customized transparency) as GATT characteristics, which the daemon reads and writes over a second L2CAP channel (ATT, PSM `0x1F`).
 3. To recognize *your* AirPods among rotating BLE addresses (RPA) and to decrypt the battery block, MyPods needs the IRK and ENC key. It asks the AirPods for them over AAP on every connection and stores them when they change. iCloud isn't involved.
-4. The AirPods relay Apple's smart routing messages between their sources. MyPods takes part in that exchange and watches MPRIS players to decide when to take over.
+4. The AirPods relay Apple's smart routing messages between their sources. MyPods takes part in that exchange and watches MPRIS players to decide when to take over. At a takeover it claims the AirPods once their control channel is up, then asks every other device on them to let go: the ones in the list the AirPods send, plus any that reported playing on this connection.
 5. Equalizer, headphone correction, crossfeed, loudness, hearing profile and spatial audio run as a PipeWire filter chain sink (`mypods_fx`) in front of the headphones: a pre-gain per input channel, then spatial audio or crossfeed, then the filters per ear, then the limiter. The pre-gain takes off exactly as much as the chain can boost (computed from the summed filter curves), so nothing clips. Head tracking and the volume (for the loudness compensation) update the running chain via `pw-cli`. The chain runs at the graph's rate, so with Hi-Res playback at the source's. When PipeWire restarts, the daemon reconnects and puts a new chain in front of the headphones playing then.
 6. For the iPhone's now playing, the UI talks to a paired iPhone directly, over the Apple Media Service (AMS), the BLE GATT service an Apple Watch uses for the same thing. The iPhone pushes title, artist, playback state and volume, and takes play/pause, skip and volume steps. On Linux the UI registers a BlueZ LE advertisement that solicits AMS, and the iPhone connects to it; on Windows the UI connects to the iPhone itself. The daemon isn't involved.
 
@@ -569,7 +573,7 @@ python3 tools/check_translations.py
 
 `run_checks.sh` also compiles and runs the standalone checks for the ANC and battery wire paths, the low battery warning, the battery time estimate, the keyboard shortcut actions, the iPhone's now playing values, the menu entry's Exec line, the picker, the lid popup, the (i) explanations and the text styles ([core/src/tests/AncSelfCheck.cpp](core/src/tests/AncSelfCheck.cpp), [core/src/tests/BatterySelfCheck.cpp](core/src/tests/BatterySelfCheck.cpp), [ui/tests/LowBatteryCheck.cpp](ui/tests/LowBatteryCheck.cpp), [ui/tests/BatteryEstimateCheck.cpp](ui/tests/BatteryEstimateCheck.cpp), [ui/tests/ActionsCheck.cpp](ui/tests/ActionsCheck.cpp), [ui/tests/AmsCheck.cpp](ui/tests/AmsCheck.cpp), [ui/tests/DesktopCheck.cpp](ui/tests/DesktopCheck.cpp), [ui/tests/tst_picker.qml](ui/tests/tst_picker.qml), [ui/tests/tst_popup.qml](ui/tests/tst_popup.qml), [ui/tests/tst_info.qml](ui/tests/tst_info.qml), [ui/tests/tst_theme.qml](ui/tests/tst_theme.qml)). Each file names its own compile command.
 
-Two checks need hardware, because the behavior they guard only exists on a real adapter:
+Three checks need hardware, because the behavior they guard only exists on a real adapter:
 
 ```bash
 # With MyPods running: fails if a discovery session is held although no Apple device is
@@ -579,7 +583,13 @@ sh tools/check_no_idle_discovery.sh
 # With MyPods running: remove the headphones in bluetoothctl, start this, then pair them;
 # passes once the core pushes a device list containing them, without a restart
 python3 tools/check_new_pairing.py AA:BB:CC:DD:EE:FF
+
+# After switching back and forth with an iPhone: reads the daemon's log and fails on a slow
+# switch or one that needed Move here
+python3 tools/check_switch_log.py --since "HH:MM"
 ```
+
+Before a change to switching goes in, the hardware run in [docs/airpods-switching.md](docs/airpods-switching.md) goes through the six cases there, from playing here first to putting the AirPods away into the open case.
 
 ### Capturing from real hardware
 
@@ -639,7 +649,9 @@ The daemon writes `core.log` and the UI `ui.log`, in `~/.local/state/mypods` (Li
 Check that the `animation` setting is enabled and that Bluetooth is on. Run `python3 tools/sniff.py` and open the case; if nothing shows up, the adapter is not receiving the advertisements. The popup also needs the IRK/ENC keys, which are fetched when the AirPods connect to MyPods. On Linux there is no popup while the AirPods are connected (see [What doesn't work (yet)](#what-doesnt-work-yet)).
 
 **My Bluetooth mouse or keyboard stopped reconnecting on its own.**
-This was fixed in the lid-open popup's BLE scan, which no longer sets an LE-only discovery filter. An LE-only discovery scans without a gap, and the kernel never gets to finish the allowlist auto-connect that paired Bluetooth LE devices need, so they stay disconnected for as long as MyPods scans. The default transport interleaves BR/EDR inquiry with the LE scan and leaves exactly those gaps, at no measurable cost to advertisement throughput. To switch the scan off entirely, turn off the popup (`animation = false`) and set automatic switching to "When Last Connected to This Computer".
+This was fixed in the lid-open popup's BLE scan, which no longer sets an LE-only discovery filter. An LE-only discovery scans without a gap, and the kernel never gets to finish the allowlist auto-connect that paired Bluetooth LE devices need, so they stay disconnected for as long as MyPods scans. The default transport interleaves BR/EDR inquiry with the LE scan and leaves exactly those gaps, at no measurable cost to advertisement throughput.
+
+After a reboot that wasn't enough. A mouse that lost its link for long comes back with directed advertising, aimed at the adapter's own address, and every discovery scans from a random address, so the controller drops those advertisements for as long as any discovery runs. The scan therefore pauses for 1.5 s every 15 s, and the mouse reconnects in one of those pauses, without pairing it again. `sh tools/check_no_idle_discovery.sh` checks the pause. To switch the scan off entirely, turn off the popup (`animation = false`) and set automatic switching to "When Last Connected to This Computer".
 
 **Music stutters while the AirPods are playing.**
 The BLE scan's classic inquiry competes with A2DP on many adapters, so on Linux MyPods pauses the scan while AirPods are connected. If it still stutters, check `journalctl --user -u mypods-core` for "BLE scan started" while they are connected, and whether another program runs a Bluetooth scan.
@@ -652,6 +664,8 @@ The daemon log says "BlueZ takes no battery levels from MyPods" when BlueZ lacks
 
 **Automatic switching does not work.**
 If the device page still offers the one-time setup, run it (see [Setup](#set-it-up-once-switch-from-then-on)). Otherwise check that `/etc/bluetooth/main.conf` has `DeviceID = bluetooth:004C:0000:0000` under `[General]`, restart Bluetooth and reconnect the AirPods. Switching is also skipped while a call is active on the other device, and only MPRIS players trigger it.
+
+If you still have to pick the AirPods by hand on the iPhone, run `python3 tools/check_switch_log.py --since "HH:MM"` with the time you started. It lists every switch since then, what started it, how long it took and how many other devices were asked. "asking 0 other device(s) to let go" in the log means the iPhone wasn't connected to the AirPods at that moment, and only a pick by hand brings them over then.
 
 **The UI says it cannot reach the daemon.**
 Something else might be using port 2020 on `127.0.0.1`, or an old daemon is still running: `systemctl --user restart mypods-core` (or `pkill -x mypodscore` without the service), then start MyPods again. `journalctl --user -u mypods-core` shows the daemon's log.
