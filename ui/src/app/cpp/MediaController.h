@@ -17,7 +17,8 @@ class MediaController final : public QObject
 {
     Q_OBJECT
     // Empty without a player; otherwise title, artist, artUrl, playing, canGoNext, canGoPrevious.
-    // The iPhone's also: source (its name), volumeStep, canLike, liked
+    // The iPhone's also: source (its name), volumeStep, canLike, liked. With a known length also duration and
+    // position (seconds), where the track was at positionAt (ms since the epoch), running on at rate (0 paused)
     Q_PROPERTY(QVariantMap player READ player NOTIFY playerChanged)
     // 0-100, -1 when the volume can't be read
     Q_PROPERTY(int volume READ volume NOTIFY volumeChanged)

@@ -19,6 +19,7 @@
 #include "MediaController.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QMetaObject>
 
 
@@ -48,6 +49,10 @@ struct Snapshot {
     bool canGoNext = false;
     bool canGoPrevious = false;
     int volume = -1; // the iPhone's, 0-100
+    double duration = 0; // seconds, 0 unknown
+    double position = 0; // seconds into the track at positionAt (ms since the epoch), running on at rate
+    qint64 positionAt = 0;
+    double rate = 0;
 };
 
 using namespace Ams;
@@ -142,6 +147,10 @@ public:
         snapshot.artist = m_artist;
         snapshot.playing = m_playing;
         snapshot.volume = m_volume;
+        snapshot.duration = m_duration;
+        snapshot.position = m_elapsed;
+        snapshot.positionAt = m_elapsedAt;
+        snapshot.rate = m_rate;
         snapshot.canGoNext = supports(NextTrack);
         snapshot.canGoPrevious = supports(PreviousTrack);
         // only when the player lists it: the star is no use to one that ignores it
@@ -329,9 +338,10 @@ private:
             remote.WriteClientCharacteristicConfigurationDescriptorAsync(notify).get();
             update.WriteClientCharacteristicConfigurationDescriptorAsync(notify).get();
             // the iPhone then sends each of these on every change, but only then: what is there already has to be read
-            update.WriteValueAsync(bytes({Track, TrackArtist, TrackTitle}), gatt::GattWriteOption::WriteWithResponse).get();
+            update.WriteValueAsync(bytes({Track, TrackArtist, TrackTitle, TrackDuration}), gatt::GattWriteOption::WriteWithResponse).get();
             update.WriteValueAsync(bytes({Player, PlayerPlaybackInfo, PlayerVolume}), gatt::GattWriteOption::WriteWithResponse).get();
-            for (auto [entity, attribute] : {std::pair{Track, TrackArtist}, {Track, TrackTitle}, {Player, PlayerPlaybackInfo}, {Player, PlayerVolume}}) {
+            for (auto [entity, attribute] : {std::pair{Track, TrackArtist}, {Track, TrackTitle}, {Track, TrackDuration},
+                                             {Player, PlayerPlaybackInfo}, {Player, PlayerVolume}}) {
                 if (auto text = read(entity, attribute)) {
                     std::lock_guard lock{m_lock};
                     apply(entity, attribute, *text);
@@ -374,9 +384,14 @@ private:
             m_title = text;
         else if (entity == Track && attribute == TrackArtist)
             m_artist = text;
-        else if (entity == Player && attribute == PlayerPlaybackInfo)
+        else if (entity == Track && attribute == TrackDuration)
+            m_duration = text.toDouble();
+        else if (entity == Player && attribute == PlayerPlaybackInfo) {
             m_playing = Ams::isPlaying(text);
-        else if (entity == Player && attribute == PlayerVolume)
+            m_elapsed = Ams::elapsed(text);
+            m_rate = Ams::playbackRate(text);
+            m_elapsedAt = QDateTime::currentMSecsSinceEpoch();
+        } else if (entity == Player && attribute == PlayerVolume)
             m_volume = Ams::volumePercent(text);
         if (entity != Player || attribute != PlayerVolume)
             nowPlayingChanged();
@@ -420,6 +435,8 @@ private:
         m_artist.clear();
         m_playing = false;
         m_volume = -1;
+        m_duration = 0;
+        m_elapsedAt = 0;
         m_commands.clear();
         nowPlayingChanged();
     }
@@ -459,6 +476,10 @@ private:
     QString m_artist;
     bool m_playing = false;
     int m_volume = -1;
+    double m_duration = 0;
+    double m_elapsed = 0;
+    qint64 m_elapsedAt = 0;
+    double m_rate = 0;
     std::vector<uint8_t> m_commands;
     int m_pendingSteps = 0;
     bool m_stepping = false;
@@ -504,6 +525,20 @@ Snapshot query(const QString &knownArtKey, bool art = true)
         best.playing = bestRank == 2;
         best.canGoNext = controls.IsNextEnabled();
         best.canGoPrevious = controls.IsPreviousEnabled();
+
+        // Apps without a timeline leave the end at 0. The position is from the app's last report, which may be seconds ago
+        const auto timeline = bestSession.GetTimelineProperties();
+        best.duration = std::chrono::duration<double>(timeline.EndTime() - timeline.StartTime()).count();
+        if (best.duration > 0) {
+            best.position = std::chrono::duration<double>(timeline.Position() - timeline.StartTime()).count();
+            const qint64 now = QDateTime::currentMSecsSinceEpoch();
+            best.positionAt = std::chrono::duration_cast<std::chrono::milliseconds>(
+                winrt::clock::to_sys(timeline.LastUpdatedTime()).time_since_epoch()).count();
+            if (best.positionAt <= 0 || best.positionAt > now)
+                best.positionAt = now; // never reported
+            const auto rate = bestSession.GetPlaybackInfo().PlaybackRate();
+            best.rate = best.playing ? (rate ? rate.Value() : 1.0) : 0;
+        }
 
         // the cover only when the track changed, reading it costs a stream round trip
         if (art && props.Thumbnail() && best.title + QLatin1Char('\n') + best.artist != knownArtKey) {
@@ -657,6 +692,12 @@ void MediaController::refresh()
             {QStringLiteral("canGoNext"), snapshot.canGoNext},
             {QStringLiteral("canGoPrevious"), snapshot.canGoPrevious},
         };
+        if (snapshot.duration > 0 && snapshot.positionAt > 0) {
+            player.insert(QStringLiteral("duration"), snapshot.duration);
+            player.insert(QStringLiteral("position"), snapshot.position);
+            player.insert(QStringLiteral("positionAt"), snapshot.positionAt);
+            player.insert(QStringLiteral("rate"), snapshot.rate);
+        }
         if (!snapshot.source.isEmpty()) {
             player.insert(QStringLiteral("source"), snapshot.source);
             player.insert(QStringLiteral("volumeStep"), Ams::VolumeStep);

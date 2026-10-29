@@ -47,6 +47,12 @@ ColumnLayout {
         }
     }
 
+    // The track's elapsed and total time
+    component Time: Text {
+        color: MP.Theme.labelSecondary
+        font: MP.Units.font(MP.Units.fontDetail, { features: { "tnum": 1 } }) // T-5: changes in place
+    }
+
     // Previous, play/pause (the larger one) and next
     component Transport: RowLayout {
         spacing: 20
@@ -179,6 +185,54 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         Layout.topMargin: -4
         visible: root.hasPlayer && !root.controlsBeside
+    }
+
+    // How far into the track and how long it is, the progress between. The players say where the track was at
+    // positionAt; counted on from there, so the time runs smoothly between their reports
+    RowLayout {
+        id: timeline
+        readonly property real duration: root.player.duration ?? 0
+        readonly property real rate: root.player.rate ?? 0
+        readonly property real at: root.player.positionAt ?? 0
+        property real now: Date.now()
+        readonly property real elapsed: Math.max(0, Math.min(duration, (root.player.position ?? 0) + rate * (Math.max(now, at) - at) / 1000))
+        Layout.fillWidth: true
+        visible: root.hasPlayer && duration > 0
+        spacing: MP.Theme.spaceS
+
+        // 3:07, 1:02:07
+        function format(seconds) {
+            const s = Math.floor(seconds), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
+            return (h > 0 ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s % 60).padStart(2, "0");
+        }
+
+        Timer {
+            interval: 250
+            repeat: true
+            running: timeline.visible && timeline.rate > 0 && (root.Window.window?.visible ?? false)
+            triggeredOnStart: true
+            onTriggered: timeline.now = Date.now()
+        }
+
+        Time {
+            text: timeline.format(timeline.elapsed)
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 4
+            radius: height / 2
+            color: MP.Theme.fillSecondary
+
+            Rectangle {
+                width: parent.width * timeline.elapsed / timeline.duration
+                height: parent.height
+                radius: height / 2
+                color: MP.Theme.accent
+            }
+        }
+        Time {
+            text: timeline.format(timeline.duration)
+        }
     }
 
     // Volume: Control Center style capsule, the fill is the value; − and + step to the

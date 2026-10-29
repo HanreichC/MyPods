@@ -17,7 +17,7 @@ namespace Ams {
 // LikeTrack is Apple Music's star (favorite)
 enum Command : uint8_t { TogglePlayPause = 2, NextTrack = 3, PreviousTrack = 4, VolumeUp = 5, VolumeDown = 6, LikeTrack = 11 };
 enum Entity : uint8_t { Player = 0, Track = 2 };
-enum Attribute : uint8_t { PlayerPlaybackInfo = 1, PlayerVolume = 2, TrackArtist = 0, TrackTitle = 2 };
+enum Attribute : uint8_t { PlayerPlaybackInfo = 1, PlayerVolume = 2, TrackArtist = 0, TrackTitle = 2, TrackDuration = 3 };
 // Entity Update flag: the value goes on, the whole one is read through Entity Attribute
 constexpr uint8_t Truncated = 1;
 
@@ -31,6 +31,16 @@ constexpr double VolumeStep = 100.0 / 16;
 inline bool isPlaying(const QString &playbackInfo)
 {
     return playbackInfo.section(QLatin1Char(','), 0, 0).toInt() != 0;
+}
+
+// Seconds into the track when the playback info was sent, and how fast it runs on from there (0 while paused)
+inline double elapsed(const QString &playbackInfo)
+{
+    return playbackInfo.section(QLatin1Char(','), 2, 2).toDouble();
+}
+inline double playbackRate(const QString &playbackInfo)
+{
+    return isPlaying(playbackInfo) ? playbackInfo.section(QLatin1Char(','), 1, 1).toDouble() : 0;
 }
 
 // Volume is "0.0" to "1.0", as percent on the 16 steps (it can sit a bit off them); -1 when the iPhone sends none

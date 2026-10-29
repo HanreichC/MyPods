@@ -151,13 +151,13 @@ The tray popup lists every output under Output, speakers and monitors included, 
 
 </div>
 
-Clicking the tray icon opens a popup right under the panel, much like the AirPods module in the Mac's Control Center. It has the battery, noise control, Conversation Awareness, Move here, what's playing with play, pause and skip, the volume and the output list. A double click opens the full window.
+Clicking the tray icon opens a popup right under the panel, much like the AirPods module in the Mac's Control Center. It has the battery, noise control, Conversation Awareness, Move here, what's playing with play, pause and skip, how far into the track it is and how long it lasts, the volume and the output list. A double click opens the full window.
 
 <br>
 
 ## Your iPhone plays along.
 
-While the iPhone plays to its own headphones, the tray popup shows and controls what's on it: title, artist, cover, play, pause and skip, Apple Music's star (favorite) and the iPhone's volume in its 16 steps, marked "Playing on <iPhone>". It works over the Apple Media Service (BLE), the same service an Apple Watch uses. The cover comes from the iTunes Search API, which gets the artist and title. The Bluetooth page lists the paired iPhones and whether they are connected.
+While the iPhone plays to its own headphones, the tray popup shows and controls what's on it: title, artist, cover, elapsed and total time, play, pause and skip, Apple Music's star (favorite) and the iPhone's volume in its 16 steps, marked "Playing on <iPhone>". It works over the Apple Media Service (BLE), the same service an Apple Watch uses. The cover comes from the iTunes Search API, which gets the artist and title. The Bluetooth page lists the paired iPhones and whether they are connected.
 
 <br>
 

@@ -10,6 +10,7 @@
 #include <QDBusMessage>
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
+#include <QDateTime>
 #include <QElapsedTimer>
 #include <QProcess>
 #include <QRegularExpression>
@@ -113,6 +114,12 @@ public:
     QString artist() const { return m_artist; }
     bool playing() const { return m_playing; }
     int volume() const { return m_volume; }
+    // seconds, 0 unknown
+    double duration() const { return m_duration; }
+    // where the track was when the iPhone last said (ms since the epoch), and how fast it runs on
+    double elapsed() const { return m_elapsed; }
+    qint64 elapsedAt() const { return m_elapsedAt; }
+    double rate() const { return m_rate; }
     bool supports(Command command) const
     {
         // before the first list arrives, everything is offered
@@ -291,10 +298,10 @@ private:
             call(m_update, QStringLiteral("StartNotify"));
         // the iPhone forgets these with every disconnect; it then sends each on every change, but only
         // then: what is there already is read
-        write(m_update, {Track, TrackArtist, TrackTitle});
+        write(m_update, {Track, TrackArtist, TrackTitle, TrackDuration});
         write(m_update, {Player, PlayerPlaybackInfo, PlayerVolume});
         const std::pair<uint8_t, uint8_t> current[] = {
-            {Track, TrackArtist}, {Track, TrackTitle}, {Player, PlayerPlaybackInfo}, {Player, PlayerVolume}};
+            {Track, TrackArtist}, {Track, TrackTitle}, {Track, TrackDuration}, {Player, PlayerPlaybackInfo}, {Player, PlayerVolume}};
         for (const auto &entry : current) {
             const uint8_t entity = entry.first, attribute = entry.second;
             read(entity, attribute, [this, entity, attribute](const QString &text) { apply(entity, attribute, text); });
@@ -376,9 +383,14 @@ private:
             m_title = text;
         else if (entity == Track && attribute == TrackArtist)
             m_artist = text;
-        else if (entity == Player && attribute == PlayerPlaybackInfo)
+        else if (entity == Track && attribute == TrackDuration)
+            m_duration = text.toDouble();
+        else if (entity == Player && attribute == PlayerPlaybackInfo) {
             m_playing = Ams::isPlaying(text);
-        else if (entity == Player && attribute == PlayerVolume)
+            m_elapsed = Ams::elapsed(text);
+            m_rate = Ams::playbackRate(text);
+            m_elapsedAt = QDateTime::currentMSecsSinceEpoch();
+        } else if (entity == Player && attribute == PlayerVolume)
             m_volume = Ams::volumePercent(text);
         if ((entity != Player || attribute != PlayerVolume) && m_nowPlayingChanged)
             m_nowPlayingChanged();
@@ -455,6 +467,8 @@ private:
         m_artist.clear();
         m_playing = false;
         m_volume = -1;
+        m_duration = 0;
+        m_elapsedAt = 0;
         m_commands.clear();
         if (m_nowPlayingChanged)
             m_nowPlayingChanged();
@@ -477,6 +491,10 @@ private:
     QString m_artist;
     bool m_playing = false;
     int m_volume = -1;
+    double m_duration = 0;
+    double m_elapsed = 0;
+    qint64 m_elapsedAt = 0;
+    double m_rate = 0;
     QByteArray m_commands;
     int m_pendingSteps = 0;
     bool m_stepping = false;
@@ -590,6 +608,26 @@ void MediaController::refresh()
                 {QStringLiteral("canGoNext"), bestProps.value(QStringLiteral("CanGoNext")).toBool()},
                 {QStringLiteral("canGoPrevious"), bestProps.value(QStringLiteral("CanGoPrevious")).toBool()},
             };
+            // microseconds
+            const double duration = meta.value(QStringLiteral("mpris:length")).toLongLong() / 1e6;
+            if (duration > 0 && bestProps.contains(QStringLiteral("Position"))) {
+                const double rate = bestRank == 2 ? bestProps.value(QStringLiteral("Rate"), 1.0).toDouble() : 0;
+                double position = bestProps.value(QStringLiteral("Position")).toLongLong() / 1e6;
+                qint64 at = QDateTime::currentMSecsSinceEpoch();
+                // MPRIS says where the player is, not since when: the last mark stays while it still fits, or
+                // the popup would get a new player every second
+                const double expected = m_player.value(QStringLiteral("position")).toDouble()
+                    + rate * (at - m_player.value(QStringLiteral("positionAt")).toLongLong()) / 1000;
+                if (m_player.value(QStringLiteral("title")) == title && m_player.value(QStringLiteral("rate")) == rate
+                    && qAbs(expected - position) < 1) {
+                    position = m_player.value(QStringLiteral("position")).toDouble();
+                    at = m_player.value(QStringLiteral("positionAt")).toLongLong();
+                }
+                player.insert(QStringLiteral("duration"), duration);
+                player.insert(QStringLiteral("position"), position);
+                player.insert(QStringLiteral("positionAt"), at);
+                player.insert(QStringLiteral("rate"), rate);
+            }
         }
     }
     QString service = bestService;
@@ -615,6 +653,12 @@ void MediaController::refresh()
             {QStringLiteral("canLike"), iphone.offers(LikeTrack)},
             {QStringLiteral("liked"), m_liked.contains(key)},
         };
+        if (iphone.duration() > 0 && iphone.elapsedAt() > 0) {
+            player.insert(QStringLiteral("duration"), iphone.duration());
+            player.insert(QStringLiteral("position"), iphone.elapsed());
+            player.insert(QStringLiteral("positionAt"), iphone.elapsedAt());
+            player.insert(QStringLiteral("rate"), iphone.rate());
+        }
         service = IphoneService;
     } else {
         m_artKey.clear();

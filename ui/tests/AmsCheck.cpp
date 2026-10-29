@@ -12,6 +12,12 @@ int main()
     assert(!Ams::isPlaying("0,0.0,12.345"));
     assert(!Ams::isPlaying(""));            // no player
 
+    assert(Ams::elapsed("1,1.0,12.345") == 12.345);
+    assert(Ams::playbackRate("1,1.0,12.345") == 1.0);
+    assert(Ams::playbackRate("3,2.0,5.0") == 2.0);
+    assert(Ams::playbackRate("0,1.0,12.345") == 0); // paused: the time stands still
+    assert(Ams::elapsed("") == 0 && Ams::playbackRate("") == 0);
+
     assert(Ams::volumePercent("0.5") == 50);
     assert(Ams::volumePercent("1.0") == 100);
     assert(Ams::volumePercent("") == -1);
