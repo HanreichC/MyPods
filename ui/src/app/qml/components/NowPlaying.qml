@@ -191,7 +191,9 @@ ColumnLayout {
     // positionAt; counted on from there, so the time runs smoothly between their reports
     RowLayout {
         id: timeline
-        readonly property real duration: root.player.duration ?? 0
+        // A live stream has no length: browsers report the largest number there is (2562047788 hours). Nothing real
+        // lasts a week, so that counts as unknown and the timeline hides, as for any player without a length
+        readonly property real duration: (root.player.duration ?? 0) < 604800 ? (root.player.duration ?? 0) : 0
         readonly property real rate: root.player.rate ?? 0
         readonly property real at: root.player.positionAt ?? 0
         property real now: Date.now()
