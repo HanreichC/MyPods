@@ -99,7 +99,7 @@ QtObject {
     readonly property var glassThick: ({lensZone: 42, lensStrength: 46, edgeBlur: 12, chroma: 0.1, extraBlur: 8, shadowBlur: 40, shadowY: 10, shadowScale: 1.3})
 
     // ---- shape, space, size
-    readonly property int radiusWindow: 32
+    readonly property int radiusWindow: 24
     readonly property int radiusPanel: 20
     readonly property int radiusTile: 12
     readonly property int radiusControl: 8
