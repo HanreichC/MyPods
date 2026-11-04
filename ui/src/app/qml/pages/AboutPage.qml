@@ -3,7 +3,6 @@
 // License: GPL-3.0
 
 import QtQuick 2.15
-import QtQuick.Effects
 import QtQuick.Layouts 1.15
 import mypods as MP
 import "../components" as Components
@@ -11,48 +10,10 @@ import "../components" as Components
 Components.ScrollPage {
     id: rootPage
     title: qsTrId("menu.about")
-    showTitle: false
 
     // The file next to the app, asked once: asked whenever the connection drops, it started the daemon while
     // Windows shut down (which ends the daemon first), and that start fails with a 0xc0000142 popup
     readonly property string fileVersion: backendManager ? backendManager.version() : ""
-
-    Item {
-        Layout.fillWidth: true
-        Layout.topMargin: MP.Theme.spaceXl
-        implicitHeight: 88
-
-        RectangularShadow {
-            anchors.fill: logo
-            anchors.margins: 8
-            radius: MP.Theme.radiusPanel
-            blur: 32
-            offset.y: 10
-            color: MP.Theme.shadow
-        }
-
-        Image {
-            id: logo
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 88; height: 88
-            sourceSize: Qt.size(224, 224)
-            source: MP.Units.asset("icons/mp-logo-color.svg")
-        }
-    }
-
-    MP.Heading {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.topMargin: MP.Theme.spaceS
-        level: 1
-        text: "MyPods"
-    }
-
-    MP.Label {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.bottomMargin: MP.Theme.spaceXl
-        color: MP.Theme.labelSecondary
-        text: Qt.application.version
-    }
 
     MP.Heading {
         level: 5

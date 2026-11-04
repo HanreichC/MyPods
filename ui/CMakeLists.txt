@@ -85,6 +85,7 @@ qt_add_qml_module(mypods
         src/app/qml/components/Toggle.qml
         src/app/qml/components/Separator.qml
         src/app/qml/components/Glass.qml
+        src/app/qml/components/BackdropGlow.qml
         src/app/qml/components/Button.qml
         src/app/qml/components/Slider.qml
         src/app/qml/components/TextField.qml

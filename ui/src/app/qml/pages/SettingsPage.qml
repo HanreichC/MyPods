@@ -76,7 +76,6 @@ Components.ScrollPage {
 
     MP.Heading {
         level: 5
-        Layout.topMargin: MP.Theme.spaceS
         Layout.leftMargin: MP.Theme.spaceL
         text: qsTrId("settings.group.general")
     }

@@ -5,7 +5,7 @@
 import QtQuick
 import mypods as MP
 
-// MyStyle's desktop text styles: 1 = page title (Title 1), 2 = title (Title 2), 3 = headline, 4 = body emphasized,
+// MyStyle's desktop text styles: 1 = Title 1, 2 = title (Title 2), 3 = headline, 4 = body emphasized,
 // 5 = section header (small caps in grey)
 Text {
     id: root

@@ -19,7 +19,7 @@ ToolButton {
     padding: MP.Theme.spaceXs
     display: AbstractButton.IconOnly
     icon.source: MP.Units.asset("icons/icon-info.svg")
-    icon.color: MP.Theme.accentText
+    icon.color: MP.Theme.labelSecondary
     icon.width: MP.Theme.sizeIconM
     icon.height: MP.Theme.sizeIconM
     focusPolicy: Qt.StrongFocus

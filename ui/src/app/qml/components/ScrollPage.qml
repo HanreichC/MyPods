@@ -7,11 +7,11 @@ import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
 import mypods as MP
 
-// Page with a large title and a centered, scrollable column.
+// Page with a centered, scrollable column. The window's title row shows its title.
 QQC2.Page {
     id: page
     default property alias content: column.data
-    property bool showTitle: true
+    readonly property alias contentX: column.x // the title row lines the title up with it
     padding: 0
     background: null
 
@@ -20,7 +20,7 @@ QQC2.Page {
         anchors.fill: parent
         contentWidth: availableWidth
 
-        // between the bars at the top and the window's rounded corner at the bottom
+        // between the title row at the top and the window's rounded corner at the bottom
         QQC2.ScrollBar.vertical: MP.ScrollBar {
             parent: scroll
             x: scroll.width - width - MP.Theme.spaceXs
@@ -46,25 +46,13 @@ QQC2.Page {
 
             ColumnLayout {
                 id: column
-                // below the title bar, level with the top of the sidebar
+                // directly below the title row
                 y: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.sizeWindowInset
                 // right of the window's sidebar, which the page slides under
                 readonly property int inset: QQC2.ApplicationWindow.window?.contentInset ?? 0
                 width: Math.min(parent.width - inset - MP.Theme.spaceXl * 2, MP.Theme.sizeContentMaxWidth)
                 x: inset + Math.round((parent.width - inset - width) / 2)
                 spacing: MP.Theme.spaceS
-
-                MP.Heading {
-                    visible: page.showTitle
-                    level: 1
-                    text: page.title
-                    Layout.fillWidth: true
-                    Layout.leftMargin: MP.Theme.spaceXs
-                    Layout.bottomMargin: MP.Theme.spaceS
-                    wrapMode: Text.Wrap // a long device name on two lines rather than cut off
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                }
             }
         }
     }

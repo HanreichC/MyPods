@@ -14,7 +14,7 @@ import mypods as MP
 
 QQC2.ApplicationWindow {
     id: root
-    // Frameless like MyCAD: a glass title bar across the window; GameScope runs it fullscreen anyway
+    // Frameless, in MyStyle's free title form (W-1); GameScope runs it fullscreen anyway
     flags: gameScopeMode ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     minimumWidth: gameScopeMode ? 0 : 720
     minimumHeight: gameScopeMode ? 0 : 480
@@ -75,6 +75,13 @@ QQC2.ApplicationWindow {
         radius: height / 2
     }
 
+    // Every free spot of the title row and the sidebar moves the window (W-1)
+    component WindowDrag: DragHandler {
+        enabled: !gameScopeMode
+        target: null
+        onActiveChanged: if (active) root.startSystemMove()
+    }
+
     component WindowButton: QQC2.AbstractButton {
         id: windowButton
         property bool danger: false
@@ -112,6 +119,11 @@ QQC2.ApplicationWindow {
             }
         }
 
+        Components.BackdropGlow {
+            anchors.fill: parent
+            radius: root.cornerRadius
+        }
+
         ColumnLayout {
             anchors.fill: parent
             spacing: 0
@@ -125,7 +137,7 @@ QQC2.ApplicationWindow {
             Components.InlineMessage {
                 Layout.margins: MP.Theme.spaceL
                 Layout.leftMargin: root.contentInset + MP.Theme.spaceL
-                Layout.topMargin: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.spaceL // under the title bar
+                Layout.topMargin: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.spaceL // under the title row
                 visible: cppBackend?.unsupportedApi ?? false
                 type: 2
                 text: qsTrId("Error.service_api_wrong")
@@ -137,7 +149,7 @@ QQC2.ApplicationWindow {
                 Layout.fillHeight: true
                 clip: true
 
-                // HIG soft scroll edge effect: content fades out where it leaves at the top,
+                // HIG soft scroll edge effect: content fades out below the free title, so nothing runs through it (W-3),
                 // and stays inside the window's rounded corners when a page slides past them.
                 // effects need a shader-capable scene graph; the software renderer drops the item
                 layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
@@ -145,7 +157,7 @@ QQC2.ApplicationWindow {
                     maskEnabled: true
                     maskSource: scrollEdgeMask
                     maskSpreadAtMin: 1.0
-                    maskThresholdMin: 0.0
+                    maskThresholdMin: 0.5 // with 0.0 the mask does nothing
                 }
 
                 DevicePage { id: devicePage }
@@ -163,9 +175,11 @@ QQC2.ApplicationWindow {
         visible: false
         layer.enabled: true
         radius: root.cornerRadius
+        readonly property real contentTop: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.sizeWindowInset
         gradient: Gradient {
-            GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.15) }
-            GradientStop { position: Math.min(0.5, 14 / scrollEdgeMask.height); color: "black" }
+            GradientStop { position: 0; color: "transparent" }
+            GradientStop { position: Math.min(0.5, (scrollEdgeMask.contentTop - 14) / scrollEdgeMask.height); color: "transparent" }
+            GradientStop { position: Math.min(0.5, scrollEdgeMask.contentTop / scrollEdgeMask.height); color: "black" }
             GradientStop { position: 1; color: "black" }
         }
     }
@@ -258,10 +272,12 @@ QQC2.ApplicationWindow {
         readonly property var devices: devicePage.connectedHeadphones.length > 0 ? devicePage.connectedHeadphones
                                        : devicePage.hasInfo ? [devicePage.infoData] : []
         x: MP.Theme.sizeWindowInset
-        y: titleBar.y + titleBar.height + MP.Theme.sizeWindowInset
+        y: MP.Theme.sizeWindowInset
         width: MP.Theme.sizeSidebarWidth
         height: parent.height - y - MP.Theme.sizeWindowInset
         radius: MP.Theme.radiusPanel
+
+        WindowDrag {}
 
         ColumnLayout {
             anchors.fill: parent
@@ -269,6 +285,13 @@ QQC2.ApplicationWindow {
             anchors.topMargin: 16
             anchors.bottomMargin: 14
             spacing: 2
+
+            MP.Heading {
+                Layout.leftMargin: 10
+                Layout.bottomMargin: MP.Theme.spaceL
+                level: 2
+                text: "MyPods"
+            }
 
             MP.Heading {
                 Layout.leftMargin: 10
@@ -339,45 +362,60 @@ QQC2.ApplicationWindow {
         border.color: MP.Theme.glassPopupBorder
     }
 
-    // Glass title bar across the window, as in MyCAD: the app's name, minimize, close; dragging it anywhere moves the window
-    GlassBar {
-        id: titleBar
+    // MyStyle's title row beside the sidebar, without a bar: the page's title on the backdrop, the window buttons in a
+    // capsule of their own. The title stays level with the page's content, like the pane title on the Mac.
+    Item {
+        id: titleRow
         anchors.top: parent.top
-        anchors.left: parent.left
+        anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.margins: MP.Theme.sizeWindowInset
         height: MP.Theme.sizeBarHeight
 
-        DragHandler {
-            enabled: !gameScopeMode
-            target: null
-            onActiveChanged: if (active) root.startSystemMove()
-        }
+        WindowDrag {}
 
         MP.Heading {
-            anchors.left: parent.left
-            anchors.leftMargin: 18 // level with the sidebar's headings
+            id: pageTitle
+            x: (swipeView.currentItem?.contentX ?? 0) + MP.Theme.spaceXs - titleRow.x
+            width: windowButtons.x - x - MP.Theme.spaceS
             anchors.verticalCenter: parent.verticalCenter
-            level: 2
-            text: "MyPods"
+            // a long device name on two smaller lines rather than cut off; two lines of Title 1 don't fit the row
+            level: pageTitleWidth.width > width ? 3 : 1
+            text: swipeView.currentItem?.title ?? ""
+            wrapMode: Text.Wrap
+            maximumLineCount: 2
+            elide: Text.ElideRight
+
+            TextMetrics {
+                id: pageTitleWidth
+                font: MP.Theme.fontTitle1
+                text: pageTitle.text
+            }
         }
 
-        Row {
+        GlassBar {
+            id: windowButtons
             visible: !gameScopeMode
             anchors.right: parent.right
-            anchors.rightMargin: (MP.Theme.sizeBarHeight - MP.Theme.sizeWindowButton) / 2
             anchors.verticalCenter: parent.verticalCenter
+            width: buttonsRow.width + MP.Theme.spaceS
+            height: parent.height
 
-            WindowButton {
-                text: qsTrId("window.minimize")
-                icon.source: MP.Units.asset("icons/icon-minus.svg")
-                onClicked: root.showMinimized()
-            }
-            WindowButton {
-                danger: true
-                text: qsTrId("window.close")
-                icon.source: MP.Units.asset("icons/icon-close.svg")
-                onClicked: root.close()
+            Row {
+                id: buttonsRow
+                anchors.centerIn: parent
+
+                WindowButton {
+                    text: qsTrId("window.minimize")
+                    icon.source: MP.Units.asset("icons/icon-minus.svg")
+                    onClicked: root.showMinimized()
+                }
+                WindowButton {
+                    danger: true
+                    text: qsTrId("window.close")
+                    icon.source: MP.Units.asset("icons/icon-close.svg")
+                    onClicked: root.close()
+                }
             }
         }
     }
