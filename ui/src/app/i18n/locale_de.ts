@@ -1387,11 +1387,6 @@ MyPods legt dafür Dateien in ~/.config/pipewire an (…/60-mypods-hires.conf) u
         <source></source>
         <translation>Fertig</translation>
     </message>
-    <message id="window.move">
-        <location filename="../qml/Main.qml" line="0"/>
-        <source></source>
-        <translation>Fenster bewegen</translation>
-    </message>
     <message id="window.minimize">
         <location filename="../qml/Main.qml" line="0"/>
         <source></source>

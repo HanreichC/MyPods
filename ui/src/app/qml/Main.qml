@@ -14,7 +14,7 @@ import mypods as MP
 
 QQC2.ApplicationWindow {
     id: root
-    // Frameless like MyCAD: the window buttons sit in a glass capsule; GameScope runs it fullscreen anyway
+    // Frameless like MyCAD: a glass title bar across the window; GameScope runs it fullscreen anyway
     flags: gameScopeMode ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     minimumWidth: gameScopeMode ? 0 : 720
     minimumHeight: gameScopeMode ? 0 : 480
@@ -33,11 +33,9 @@ QQC2.ApplicationWindow {
 
     property alias currentIndex: swipeView.currentIndex
     readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radiusWindow
-    // Pages span the whole window and slide under the glass sidebar; their content starts right of it.
-    // contentInset and titleInset (clear of the window buttons) are read by ScrollPage
+    // Pages span the whole window and slide under the glass bars; their content starts right of the sidebar.
+    // contentInset is read by ScrollPage
     readonly property int contentInset: sidebar.x + sidebar.width
-    readonly property int titleInset: windowBar.visible ? Math.max(0, contentInset + (width - contentInset + Math.min(width - contentInset - MP.Theme.spaceXl * 2, MP.Theme.sizeContentMaxWidth)) / 2
-                                                                     - windowBar.x + MP.Theme.spaceS) : 0
     readonly property var sections: [
         { page: 1, text: qsTrId("menu.headphones"), icon: "icon-bluetooth.svg" },
         { page: 2, text: qsTrId("menu.settings"), icon: "icon-settings-fill.svg" },
@@ -127,7 +125,7 @@ QQC2.ApplicationWindow {
             Components.InlineMessage {
                 Layout.margins: MP.Theme.spaceL
                 Layout.leftMargin: root.contentInset + MP.Theme.spaceL
-                Layout.topMargin: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.spaceL // under the window buttons
+                Layout.topMargin: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.spaceL // under the title bar
                 visible: cppBackend?.unsupportedApi ?? false
                 type: 2
                 text: qsTrId("Error.service_api_wrong")
@@ -260,9 +258,9 @@ QQC2.ApplicationWindow {
         readonly property var devices: devicePage.connectedHeadphones.length > 0 ? devicePage.connectedHeadphones
                                        : devicePage.hasInfo ? [devicePage.infoData] : []
         x: MP.Theme.sizeWindowInset
-        y: MP.Theme.sizeWindowInset
+        y: titleBar.y + titleBar.height + MP.Theme.sizeWindowInset
         width: MP.Theme.sizeSidebarWidth
-        height: parent.height - 2 * MP.Theme.sizeWindowInset
+        height: parent.height - y - MP.Theme.sizeWindowInset
         radius: MP.Theme.radiusPanel
 
         ColumnLayout {
@@ -271,13 +269,6 @@ QQC2.ApplicationWindow {
             anchors.topMargin: 16
             anchors.bottomMargin: 14
             spacing: 2
-
-            MP.Heading {
-                Layout.leftMargin: 10
-                Layout.bottomMargin: 14
-                level: 2
-                text: "MyPods"
-            }
 
             MP.Heading {
                 Layout.leftMargin: 10
@@ -348,39 +339,35 @@ QQC2.ApplicationWindow {
         border.color: MP.Theme.glassPopupBorder
     }
 
-    // Window buttons in a glass capsule at the top right, as in MyCAD: grip to move, minimize, close
+    // Glass title bar across the window, as in MyCAD: the app's name, minimize, close; dragging it anywhere moves the window
     GlassBar {
-        id: windowBar
-        visible: !gameScopeMode
+        id: titleBar
         anchors.top: parent.top
+        anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: MP.Theme.sizeWindowInset
-        width: windowRow.implicitWidth + MP.Theme.sizeBarHeight - MP.Theme.sizeWindowButton
         height: MP.Theme.sizeBarHeight
 
         DragHandler {
+            enabled: !gameScopeMode
             target: null
             onActiveChanged: if (active) root.startSystemMove()
         }
 
+        MP.Heading {
+            anchors.left: parent.left
+            anchors.leftMargin: 18 // level with the sidebar's headings
+            anchors.verticalCenter: parent.verticalCenter
+            level: 2
+            text: "MyPods"
+        }
+
         Row {
-            id: windowRow
-            anchors.centerIn: parent
+            visible: !gameScopeMode
+            anchors.right: parent.right
+            anchors.rightMargin: (MP.Theme.sizeBarHeight - MP.Theme.sizeWindowButton) / 2
+            anchors.verticalCenter: parent.verticalCenter
 
-            Item {
-                width: 30
-                height: MP.Theme.sizeWindowButton
-                Accessible.role: Accessible.Grip
-                Accessible.name: qsTrId("window.move")
-
-                Impl.IconImage {
-                    anchors.centerIn: parent
-                    sourceSize: Qt.size(18, 18)
-                    source: MP.Units.asset("icons/icon-grip.svg")
-                    color: MP.Theme.labelSecondary
-                }
-                HoverHandler { cursorShape: Qt.OpenHandCursor }
-            }
             WindowButton {
                 text: qsTrId("window.minimize")
                 icon.source: MP.Units.asset("icons/icon-minus.svg")

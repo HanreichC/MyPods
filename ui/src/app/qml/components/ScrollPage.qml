@@ -46,8 +46,8 @@ QQC2.Page {
 
             ColumnLayout {
                 id: column
-                // the page title level with the window buttons
-                y: MP.Theme.sizeWindowInset + (MP.Theme.sizeBarHeight - MP.Theme.lineTitle1) / 2
+                // below the title bar, level with the top of the sidebar
+                y: MP.Theme.sizeWindowInset + MP.Theme.sizeBarHeight + MP.Theme.sizeWindowInset
                 // right of the window's sidebar, which the page slides under
                 readonly property int inset: QQC2.ApplicationWindow.window?.contentInset ?? 0
                 width: Math.min(parent.width - inset - MP.Theme.spaceXl * 2, MP.Theme.sizeContentMaxWidth)
@@ -60,8 +60,6 @@ QQC2.Page {
                     text: page.title
                     Layout.fillWidth: true
                     Layout.leftMargin: MP.Theme.spaceXs
-                    // clear of the window buttons
-                    Layout.rightMargin: QQC2.ApplicationWindow.window?.titleInset ?? 0
                     Layout.bottomMargin: MP.Theme.spaceS
                     wrapMode: Text.Wrap // a long device name on two lines rather than cut off
                     maximumLineCount: 2
