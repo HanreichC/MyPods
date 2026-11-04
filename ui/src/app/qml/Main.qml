@@ -14,7 +14,7 @@ import mypods as MP
 
 QQC2.ApplicationWindow {
     id: root
-    // Frameless, in MyStyle's free title form (W-1); GameScope runs it fullscreen anyway
+    // Frameless, with MyStyle's title row (W-1); GameScope runs it fullscreen anyway
     flags: gameScopeMode ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     minimumWidth: gameScopeMode ? 0 : 720
     minimumHeight: gameScopeMode ? 0 : 480
@@ -117,11 +117,6 @@ QQC2.ApplicationWindow {
                 GradientStop { position: 0; color: MP.Theme.backgroundTop }
                 GradientStop { position: 1; color: MP.Theme.backgroundBottom }
             }
-        }
-
-        Components.BackdropGlow {
-            anchors.fill: parent
-            radius: root.cornerRadius
         }
 
         ColumnLayout {

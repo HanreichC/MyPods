@@ -67,8 +67,6 @@ QtObject {
     readonly property color shadow: pick("#21000000", "#40000000", "#21000000", "#40000000")
     readonly property color scrim: pick("#24000000", "#59000000", "#24000000", "#59000000")
     readonly property color mediaScrim: pick("#59000000", "#59000000", "#59000000", "#59000000")
-    readonly property color backdropGlowPrimary: pick("#8CAAD2FF", "#73002D96", "#8CAAD2FF", "#73002D96")
-    readonly property color backdropGlowSecondary: pick("#99E1DEFF", "#61231996", "#99E1DEFF", "#61231996")
     readonly property color categoryGeneral: pick("#CB30E0", "#DB34F2", "#B02FC2", "#EA8DFF")
     readonly property color categoryAppearance: pick("#6155F5", "#6D7CFF", "#564ADE", "#A7AAFF")
     readonly property color categoryAudio: pick("#FF2D55", "#FF375F", "#E7124D", "#FF8AC4")
