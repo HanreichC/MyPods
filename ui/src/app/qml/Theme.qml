@@ -91,6 +91,7 @@ QtObject {
                                         : (dark ? [0.16, 0.33, 0.66] : [0.1, 0.27, 0.62]));
         return increaseContrast ? Math.max(t, 0.85) : t;
     }
+    readonly property real glassNoteTint: dark ? 0.15 : 0.3
     readonly property real glassBlur: piecewise([12, 24, 36])
     readonly property real glassSaturation: 1.5
     readonly property real glassRim: piecewise(dark ? [0.07, 0.07, 0.07] : [0.7, 0.7, 0.7])
