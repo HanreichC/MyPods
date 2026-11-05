@@ -46,6 +46,10 @@
 #include "Backend.h"
 #include "BlurBehind.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 static void ensureEnvDefaults() {
     if (qEnvironmentVariableIsEmpty("QML2_IMPORT_PATH")) {
         const QString qmlPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
@@ -349,6 +353,27 @@ int main(int argc, char *argv[]) {
     if (raisePending) {
         raiseWindow();
     }
+
+#ifdef Q_OS_WIN
+    // While minimized, Windows paints its little caption bar into the window's GDI surface and keeps it there after the
+    // restore. Qt's content lies above that surface, so the caption showed through the transparent top left corner.
+    // Black is fully transparent in there.
+    if (auto window = qobject_cast<QWindow *>(root)) {
+        QObject::connect(window, &QWindow::windowStateChanged, window, [window](Qt::WindowState state) {
+            if (state == Qt::WindowMinimized)
+                return;
+            // once the restore is through
+            QTimer::singleShot(0, window, [window]() {
+                const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+                RECT rect;
+                GetWindowRect(hwnd, &rect);
+                const HDC dc = GetWindowDC(hwnd);
+                PatBlt(dc, 0, 0, rect.right - rect.left, rect.bottom - rect.top, BLACKNESS);
+                ReleaseDC(hwnd, dc);
+            });
+        });
+    }
+#endif
 
     QMenu trayMenu;
     auto toggleMainWindow = [&]() {
