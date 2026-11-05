@@ -13,3 +13,8 @@ tag=v$version
 # both workflows try to create it; the second one finds it there
 gh release create "$tag" --target "$GITHUB_SHA" --title "MyPods $version" --generate-notes || gh release view "$tag" >/dev/null
 gh release upload "$tag" "$file" --clobber
+
+# GitHub makes each new release the latest, whatever its number. With two pushes close together the slower build wins
+# (1.0.90 over 1.0.92) and the app's update check (DesktopManager) stops at it. Each run sets it last, so the last one is right.
+gh release edit "$(gh release list --limit 100 --json tagName --jq \
+    'map(.tagName) | sort_by(ltrimstr("v") | split(".") | map(tonumber)) | last')" --latest
