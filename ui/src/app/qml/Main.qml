@@ -32,7 +32,10 @@ QQC2.ApplicationWindow {
     Material.primary: MP.Theme.accent
 
     property alias currentIndex: swipeView.currentIndex
-    readonly property int cornerRadius: gameScopeMode ? 0 : MP.Theme.radiusWindow
+    readonly property bool maximized: visibility === Window.Maximized
+    // Maximized it is square and without the hairline (W-1)
+    readonly property int cornerRadius: gameScopeMode || maximized ? 0 : MP.Theme.radiusWindow
+    function toggleMaximized() { if (maximized) showNormal(); else showMaximized(); }
     // Pages span the whole window and slide under the glass bars; their content starts right of the sidebar.
     // contentInset is read by ScrollPage
     readonly property int contentInset: sidebar.x + sidebar.width
@@ -99,7 +102,7 @@ QQC2.ApplicationWindow {
             Behavior on color { ColorAnimation { duration: MP.Theme.durationHover } }
         }
         contentItem: Impl.IconImage {
-            sourceSize: Qt.size(18, 18)
+            sourceSize: Qt.size(MP.Theme.sizeIconWindow, MP.Theme.sizeIconWindow)
             source: windowButton.icon.source
             color: windowButton.danger && windowButton.hovered ? MP.Theme.labelOnAccent : MP.Theme.labelPrimary
         }
@@ -350,7 +353,7 @@ QQC2.ApplicationWindow {
     // A fine edge around the rounded window, like the popups'
     Rectangle {
         anchors.fill: parent
-        visible: !gameScopeMode
+        visible: !gameScopeMode && !root.maximized
         radius: root.cornerRadius
         color: "transparent"
         border.width: 1
@@ -368,6 +371,10 @@ QQC2.ApplicationWindow {
         height: MP.Theme.sizeBarHeight
 
         WindowDrag {}
+        TapHandler {
+            enabled: !gameScopeMode
+            onDoubleTapped: root.toggleMaximized()
+        }
 
         MP.Heading {
             id: pageTitle
@@ -402,8 +409,13 @@ QQC2.ApplicationWindow {
 
                 WindowButton {
                     text: qsTrId("window.minimize")
-                    icon.source: MP.Units.asset("icons/icon-minus.svg")
+                    icon.source: MP.Units.asset("icons/icon-window-minimize.svg")
                     onClicked: root.showMinimized()
+                }
+                WindowButton {
+                    text: root.maximized ? qsTrId("window.restore") : qsTrId("window.maximize")
+                    icon.source: MP.Units.asset(root.maximized ? "icons/icon-window-restore.svg" : "icons/icon-window-maximize.svg")
+                    onClicked: root.toggleMaximized()
                 }
                 WindowButton {
                     danger: true
@@ -417,7 +429,7 @@ QQC2.ApplicationWindow {
 
     // Frameless: the edges still resize the window
     Repeater {
-        model: gameScopeMode ? [] : [Qt.TopEdge, Qt.BottomEdge, Qt.LeftEdge, Qt.RightEdge]
+        model: gameScopeMode || root.maximized ? [] : [Qt.TopEdge, Qt.BottomEdge, Qt.LeftEdge, Qt.RightEdge]
         delegate: MouseArea {
             required property int modelData
             readonly property bool vertical: modelData === Qt.TopEdge || modelData === Qt.BottomEdge

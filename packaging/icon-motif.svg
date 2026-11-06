@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- the earbuds of assets/icons/logo-dark.svg (16 grid), 560 wide; app plate: MyStyle tools/app_icon.py -->
+  <g transform="translate(232 216) scale(35)" fill="#FFFFFF">
+    <rect x="4.9231" y="5.0769" width="2.46154" height="9.84615" rx="1.23077" fill-opacity="{secondary}"/>
+    <rect x="8.61536" y="5.0769" width="2.46154" height="9.84615" rx="1.23077" fill-opacity="{secondary}"/>
+    <circle cx="3.69231" cy="5.69231" r="3.69231"/>
+    <circle cx="12.30769" cy="5.69231" r="3.69231"/>
+  </g>
+</svg>

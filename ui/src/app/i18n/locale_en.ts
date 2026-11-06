@@ -1392,6 +1392,16 @@ MyPods adds files under ~/.config/pipewire for it (…/60-mypods-hires.conf) and
         <source></source>
         <translation>Minimize</translation>
     </message>
+    <message id="window.maximize">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Maximize</translation>
+    </message>
+    <message id="window.restore">
+        <location filename="../qml/Main.qml" line="0"/>
+        <source></source>
+        <translation>Restore</translation>
+    </message>
     <message id="window.close">
         <location filename="../qml/Main.qml" line="0"/>
         <source></source>

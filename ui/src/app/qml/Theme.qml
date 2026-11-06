@@ -119,6 +119,7 @@ QtObject {
     readonly property int sizeWindowInset: 12
     readonly property int sizeBarHeight: 44
     readonly property int sizeWindowButton: 36
+    readonly property int sizeIconWindow: 18
     readonly property int sizeSidebarWidth: 232
     readonly property int sizeContentMaxWidth: 560
     readonly property int sizeControlDesktop: 30
