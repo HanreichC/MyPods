@@ -105,13 +105,21 @@ namespace MyPods{
             // Wired headphones that are plugged in and active; blocking
             std::vector<WiredOutput> GetWiredHeadphones();
             // Every output that isn't Bluetooth (speakers, monitors, jacks, USB), for the user to say which are headphones;
-            // `bluetooth`: the Bluetooth headphones' too, for picking where the sound goes. Blocking
-            std::vector<WiredOutput> GetOutputs(bool bluetooth = false);
+            // `playback`: for picking where the sound goes, the Bluetooth headphones' too and (Linux) the outputs a card
+            // plays only in another profile (OtherProfileOutputs). Blocking
+            std::vector<WiredOutput> GetOutputs(bool playback = false);
+            // Plays on an output of GetOutputs(true): makes the sink the default, or first switches the card to the
+            // profile a "<card>#<profile>" names. Blocking, a profile switch up to a few seconds
+            bool PlayOn(const std::string& output);
             // The applications' streams; blocking. Windows: none (shared mode hides them)
             std::vector<StreamInfo> GetStreams();
 #ifndef _WIN32
             // The sink plays into wired headphones: a headphone jack whose port is active and not empty, or a USB headset
             static std::optional<WiredOutput> WiredHeadphones(const pa_sink_info& info);
+            // A sound card's outputs it has no sink for now: only one profile plays at a time, so HDMI next to the speakers
+            // on one card is a sink only after switching to it. One per profile, named after the port it would play on
+            // (an HDMI monitor by its name); the sink is "<card>#<profile>" (PlayOn)
+            static std::vector<WiredOutput> OtherProfileOutputs(const pa_card_info& card);
 #else
             // The endpoint is wired headphones: a headphone or headset form factor that isn't Bluetooth
             static std::optional<WiredOutput> WiredHeadphones(const AudioEndpoint& endpoint);
@@ -154,6 +162,8 @@ namespace MyPods{
             // Waits with the loop lock held until the operation finishes, false if it could not start
             bool Wait(pa_operation* op);
             bool RequestCardProfile(const std::string& name, const std::string& profile);
+            // The card's sink that plays its active profile's output, once the sound server made it
+            std::optional<std::string> CardSink(const std::string& card, const std::string& profile);
             void Free();
 #else
             struct Native;

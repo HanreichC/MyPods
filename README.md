@@ -139,7 +139,7 @@ Lossless and Hi-Res as in Apple Music don't exist over Bluetooth: AirPods speak 
 
 Click headphones in the sidebar and they become the ones you control, with the sound going to them. A small speaker symbol marks where the sound plays right now. If you switch the output in the taskbar or in the desktop's sound settings, MyPods follows.
 
-The tray popup lists every output under Output, speakers and monitors included, with a check mark on the one playing. Headphones take their effects along when you switch. For headphones on a monitor's jack, mark the output once under *Settings > Headphones on these outputs*, because monitors don't tell anyone whether something is plugged in. From then on they are headphones like any other pair, with their own equalizer.
+The tray popup lists every output under Output, speakers and monitors included, with a check mark on the one playing. That also holds without headphones: on Linux, HDMI that shares a sound card with the speakers shows up too (by the monitor's name), and picking it switches the card over. Headphones take their effects along when you switch. For headphones on a monitor's jack, mark the output once under *Settings > Headphones on these outputs*, because monitors don't tell anyone whether something is plugged in. From then on they are headphones like any other pair, with their own equalizer.
 
 <br>
 

@@ -378,6 +378,71 @@ TestsCore::TestsCore()
         Test("Wired headphones: not Bluetooth, not the effect chain", bluetooth && chain);
     }
 
+    // a laptop's one card with speakers and HDMI: only the active profile has a sink, the other output is offered by profile
+    {
+        auto profile = [](const char *name, uint32_t priority, int available, uint32_t sinks) {
+            pa_card_profile_info2 p{};
+            p.name = name;
+            p.priority = priority;
+            p.available = available;
+            p.n_sinks = sinks;
+            return p;
+        };
+        auto analog = profile("output:analog-stereo+input:analog-stereo", 6565, 1, 1);
+        auto hdmi = profile("output:hdmi-stereo+input:analog-stereo", 5965, 1, 1);
+        auto hdmiOnly = profile("output:hdmi-stereo", 5900, 1, 1);
+        auto hdmi2 = profile("output:hdmi-stereo-extra1", 5800, 0, 1);
+        auto pro = profile("pro-audio", 1, 1, 3);
+        pa_card_profile_info2 *speakerProfiles[] = {&analog}, *hdmiProfiles[] = {&hdmi, &hdmiOnly, &pro}, *hdmi2Profiles[] = {&hdmi2},
+                              *micProfiles[] = {&analog, &hdmi};
+        auto port = [](const char *name, const char *description, uint32_t priority, int available, int direction, pa_card_profile_info2 **profiles, uint32_t n) {
+            pa_card_port_info p{};
+            p.name = name;
+            p.description = description;
+            p.priority = priority;
+            p.available = available;
+            p.direction = direction;
+            p.profiles2 = profiles;
+            p.n_profiles = n;
+            return p;
+        };
+        auto speaker = port("analog-output-speaker", "Speakers", 10000, PA_PORT_AVAILABLE_UNKNOWN, PA_DIRECTION_OUTPUT, speakerProfiles, 1);
+        auto jack = port("analog-output-headphones", "Headphones", 9900, PA_PORT_AVAILABLE_NO, PA_DIRECTION_OUTPUT, speakerProfiles, 1);
+        auto monitor = port("hdmi-output-0", "HDMI / DisplayPort", 5900, PA_PORT_AVAILABLE_YES, PA_DIRECTION_OUTPUT, hdmiProfiles, 3);
+        auto noMonitor = port("hdmi-output-1", "HDMI / DisplayPort 2", 5800, PA_PORT_AVAILABLE_NO, PA_DIRECTION_OUTPUT, hdmi2Profiles, 1);
+        auto mic = port("analog-input-mic", "Microphone", 8700, PA_PORT_AVAILABLE_UNKNOWN, PA_DIRECTION_INPUT, micProfiles, 2);
+        monitor.proplist = pa_proplist_new();
+        pa_card_port_info *ports[] = {&jack, &mic, &monitor, &noMonitor, &speaker};
+        pa_card_info card{};
+        card.name = "alsa_card.pci-0000_00_1f.3";
+        card.proplist = pa_proplist_new();
+        pa_proplist_sets(card.proplist, "device.api", "alsa");
+        pa_proplist_sets(card.proplist, "device.description", "Built-in Audio");
+        card.ports = ports;
+        card.n_ports = 5;
+
+        card.active_profile2 = &analog;
+        auto unnamed = PulseAudioClient::OtherProfileOutputs(card);
+        pa_proplist_sets(monitor.proplist, "device.product.name", "DELL U2720Q"); // what PipeWire reads from the monitor's ELD
+        auto fromSpeakers = PulseAudioClient::OtherProfileOutputs(card);
+        card.active_profile2 = &hdmi;
+        auto fromHdmi = PulseAudioClient::OtherProfileOutputs(card);
+        pa_proplist_sets(card.proplist, "device.api", "bluez5");
+        bool bluetooth = PulseAudioClient::OtherProfileOutputs(card).empty();
+        pa_proplist_free(card.proplist);
+        pa_proplist_free(monitor.proplist);
+
+        Test("Other profile: HDMI next to the speakers, its best profile, by the monitor's name",
+             fromSpeakers.size() == 1 && fromSpeakers[0].sink == "alsa_card.pci-0000_00_1f.3#output:hdmi-stereo+input:analog-stereo" &&
+             fromSpeakers[0].name == "DELL U2720Q");
+        Test("Other profile: a monitor without a name by its port and card",
+             unnamed.size() == 1 && unnamed[0].name == "HDMI / DisplayPort (Built-in Audio)");
+        Test("Other profile: from HDMI the speakers, not the empty jack or the unplugged HDMI",
+             fromHdmi.size() == 1 && fromHdmi[0].sink == "alsa_card.pci-0000_00_1f.3#output:analog-stereo+input:analog-stereo" &&
+             fromHdmi[0].name == "Speakers (Built-in Audio)");
+        Test("Other profile: none for a Bluetooth card", bluetooth);
+    }
+
     // AirPods unpaired while the daemon runs: their capabilities unsubscribe from AapDevice's events, which must
     // still be there (a use-after-free before; an ASan build reports it, a plain one may crash or not)
     {

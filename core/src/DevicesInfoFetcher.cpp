@@ -56,7 +56,7 @@ namespace MyPods {
             anyConnected = anyConnected || aap->GetConnected();
             anyAutoSwitch = anyAutoSwitch || aap->LoadSettingInt("autoSwitch").value_or(0) == 0;
         }
-        bool shouldScan = ShouldScan(animation, Client::SupportsL2CAP(), anyAap, anyConnected, anyAutoSwitch);
+        bool shouldScan = _connecting == 0 && ShouldScan(animation, Client::SupportsL2CAP(), anyAap, anyConnected, anyAutoSwitch);
 
         if (shouldScan == _bleScanActive)
             return;
@@ -199,9 +199,31 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
         return _activeDevice;
     }
 
-    void DevicesInfoFetcher::Connect(const std::string& deviceAddress) {
-        if (auto device = GetDevice(deviceAddress))
-            device->Connect();
+    void DevicesInfoFetcher::ConnectAsync(const std::shared_ptr<Device>& device, BtCallback&& callback) {
+        // Paging headphones while our scan's classic inquiry runs fails or drags on many adapters (BlueZ pauses its
+        // discovery for pairing, not for this). So the scan rests until the link is up or failed. Windows: the
+        // advertisement watcher has no inquiry, and connecting works there as it is.
+        bool pause = Client::SupportsL2CAP();
+        if (pause) {
+            _connecting++;
+            UpdateBleState();
+        }
+        BtCallback done = [this, pause, name = device->GetName(), callback = std::move(callback)](const std::string* error) {
+            if (error)
+                Logger::Error("%s: connecting failed: %s", name.c_str(), error->c_str());
+            if (pause) {
+                _connecting--;
+                UpdateBleState();
+            }
+            if (callback)
+                callback(error);
+        };
+        try {
+            device->ConnectAsync(BtCallback(done));
+        } catch (const std::exception& e) {
+            std::string error = e.what();
+            done(&error); // the call never went out: no reply will come to resume the scan
+        }
     }
 
     void DevicesInfoFetcher::Disconnect(const std::string& deviceAddress) {
@@ -343,7 +365,7 @@ DevicesInfoFetcher::~DevicesInfoFetcher()
     bool DevicesInfoFetcher::SetPlaybackOutput(const std::string& sink) {
         for (const auto& output : GetPlaybackOutputs())
             if (output["sink"] == sink)
-                return output["address"] != "" ? SetActiveDevice(output["address"].get<std::string>()) : _audioClient->SetDefaultSink(sink);
+                return output["address"] != "" ? SetActiveDevice(output["address"].get<std::string>()) : _audioClient->PlayOn(sink);
         return false;
     }
 

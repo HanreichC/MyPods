@@ -6,6 +6,8 @@
 
 #include "Logger.h"
 
+#include <algorithm>
+
 namespace MyPods {
 
     DBusDeviceInfo::DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces) : _deviceProxy{sdbus::createProxy("org.bluez", objectPath)}
@@ -159,6 +161,18 @@ namespace MyPods {
                 callback(&error);
             return;
         }
+        // Headphones by their audio profile, which BlueZ connects over BR/EDR, and its policy brings HFP or A2DP and
+        // AVRCP along. A plain Connect takes the bearer last seen for a device bonded over both, and our scan sees the
+        // LE advertisements all the time: it then connected over LE, without any audio.
+        // The automatic switching's Connect() stays the plain one.
+        auto uuids = GetUuids();
+        for (const char *uuid : {"0000110b-0000-1000-8000-00805f9b34fb", "0000111e-0000-1000-8000-00805f9b34fb"}) // A2DP sink, HFP
+            if (std::ranges::find(uuids, uuid) != uuids.end())
+            {
+                _deviceProxy->callMethodAsync("ConnectProfile").onInterface("org.bluez.Device1").withTimeout(std::chrono::seconds(10))
+                    .withArguments(std::string(uuid)).uponReplyInvoke(ToSdbusCallback(std::move(callback)));
+                return;
+            }
         _deviceProxy->callMethodAsync("Connect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(ToSdbusCallback(std::move(callback)));
     }
 

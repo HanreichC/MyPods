@@ -39,6 +39,7 @@ namespace MyPods {
         std::shared_ptr<SettingsService> _settingsService{};
         size_t _onSettingsChangeId = 0;
         bool _bleScanActive = false;
+        std::atomic<int> _connecting{0}; // connections the user asked for, under way: the scan rests meanwhile (Linux)
         // Wired headphones come and go with the sound server's sinks, ports and card profiles (Windows: endpoints)
         size_t _sinkEventId = 0;
         size_t _cardEventId = 0;
@@ -100,7 +101,8 @@ namespace MyPods {
         // The output after the one playing now (keyboard shortcut "output-next"). Blocking
         bool NextPlaybackOutput();
 
-        void Connect(const std::string& deviceAddress);
+        // Connects on the user's request; the reply (or the error, also logged) once the link is up or failed
+        void ConnectAsync(const std::shared_ptr<Device>& device, BtCallback&& callback);
         void Disconnect(const std::string& deviceAddress);
         void SetCapabilities(const nlohmann::json& json);
 

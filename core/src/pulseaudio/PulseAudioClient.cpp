@@ -331,12 +331,12 @@ namespace MyPods
         return outputs;
     }
 
-    std::vector<WiredOutput> PulseAudioClient::GetOutputs(bool bluetooth)
+    std::vector<WiredOutput> PulseAudioClient::GetOutputs(bool playback)
     {
         if (!Usable()) return {};
 
         // hardware only: the effect chain and MyPods' silent sink are no place to pick
-        std::pair<std::vector<WiredOutput>, bool> query{{}, bluetooth};
+        std::pair<std::vector<WiredOutput>, bool> query{{}, playback};
         Lock lock{ml};
         Wait(pa_context_get_sink_info_list(ctx,
             [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
@@ -347,7 +347,116 @@ namespace MyPods
                 const char *bus = pa_proplist_gets(info->proplist, "device.bus");
                 q->first.push_back({info->name, info->description ? info->description : info->name, bus && std::string(bus) == "usb"});
             }, &query));
+        if (playback)
+            Wait(pa_context_get_card_info_list(ctx,
+                [](pa_context*, const pa_card_info* info, int eol, void* userdata) {
+                    if (eol || !info)
+                        return;
+                    auto &outputs = static_cast<std::pair<std::vector<WiredOutput>, bool>*>(userdata)->first;
+                    for (auto &output : OtherProfileOutputs(*info))
+                        outputs.push_back(std::move(output));
+                }, &query));
         return query.first;
+    }
+
+    std::vector<WiredOutput> PulseAudioClient::OtherProfileOutputs(const pa_card_info &card)
+    {
+        auto prop = [](pa_proplist *list, const char *key) { const char *v = list ? pa_proplist_gets(list, key) : nullptr; return std::string(v ? v : ""); };
+        std::vector<WiredOutput> outputs;
+        // sound cards only: a Bluetooth card's profiles are codecs, switched on the device page
+        if (!card.name || !card.ports || prop(card.proplist, "device.api") != "alsa")
+            return outputs;
+        std::string active = card.active_profile2 && card.active_profile2->name ? card.active_profile2->name : "";
+        // ranked like the sound server ranks them, so a profile is named after the port it would play on
+        std::vector<const pa_card_port_info*> ports(card.ports, card.ports + card.n_ports);
+        std::ranges::stable_sort(ports, std::greater{}, [](const pa_card_port_info *p) { return p->priority; });
+        std::vector<std::string> offered;
+        for (const auto *port : ports)
+        {
+            // an empty jack or an HDMI port without a monitor plays nowhere
+            if (!port || port->direction != PA_DIRECTION_OUTPUT || port->available == PA_PORT_AVAILABLE_NO || !port->profiles2)
+                continue;
+            const pa_card_profile_info2 *best = nullptr;
+            bool playsNow = false;
+            for (uint32_t i = 0; i < port->n_profiles; i++)
+            {
+                const auto *profile = port->profiles2[i];
+                if (!profile || !profile->name)
+                    continue;
+                std::string name = profile->name;
+                playsNow = playsNow || name == active;
+                // the one the sound server would pick, which also keeps the microphone ("output:hdmi-stereo+input:analog-stereo")
+                if (profile->available && profile->n_sinks > 0 && !name.starts_with("pro-audio") && (!best || profile->priority > best->priority))
+                    best = profile;
+            }
+            if (playsNow || !best || std::ranges::find(offered, best->name) != offered.end())
+                continue;
+            offered.push_back(best->name);
+            // HDMI: the monitor's name from its EDID-like data (ELD); else the port ("HDMI / DisplayPort", "Speakers") and the card
+            std::string name = prop(port->proplist, "device.product.name");
+            if (name.empty())
+            {
+                name = port->description ? port->description : port->name ? port->name : best->name;
+                if (auto cardName = prop(card.proplist, "device.description"); !cardName.empty())
+                    name += " (" + cardName + ")";
+            }
+            outputs.push_back({std::string(card.name) + "#" + best->name, name, prop(card.proplist, "device.bus") == "usb"});
+        }
+        return outputs;
+    }
+
+    bool PulseAudioClient::PlayOn(const std::string &output)
+    {
+        auto hash = output.find('#');
+        if (hash == std::string::npos)
+            return SetDefaultSink(output);
+        auto card = output.substr(0, hash), profile = output.substr(hash + 1);
+        if (!SetCardProfile(card, profile))
+        {
+            Logger::Error("PulseAudioClient: could not switch %s to %s", card.c_str(), profile.c_str());
+            return false;
+        }
+        // the profile's sink comes a moment after the card reports it
+        for (int i = 0; i < 30; i++)
+        {
+            if (auto sink = CardSink(card, profile))
+                return SetDefaultSink(*sink);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        Logger::Error("PulseAudioClient: %s brought no sink for %s", card.c_str(), profile.c_str());
+        return false;
+    }
+
+    std::optional<std::string> PulseAudioClient::CardSink(const std::string &card, const std::string &profile)
+    {
+        if (!Usable()) return std::nullopt;
+
+        struct Query { uint32_t card = PA_INVALID_INDEX; std::string profile; std::optional<std::string> sink; } query{PA_INVALID_INDEX, profile, std::nullopt};
+        Lock lock{ml};
+        Wait(pa_context_get_card_info_by_name(ctx, card.c_str(),
+            [](pa_context*, const pa_card_info* info, int eol, void* userdata) {
+                if (!eol && info)
+                    static_cast<Query*>(userdata)->card = info->index;
+            }, &query));
+        if (query.card == PA_INVALID_INDEX)
+            return std::nullopt;
+        Wait(pa_context_get_sink_info_list(ctx,
+            [](pa_context*, const pa_sink_info* info, int eol, void* userdata) {
+                auto *q = static_cast<Query*>(userdata);
+                if (eol || !info || !info->name || info->card != q->card || q->sink)
+                    return;
+                // the sink of the new profile's output ("hdmi-stereo" in "output:hdmi-stereo+input:analog-stereo"),
+                // not one of the old profile still on its way out
+                if (const char *mapping = pa_proplist_gets(info->proplist, "device.profile.name"))
+                {
+                    auto part = "output:" + std::string(mapping);
+                    auto at = q->profile.find(part);
+                    if (at == std::string::npos || (at + part.size() < q->profile.size() && q->profile[at + part.size()] != '+'))
+                        return;
+                }
+                q->sink = info->name;
+            }, &query));
+        return query.sink;
     }
 
     bool PulseAudioClient::SetSinkVolume(const std::string &name, double volume)

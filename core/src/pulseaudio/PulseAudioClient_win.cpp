@@ -160,13 +160,19 @@ namespace MyPods
         return Output(endpoint);
     }
 
-    std::vector<WiredOutput> PulseAudioClient::GetOutputs(bool bluetooth)
+    std::vector<WiredOutput> PulseAudioClient::GetOutputs(bool playback)
     {
         std::vector<WiredOutput> outputs;
         for (const auto &endpoint : _native->ActiveEndpoints())
-            if (bluetooth || !Bluetooth(endpoint))
+            if (playback || !Bluetooth(endpoint))
                 outputs.push_back(Output(endpoint));
         return outputs;
+    }
+
+    // every endpoint Windows can play on is active already: no profiles to switch
+    bool PulseAudioClient::PlayOn(const std::string &output)
+    {
+        return SetDefaultSink(output);
     }
 
     std::vector<WiredOutput> PulseAudioClient::GetWiredHeadphones()

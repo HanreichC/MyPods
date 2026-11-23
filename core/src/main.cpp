@@ -147,7 +147,7 @@ void HandleConnectDeviceRequest(auto *ws, const nlohmann::json& json, uWS::OpCod
         return;
     }
 
-    device->ConnectAsync([device, ws, opCode, &app, &devicesInfoFetcher](const std::string* error) {
+    devicesInfoFetcher.ConnectAsync(device, [device, ws, opCode, &app, &devicesInfoFetcher](const std::string* error) {
         app.getLoop()->defer([device, ws, opCode, &devicesInfoFetcher]() {
             if (!openSockets.contains(ws))
                 return;

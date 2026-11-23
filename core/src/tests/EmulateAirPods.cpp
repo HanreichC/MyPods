@@ -497,7 +497,16 @@ int EmulateAirPods()
         // the laptop's speakers: a sound card output (device.api alsa) that isn't headphones
         std::string speakers = Sh("pactl load-module module-null-sink sink_name=mypods_speakers sink_properties=device.api=alsa");
         auto output = [] { return Sh("pactl get-default-sink"); };
-        auto silentOutput = [] { return !Sh("pactl list short sinks | grep " + std::string(AudioEffects::HOLD_SINK)).empty(); };
+        {
+            // the tray's output list (with the cards' other profiles, none here) and a pick from it, against the real server
+            auto pac = pods.GetAudioClient();
+            auto outputs = pac->GetOutputs(true);
+            bool listed = std::ranges::any_of(outputs, [](const WiredOutput &o) { return o.sink == "mypods_speakers"; });
+            bool played = pac->PlayOn("mypods_speakers") && WaitFor([&] { return output() == "mypods_speakers"; });
+            Check("Outputs: the speakers listed, picked, they play", listed && played, output());
+            Check("Outputs: a card that isn't there is refused", !pac->PlayOn("alsa_card.none#output:hdmi-stereo"));
+        }
+        auto silentOutput =[] { return !Sh("pactl list short sinks | grep " + std::string(AudioEffects::HOLD_SINK)).empty(); };
         // the AirPods' output goes with their A2DP profile when another device takes them, the system falls back
         auto fallBack = [] { Sh("pactl set-default-sink mypods_speakers"); };
         auto inEar = [](unsigned char primary, unsigned char secondary) { return Aap(0x06, {primary, secondary}); };

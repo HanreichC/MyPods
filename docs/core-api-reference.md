@@ -373,6 +373,11 @@ playing; headphones also count while they play through the effect chain (Linux).
 headphones through `SetActiveDevice`, so their effects come along, and anything else directly. `NextPlaybackOutput`
 plays on the output after the current one (the keyboard shortcut `output-next`).
 
+On Linux a sound card plays only one profile at a time, so HDMI next to the speakers on one card has no sink until
+the card switches to it. Such outputs are listed with `"<card>#<profile>"` as their `sink` (for example
+`"alsa_card.pci-0000_00_1f.3#output:hdmi-stereo+input:analog-stereo"`), named after the monitor or the port; picking
+one switches the card's profile and plays on the sink that brings.
+
 ```json
 { "method": "GetPlaybackOutputs" }
 { "method": "SetPlaybackOutput", "arguments": { "sink": "{0.0.0.00000000}.{d10eb956-9728-4171-8665-8d746bffc83f}" } }
