@@ -25,8 +25,6 @@ QQC2.ApplicationWindow {
     readonly property var conversationAwarenessData: capabilities?.conversationAwareness ?? null
     readonly property var player: cppMedia.player
     readonly property bool hasPlayer: Object.keys(player).length > 0
-    // the music on the iPhone opens the popup even without headphones here
-    readonly property bool canShow: hasInfo || !!player.source
     property double hiddenAt: 0
     // {sink, name, address, default} per output (core: GetPlaybackOutputs)
     property var outputs: []
@@ -68,7 +66,6 @@ QQC2.ApplicationWindow {
     onVisibleChanged: if (!visible) hiddenAt = Date.now()
     // HIG: a menu bar extra closes as soon as the person clicks elsewhere
     onActiveChanged: if (!active) visible = false
-    onCanShowChanged: if (!canShow) visible = false
 
     Connections {
         target: cppBackend
@@ -256,9 +253,10 @@ QQC2.ApplicationWindow {
                 }
             }
 
-            // Where the sound goes, like the Mac's Sound module: every output, the one playing ticked
+            // Where the sound goes, like the Mac's Sound module: every output, the one playing ticked; a lone one too,
+            // so the popup says where the sound is when nothing is connected
             Tile {
-                visible: popup.outputs.length > 1
+                visible: popup.outputs.length > 0
 
                 Text {
                     text: qsTrId("tray.popup.output")
@@ -314,7 +312,10 @@ QQC2.ApplicationWindow {
                 }
             }
 
-            Components.Separator { Layout.fillWidth: true }
+            Components.Separator {
+                Layout.fillWidth: true
+                visible: popup.hasInfo || nowPlaying.shown || popup.outputs.length > 0 // nothing above it to set apart
+            }
 
             // Menu item that opens the window
             QQC2.AbstractButton {

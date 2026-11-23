@@ -402,15 +402,10 @@ int main(int argc, char *argv[]) {
 
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         trayIcon.setContextMenu(&trayMenu);
-        // Click: the popup for the connected headphones or the music on the iPhone (the window when
-        // there is neither). Double click: the window.
+        // Click: the popup, like a menu bar extra on the Mac: the connected headphones, the music, where the sound
+        // goes (also with nothing connected: speakers, HDMI). Double click: the window.
         QObject::connect(&trayIcon, &TrayIcon::leftClicked, [&]() {
-            bool showPopup = trayPopup && trayPopup->property("hasInfo").toBool();
-            if (trayPopup && !showPopup) {
-                mediaController.refresh();
-                showPopup = mediaController.player().contains(QStringLiteral("source"));
-            }
-            if (showPopup) {
+            if (trayPopup) {
                 toggleTrayPopup();
             } else {
                 toggleMainWindow();
